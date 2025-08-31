@@ -1,4 +1,4 @@
-# Image Editor Generator
+# ThumbAI Youtube Thumbnail Generator
 
 A powerful, AI-driven image editing tool designed specifically for content creators who need to quickly generate professional thumbnails and social media content. Built with React, Next.js, and integrated with FAL AI for intelligent image processing.
 
