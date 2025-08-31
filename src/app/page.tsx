@@ -17,6 +17,8 @@ import {
   Menu,
   X,
   Edit3,
+  VideoIcon,
+  Youtube,
 } from "lucide-react";
 import { Header } from "@/components/Header";
 import UploadImage from "@/components/UploadImage";
@@ -148,19 +150,22 @@ const Home = () => {
             <Link href="/nano-banana/edit-image">
               <Button
                 size="lg"
-                className="bg-gradient-to-r from-blue-700 to-cyan-700 hover:from-blue-700 hover:to-cyan-600 text-lg text-neutral-300 px-8 py-6 font-semibold shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all"
+                className="cursor-pointer bg-gradient-to-r from-blue-700 to-cyan-700 hover:from-blue-700 hover:to-cyan-600 text-lg text-neutral-300 px-8 py-6 font-semibold shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all"
               >
                 Start Creating
                 <ArrowRight className=" w-5 h-5" />
               </Button>
             </Link>
+           <a href="https://youtu.be/dnqDogyenHg" target="_blank">
             <Button
               variant="outline"
               size="lg"
-              className="border-gray-600 text-gray-300 hover:bg-gray-800 text-lg px-8 py-6"
+              className="border-gray-600 cursor-pointer text-gray-300 hover:bg-gray-800 text-lg px-8 py-6"
             >
               Watch Demo
+               <Youtube className=" w-5 h-5" />
             </Button>
+            </a>
           </div>
 
           <section className="py-20 px-4 sm:px-6 lg:px-8">
@@ -361,7 +366,7 @@ const Home = () => {
                       </li>
                     </ul>
                     <Link href="/">
-                      <Button className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-neutral-100 text-lg px-6 py-6">
+                      <Button className="cursor-pointer bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-neutral-100 text-lg px-6 py-6">
                         Try It Now
                         <ArrowRight className="ml-1 w-5 h-5" />
                       </Button>

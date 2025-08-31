@@ -33,7 +33,6 @@ import {
   AccordionTrigger,
 } from "./ui/accordion";
 import axios from "axios";
-import { Badge } from "./ui/badge";
 import toast from "react-hot-toast";
 import { resizedImages } from "@/utils/imageUtils";
 import { fal } from "@fal-ai/client";
@@ -453,7 +452,7 @@ export const ImageEditorGenerator = () => {
                     type="button"
                     onClick={handleAddUrl}
                     variant="outline"
-                    className="border-neutral-600 text-neutral-300 hover:bg-neutral-800"
+                    className="cursor-pointer border-neutral-600 text-neutral-300 hover:bg-neutral-800"
                   >
                     Add
                   </Button>
@@ -653,7 +652,7 @@ export const ImageEditorGenerator = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  className="border-neutral-600 text-neutral-300 hover:bg-neutral-800"
+                  className="cursor-pointer border-neutral-600 text-neutral-300 hover:bg-neutral-800"
                   onClick={handleReset}
                 >
                   Reset
@@ -666,7 +665,7 @@ export const ImageEditorGenerator = () => {
                     uploadedImages.length === 0 ||
                     (aspectRatios?.length || 0) === 0
                   }
-                  className="flex-1 bg-gradient-to-r from-neutral-200 to-neutral-300 text-neutral-900 hover:from-neutral-300 hover:to-neutral-400 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                  className=" cursor-pointer flex-1 bg-gradient-to-r from-neutral-200 to-neutral-300 text-neutral-900 hover:from-neutral-300 hover:to-neutral-400 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isGenerating ? (
                     <>Processing...</>
@@ -869,7 +868,7 @@ export const ImageEditorGenerator = () => {
                       variant="outline"
                       size="lg"
                       onClick={handleDownloadAll}
-                      className="border-neutral-600 text-neutral-300 hover:bg-neutral-800"
+                      className="cursor-pointer border-neutral-600 text-neutral-300 hover:bg-neutral-800"
                       disabled={displayImages.length === 0}
                     >
                       <Download className="w-4 h-4 mr-2" />

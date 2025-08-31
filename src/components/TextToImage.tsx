@@ -501,7 +501,7 @@ export const TextToImageGenerator = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  className="border-neutral-600 text-neutral-300 hover:bg-neutral-800"
+                  className="cursor-pointer border-neutral-600 text-neutral-300 hover:bg-neutral-800"
                   onClick={handleReset}
                 >
                   Reset
@@ -513,7 +513,7 @@ export const TextToImageGenerator = () => {
                     isGenerating ||
                     (aspectRatios?.length || 0) === 0
                   }
-                  className="flex-1 bg-gradient-to-r from-neutral-200 to-neutral-300 text-neutral-900 hover:from-neutral-300 hover:to-neutral-400 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                  className=" cursor-pointer flex-1 bg-gradient-to-r from-neutral-200 to-neutral-300 text-neutral-900 hover:from-neutral-300 hover:to-neutral-400 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isGenerating ? (
                     <>Generating...</>
@@ -714,7 +714,7 @@ export const TextToImageGenerator = () => {
                     <Select
                       onValueChange={(value) => handleEdit(parseInt(value))}
                     >
-                      <SelectTrigger className="w-[200px] border-neutral-600 text-neutral-300">
+                      <SelectTrigger className="w-[200px] cursor-pointer border-neutral-600 text-neutral-300">
                         <Edit className="w-4 h-4 mr-2" />
                         <SelectValue placeholder="Edit Image" />
                       </SelectTrigger>
@@ -731,7 +731,7 @@ export const TextToImageGenerator = () => {
                       variant="outline"
                       size="lg"
                       onClick={handleDownloadAll}
-                      className="border-neutral-600 text-neutral-300 hover:bg-neutral-800"
+                      className="border-neutral-600 cursor-pointer text-neutral-300 hover:bg-neutral-800"
                     >
                       <Download className="w-4 h-4 mr-2" />
                       Download All as ZIP

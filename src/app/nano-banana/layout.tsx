@@ -57,14 +57,14 @@ export default function GeneratorLayout({ children }: { children: React.ReactNod
          
           <div className="flex items-center gap-4">
              <Badge className="bg-neutral-900 flex justify-center items-center gap-2 text-center text-sm border-neutral-600  hover:bg-neutral-800 text-neutral-300 px-3 py-2 rounded-md">
-              <span className="w-2 h-2 rounded-full bg-neutral-300 -mt-0.5"></span>
+              <span className="w-2 h-2 rounded-full bg-green-600 -mt-0.5"></span>
               Nano Banana
             </Badge>
             <div className="relative" ref={dropdownRef}>
               <Button
                 variant="outline"
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="border-neutral-600 text-neutral-300 hover:bg-neutral-800 min-w-[200px] justify-between"
+                className="cursor-pointer border-neutral-600 text-neutral-300 hover:bg-neutral-800 min-w-[200px] justify-between"
               >
                 <div className="flex items-center">
                   {currentMode?.icon}
@@ -85,7 +85,7 @@ export default function GeneratorLayout({ children }: { children: React.ReactNod
                         <div
                           className={`w-full text-left p-3 mt-2 rounded-lg transition-colors cursor-pointer ${
                             pathname.includes(mode.id)
-                              ? "bg-blue-600 text-white"
+                              ? "bg-neutral-800 text-white"
                               : "hover:bg-neutral-800 text-neutral-300"
                           }`}
                         >
