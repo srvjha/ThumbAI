@@ -84,29 +84,7 @@ const Home = () => {
     },
   ];
 
-  const testimonials = [
-    {
-      name: "Alex Chen",
-      role: "YouTuber",
-      content:
-        "This tool increased my click-through rates by 40%. The AI understands exactly what makes thumbnails pop!",
-      rating: 5,
-    },
-    {
-      name: "Sarah Wilson",
-      role: "Content Creator",
-      content:
-        "I went from spending hours on thumbnails to generating perfect ones in minutes. Game changer!",
-      rating: 5,
-    },
-    {
-      name: "Mike Rodriguez",
-      role: "Digital Marketer",
-      content:
-        "The chat interface is genius. I can iterate on designs faster than any other tool I've used.",
-      rating: 5,
-    },
-  ];
+ 
 
   const models = [
     {
@@ -117,7 +95,7 @@ const Home = () => {
       isNew: true,
       backgroundImage: "./pgmarry.jpeg",
       icon: <Wand2 className="w-3 h-3" />,
-      navigate:"/nano-banana/text-to-image",
+      navigate: "/nano-banana/text-to-image",
       onClick: () => console.log("Navigate to text-to-image"),
     },
     {
@@ -128,7 +106,7 @@ const Home = () => {
       isNew: true,
       backgroundImage: "./hitshchai.jpeg",
       icon: <Edit3 className="w-3 h-3" />,
-      navigate:"/nano-banana/edit-image",
+      navigate: "/nano-banana/edit-image",
       onClick: () => console.log("Navigate to image-editor"),
     },
   ];
@@ -140,10 +118,18 @@ const Home = () => {
         <div className="container mx-auto text-center">
           <Badge className="mb-6 bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20 px-4 py-2 rounded-full">
             <Sparkles className="w-4 h-4 mr-2" />
-            Powered by Nano banana
+             Nano banana Image Generation
           </Badge>
-
-          <h1 className="text-4xl sm:text-6xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent leading-tight">
+          <h1
+            className="
+            text-4xl sm:text-6xl lg:text-7xl 
+            font-bold mb-6 
+            bg-gradient-to-r from-white via-gray-200 to-gray-400 
+            bg-clip-text text-transparent leading-tight 
+            tracking-tight   /* decrease character spacing */
+            word-spacing-tight /* custom class for word spacing */
+          "
+          >
             From Idea to{" "}
             <span className="bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
               Thumbnail
@@ -160,13 +146,13 @@ const Home = () => {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-17 mt-5">
             <Link href="/nano-banana/edit-image">
-            <Button
-              size="lg"
-              className="bg-gradient-to-r from-blue-700 to-cyan-700 hover:from-blue-700 hover:to-cyan-600 text-lg text-neutral-300 px-8 py-6 font-semibold shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all"
-            >
-              Start Creating
-              <ArrowRight className=" w-5 h-5" />
-            </Button>
+              <Button
+                size="lg"
+                className="bg-gradient-to-r from-blue-700 to-cyan-700 hover:from-blue-700 hover:to-cyan-600 text-lg text-neutral-300 px-8 py-6 font-semibold shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all"
+              >
+                Start Creating
+                <ArrowRight className=" w-5 h-5" />
+              </Button>
             </Link>
             <Button
               variant="outline"
@@ -374,27 +360,32 @@ const Home = () => {
                         Professional quality output
                       </li>
                     </ul>
-                    <Button className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-lg px-6 py-3">
-                      Try It Now
-                      <ArrowRight className="ml-2 w-5 h-5" />
-                    </Button>
+                    <Link href="/">
+                      <Button className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-neutral-100 text-lg px-6 py-6">
+                        Try It Now
+                        <ArrowRight className="ml-1 w-5 h-5" />
+                      </Button>
+                    </Link>
                   </div>
                   <div className="bg-transparent p-8 lg:p-12 flex items-center justify-center">
                     <div className="w-full max-w-sm">
                       <div className="bg-gray-800 rounded-lg p-4 mb-4">
-                        <div className="w-full h-32 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-lg flex items-center justify-center mb-3">
-                          <span className="text-white font-bold text-lg">
-                            BEFORE
-                          </span>
+                        <div className="w-full h-44 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-lg flex items-center justify-center mb-3">
+                          <img
+                            src="https://i.ytimg.com/vi/qG1m_wIopsQ/hqdefault.jpg?sqp=-oaymwEnCNACELwBSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLCVTJKqsD3tmNaaaxSITjUgl35OHw"
+                            alt=""
+                            className="w-full h-full rounded-lg"
+                          />
                         </div>
                         <div className="text-center">
                           <ArrowRight className="w-6 h-6 text-gray-400 mx-auto mb-3" />
                         </div>
-                        <div className="w-full h-32 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center relative overflow-hidden">
-                          <span className="text-white font-bold text-lg relative z-10">
-                            EPIC RESULT!
-                          </span>
-                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 animate-pulse"></div>
+                        <div className="w-full h-44 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center relative overflow-hidden">
+                          <img
+                            src="https://v3.fal.media/files/elephant/qA7XmAMV6j63cOTjYbuGi.jpeg"
+                            alt=""
+                            className="w-full h-full"
+                          />
                         </div>
                       </div>
                     </div>

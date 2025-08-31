@@ -68,7 +68,7 @@ export const TextToImageGenerator = () => {
       outputFormat: "jpeg",
       aspectRatios: ["16:9"],
       imagesUrl: [
-        "https://v3.fal.media/files/koala/31B5i_j0XFXaZK-9Xu8-0.jpeg",
+        "https://v3.fal.media/files/zebra/eKy38gYAhM3NCDmqiLe0d.jpeg",
       ],
     },
     mode: "onChange",
@@ -81,47 +81,37 @@ export const TextToImageGenerator = () => {
   const defaultImage = watch("imagesUrl") || [];
 
   const onSubmit = async (data: FormValues) => {
+    console.log({ data });
     setIsGenerating(true);
     setStatus("generating");
+
     try {
       let results: ImageData[] = [];
 
-      // 16:9 -> /api/generate
-      if (data.aspectRatios.includes("16:9")) {
+      // Process images for each selected aspect ratio
+      for (const aspectRatio of data.aspectRatios) {
         const res = await axios.post("/api/generate", {
           prompt: data.prompt,
           numImages: data.numImages,
           outputFormat: data.outputFormat,
+          aspectRatio: data.aspectRatios,
         });
-        const imgs =
-          res.data?.data?.data?.images?.map((img: any) => ({
-            url: img.url,
-            aspectRatio: "16:9",
-          })) || [];
-        results = [...results, ...imgs];
-      }
 
-      // 9:16 -> /api/generate/variant
-      if (data.aspectRatios.includes("9:16")) {
-        const res = await axios.post("/api/generate/variant", {
-          prompt: data.prompt,
-          numImages: data.numImages,
-        });
         const imgs =
           res.data?.data?.data?.images?.map((img: any) => ({
             url: img.url,
-            aspectRatio: "9:16",
+            aspectRatio: aspectRatio,
           })) || [];
         results = [...results, ...imgs];
       }
 
       setGeneratedImages(results);
       setStatus("completed");
-      toast.success("Images generated successfully!", { id: "generation" });
+      toast.success("Images edited successfully!", { id: "generation" });
     } catch (err) {
       console.error(err);
       setStatus("idle");
-      toast.error("Failed to generate images. Please try again.", {
+      toast.error("Failed to edit images. Please try again.", {
         id: "generation",
       });
     } finally {

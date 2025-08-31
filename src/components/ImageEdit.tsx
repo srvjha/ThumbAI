@@ -70,7 +70,7 @@ export const ImageEditorGenerator = () => {
     urlFromQuery.length > 0
       ? [urlFromQuery]
       : [
-          "https://res.cloudinary.com/sauravjha/image/upload/v1756626211/myProfile_ps3myc.jpg",
+          "https://i.ytimg.com/vi/Ecygj87WhZs/hqdefault.jpg?sqp=-oaymwEnCNACELwBSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLALuqRUZ4UCevhLJZ5hHcR4_koCRA",
         ];
   const finalOutputFormat =
     outputFormatFromQuery.length > 0 ? outputFormatFromQuery : "jpeg";
@@ -102,7 +102,7 @@ export const ImageEditorGenerator = () => {
       url:
         urlFromQuery.length > 0
           ? urlFromQuery
-          : "https://v3.fal.media/files/kangaroo/93f9N-RE7DhRUU_GWoGx7.jpeg",
+          : "https://v3.fal.media/files/panda/Z_BYnI4_8T-nNGe5n0FJQ.jpeg",
       aspectRatio: "16:9",
     },
   ]);
