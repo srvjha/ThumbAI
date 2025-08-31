@@ -53,7 +53,7 @@ export const TextToImageGenerator = () => {
     "idle" | "generating" | "in-progress" | "completed"
   >("idle");
   const [imageSizes, setImageSizes] = useState<string[]>([]);
-  
+
   const {
     control,
     handleSubmit,
@@ -83,35 +83,35 @@ export const TextToImageGenerator = () => {
   const onSubmit = async (data: FormValues) => {
     setIsGenerating(true);
     setStatus("generating");
-    toast.loading("Starting image generation...", { id: "generation" });
-
     try {
       let results: ImageData[] = [];
 
-      // if 16:9 selected -> call /api/generate
+      // 16:9 -> /api/generate
       if (data.aspectRatios.includes("16:9")) {
         const res = await axios.post("/api/generate", {
           prompt: data.prompt,
           numImages: data.numImages,
           outputFormat: data.outputFormat,
         });
-        const imgs = res.data?.data?.data?.images?.map((img: any) => ({
-          url: img.url,
-          aspectRatio: "16:9"
-        })) || [];
+        const imgs =
+          res.data?.data?.data?.images?.map((img: any) => ({
+            url: img.url,
+            aspectRatio: "16:9",
+          })) || [];
         results = [...results, ...imgs];
       }
 
-      // if 9:16 selected -> call /api/generate/variant
+      // 9:16 -> /api/generate/variant
       if (data.aspectRatios.includes("9:16")) {
         const res = await axios.post("/api/generate/variant", {
           prompt: data.prompt,
           numImages: data.numImages,
         });
-        const imgs = res.data?.data?.data?.images?.map((img: any) => ({
-          url: img.url,
-          aspectRatio: "9:16"
-        })) || [];
+        const imgs =
+          res.data?.data?.data?.images?.map((img: any) => ({
+            url: img.url,
+            aspectRatio: "9:16",
+          })) || [];
         results = [...results, ...imgs];
       }
 
@@ -121,7 +121,9 @@ export const TextToImageGenerator = () => {
     } catch (err) {
       console.error(err);
       setStatus("idle");
-      toast.error("Failed to generate images. Please try again.", { id: "generation" });
+      toast.error("Failed to generate images. Please try again.", {
+        id: "generation",
+      });
     } finally {
       setIsGenerating(false);
     }
@@ -142,8 +144,6 @@ export const TextToImageGenerator = () => {
     try {
       console.log("sizes: ", sizes);
       toast.loading("Downloading image...", { id: "download" });
-
-      // if sizes are requested → get resized URL(s)
       const urlsToDownload =
         sizes.length > 0 ? resizedImages([url], sizes) : [url];
 
@@ -223,16 +223,17 @@ export const TextToImageGenerator = () => {
       for (let i = 0; i < displayImages.length; i++) {
         const img = displayImages[i];
         try {
-          const imageUrl = typeof img === 'string' ? img : img.url;
+          const imageUrl = typeof img === "string" ? img : img.url;
           const response = await fetch(imageUrl);
           if (!response.ok) throw new Error(`Failed to fetch image ${i + 1}`);
 
           const blob = await response.blob();
           const extension = watch("outputFormat") || "jpg";
-          const aspectRatio = typeof img === 'string' ? '16:9' : img.aspectRatio;
+          const aspectRatio =
+            typeof img === "string" ? "16:9" : img.aspectRatio;
           const filename = `${
             isShowingDefault ? "default" : "generated"
-          }-image-${aspectRatio.replace(':', 'x')}-${i + 1}.${extension}`;
+          }-image-${aspectRatio.replace(":", "x")}-${i + 1}.${extension}`;
 
           zip.file(filename, blob);
         } catch (error) {
@@ -264,14 +265,15 @@ export const TextToImageGenerator = () => {
     }
   };
 
-  //  images to ImageData format for consistent handling
-  const defaultImageData: ImageData[] = defaultImage.map(url => ({
+  const defaultImageData: ImageData[] = defaultImage.map((url) => ({
     url,
-    aspectRatio: "16:9"
+    aspectRatio: "16:9",
   }));
 
-  const displayImages = generatedImages.length > 0 ? generatedImages : defaultImageData;
-  const isShowingDefault = generatedImages.length === 0 && defaultImage.length > 0;
+  const displayImages =
+    generatedImages.length > 0 ? generatedImages : defaultImageData;
+  const isShowingDefault =
+    generatedImages.length === 0 && defaultImage.length > 0;
 
   const getImageContainerStyle = (aspectRatio: string) => {
     if (aspectRatio === "9:16") {
@@ -282,39 +284,45 @@ export const TextToImageGenerator = () => {
 
   const getGridLayout = () => {
     if (displayImages.length === 1) return "grid-cols-1";
-    
+
     // Check if we have mixed aspect ratios
-    const hasLandscape = displayImages.some(img => img.aspectRatio === "16:9");
-    const hasPortrait = displayImages.some(img => img.aspectRatio === "9:16");
-    
+    const hasLandscape = displayImages.some(
+      (img) => img.aspectRatio === "16:9"
+    );
+    const hasPortrait = displayImages.some((img) => img.aspectRatio === "9:16");
+
     if (hasLandscape && hasPortrait) {
       // Mixed ratios - use flexible grid
       return "grid-cols-1 sm:grid-cols-2 gap-4";
     }
-    
+
     // Same aspect ratios
     if (displayImages[0].aspectRatio === "9:16") {
-      return displayImages.length <= 2 ? "grid-cols-2 gap-3" : "grid-cols-3 gap-2";
+      return displayImages.length <= 2
+        ? "grid-cols-2 gap-3"
+        : "grid-cols-3 gap-2";
     }
-    
+
     return "grid-cols-1 gap-3";
   };
 
   const router = useRouter();
 
-const handleEdit = (selectedIdx: number) => {
-  const img = displayImages[selectedIdx];
-  if (!img) return;
+  const handleEdit = (selectedIdx: number) => {
+    const img = displayImages[selectedIdx];
+    if (!img) return;
 
-  router.push(
-    `/nano-banana/edit-image?url=${encodeURIComponent(img.url)}&aspectRatio=${
-      img.aspectRatio
-    }&prompt=${encodeURIComponent(prompt)}&outputFormat=${watch("outputFormat")}`
-  );
-};
+    router.push(
+      `/nano-banana/edit-image?url=${encodeURIComponent(img.url)}&aspectRatio=${
+        img.aspectRatio
+      }&prompt=${encodeURIComponent(prompt)}&outputFormat=${watch(
+        "outputFormat"
+      )}`
+    );
+  };
 
   return (
-    <div className="grid lg:grid-cols-2 gap-8 h-full">
+    <div className="grid lg:grid-cols-2 gap-8">
       {/* Left Panel - Input */}
       <div className="space-y-6">
         <Card className="bg-neutral-900/30 border border-neutral-800 py-1">
@@ -404,9 +412,9 @@ const handleEdit = (selectedIdx: number) => {
                 render={({ field }) => {
                   const ratioOptions = [
                     { value: "16:9", label: "YouTube Thumbnail (16:9)" },
-                    { value: "9:16", label: "Shorts/Reels Cover (9:16)" }
+                    { value: "9:16", label: "Shorts/Reels Cover (9:16)" },
                   ];
-                  
+
                   return (
                     <div>
                       <label className="block text-sm text-neutral-300 mb-2">
@@ -414,18 +422,28 @@ const handleEdit = (selectedIdx: number) => {
                       </label>
                       <div className="flex gap-4">
                         {ratioOptions.map((option) => (
-                          <label key={option.value} className="flex items-center gap-2 text-neutral-300">
+                          <label
+                            key={option.value}
+                            className="flex items-center gap-2 text-neutral-300"
+                          >
                             <input
                               type="checkbox"
                               value={option.value}
-                              checked={field.value?.includes(option.value) || false}
+                              checked={
+                                field.value?.includes(option.value) || false
+                              }
                               onChange={(e) => {
                                 const currentValue = field.value || [];
                                 if (e.target.checked) {
-                                  field.onChange([...currentValue, option.value]);
+                                  field.onChange([
+                                    ...currentValue,
+                                    option.value,
+                                  ]);
                                 } else {
                                   field.onChange(
-                                    currentValue.filter((r) => r !== option.value)
+                                    currentValue.filter(
+                                      (r) => r !== option.value
+                                    )
                                   );
                                 }
                               }}
@@ -501,7 +519,9 @@ const handleEdit = (selectedIdx: number) => {
                 <Button
                   type="submit"
                   disabled={
-                    !prompt.trim() || isGenerating || (aspectRatios?.length || 0) === 0
+                    !prompt.trim() ||
+                    isGenerating ||
+                    (aspectRatios?.length || 0) === 0
                   }
                   className="flex-1 bg-gradient-to-r from-neutral-200 to-neutral-300 text-neutral-900 hover:from-neutral-300 hover:to-neutral-400 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -525,39 +545,34 @@ const handleEdit = (selectedIdx: number) => {
 
       {/* Right Panel - Result */}
       <div>
-        <Card className="bg-transparent border-neutral-800 h-full p-1">
+        <Card className="bg-transparent border-neutral-800 h-[600px] overflow-y-auto p-1">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-neutral-100">Result</h3>
 
               {status !== "idle" && (
-                <Badge
-                  variant={
-                    status === "completed"
-                      ? "default"
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-neutral-700 bg-transparent text-white text-sm">
+                  <span
+                    className={`w-2.5 h-2.5 rounded-full ${
+                      status === "completed"
+                        ? "bg-green-500"
+                        : status === "generating"
+                        ? "bg-amber-400"
+                        : status === "in-progress"
+                        ? "bg-blue-400"
+                        : "bg-neutral-500"
+                    }`}
+                  />
+                  <span>
+                    {status === "completed"
+                      ? "Completed"
+                      : status === "generating"
+                      ? "Generating"
                       : status === "in-progress"
-                      ? "secondary"
-                      : "outline"
-                  }
-                  className="flex items-center gap-1 px-3 py-1 text-sm"
-                >
-                  {status === "generating" && (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" /> Generating
-                    </>
-                  )}
-                  {status === "in-progress" && (
-                    <>
-                      <Clock className="w-4 h-4" /> In Progress
-                    </>
-                  )}
-                  {status === "completed" && (
-                    <>
-                      <CheckCircle className="w-4 h-4 text-green-500" />{" "}
-                      Completed
-                    </>
-                  )}
-                </Badge>
+                      ? "In Progress"
+                      : ""}
+                  </span>
+                </div>
               )}
             </div>
 
@@ -576,19 +591,25 @@ const handleEdit = (selectedIdx: number) => {
                   <div className="flex-1">
                     {displayImages.length === 1 ? (
                       <div className="flex justify-center items-start h-full">
-                        <div className={`relative rounded-lg overflow-hidden border-none group ${getImageContainerStyle(displayImages[0].aspectRatio)}`}>
+                        <div
+                          className={`relative rounded-lg overflow-hidden border-none group ${getImageContainerStyle(
+                            displayImages[0].aspectRatio
+                          )}`}
+                        >
                           <img
                             src={displayImages[0].url}
-                            alt={isShowingDefault ? "Default Preview" : "Generated"}
+                            alt={
+                              isShowingDefault ? "Default Preview" : "Generated"
+                            }
                             className="w-full h-full object-cover"
                           />
-                          {/* Show preview label for default image */}
+
                           {isShowingDefault && (
                             <div className="absolute top-2 left-2 bg-neutral-900/80 text-neutral-300 px-2 py-1 rounded-md text-sm">
                               Preview
                             </div>
                           )}
-                          {/* Aspect ratio badge */}
+
                           <div className="absolute bottom-2 left-2 bg-neutral-900/80 text-neutral-300 px-2 py-1 rounded-md text-xs">
                             {displayImages[0].aspectRatio}
                           </div>
@@ -633,13 +654,15 @@ const handleEdit = (selectedIdx: number) => {
                         {displayImages.map((img, idx) => (
                           <div key={idx} className="flex justify-center">
                             <div
-                              className={`relative rounded-lg overflow-hidden border border-neutral-700 group ${getImageContainerStyle(img.aspectRatio)}`}
+                              className={`relative rounded-lg overflow-hidden border border-neutral-700 group ${getImageContainerStyle(
+                                img.aspectRatio
+                              )}`}
                             >
                               <img
                                 src={img.url}
-                                alt={`${isShowingDefault ? "Default" : "Generated"} ${
-                                  idx + 1
-                                }`}
+                                alt={`${
+                                  isShowingDefault ? "Default" : "Generated"
+                                } ${idx + 1}`}
                                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                               />
                               {isShowingDefault && (
@@ -667,8 +690,13 @@ const handleEdit = (selectedIdx: number) => {
                                     handleDownload(
                                       img.url,
                                       `${
-                                        isShowingDefault ? "default" : "generated"
-                                      }-image-${img.aspectRatio.replace(':', 'x')}-${idx + 1}.jpg`,
+                                        isShowingDefault
+                                          ? "default"
+                                          : "generated"
+                                      }-image-${img.aspectRatio.replace(
+                                        ":",
+                                        "x"
+                                      )}-${idx + 1}.jpg`,
                                       imageSizes
                                     )
                                   }
@@ -691,22 +719,23 @@ const handleEdit = (selectedIdx: number) => {
                       </div>
                     )}
                   </div>
-                  
-                  {/* Action buttons at bottom */}
+
                   <div className="flex items-center justify-center gap-4 mt-6 pt-4 border-t border-neutral-800">
-                   <Select onValueChange={(value) => handleEdit(parseInt(value))}>
-  <SelectTrigger className="w-[200px] border-neutral-600 text-neutral-300">
-    <Edit className="w-4 h-4 mr-2" />
-    <SelectValue placeholder="Edit Image" />
-  </SelectTrigger>
-  <SelectContent className="bg-neutral-900 border-neutral-700">
-    {displayImages.map((_, idx) => (
-      <SelectItem key={idx} value={String(idx)}>
-        Edit Image {idx + 1}
-      </SelectItem>
-    ))}
-  </SelectContent>
-</Select>
+                    <Select
+                      onValueChange={(value) => handleEdit(parseInt(value))}
+                    >
+                      <SelectTrigger className="w-[200px] border-neutral-600 text-neutral-300">
+                        <Edit className="w-4 h-4 mr-2" />
+                        <SelectValue placeholder="Edit Image" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-neutral-900 border-neutral-700">
+                        {displayImages.map((_, idx) => (
+                          <SelectItem key={idx} value={String(idx)}>
+                            Edit Image {idx + 1}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
 
                     <Button
                       variant="outline"

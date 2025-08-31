@@ -32,13 +32,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "./ui/accordion";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "./ui/dialog";
 import axios from "axios";
 import { Badge } from "./ui/badge";
 import toast from "react-hot-toast";
@@ -122,7 +115,6 @@ export const ImageEditorGenerator = () => {
 
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // --- Upload Helpers ---
   const uploadFileToFal = async (file: File): Promise<string> => {
     fal.config({
       credentials: process.env.NEXT_PUBLIC_FAL_KEY,
@@ -138,8 +130,6 @@ export const ImageEditorGenerator = () => {
       try {
         const previews = files.map((file) => URL.createObjectURL(file));
         setLocalPreviews((prev) => [...prev, ...previews]);
-
-        // Upload to fal and update form uploadedImages
         const uploadedUrls = await Promise.all(files.map(uploadFileToFal));
         setValue("uploadedImages", [...uploadedImages, ...uploadedUrls]);
       } catch (error) {
@@ -201,7 +191,6 @@ export const ImageEditorGenerator = () => {
     console.log({ data });
     setIsGenerating(true);
     setStatus("generating");
-    toast.loading("Starting image editing...", { id: "generation" });
 
     try {
       let results: ImageData[] = [];
@@ -332,7 +321,6 @@ export const ImageEditorGenerator = () => {
       const JSZip = (await import("jszip")).default;
       const zip = new JSZip();
 
-      // Add each image to zip
       for (let i = 0; i < displayImages.length; i++) {
         const img = displayImages[i];
         try {
@@ -385,19 +373,15 @@ export const ImageEditorGenerator = () => {
 
   const getGridLayout = () => {
     if (displayImages.length === 1) return "grid-cols-1";
-
-    // Check if we have mixed aspect ratios
     const hasLandscape = displayImages.some(
       (img) => img.aspectRatio === "16:9"
     );
     const hasPortrait = displayImages.some((img) => img.aspectRatio === "9:16");
 
     if (hasLandscape && hasPortrait) {
-      // Mixed ratios - use flexible grid
       return "grid-cols-1 sm:grid-cols-2 gap-4";
     }
 
-    // Same aspect ratios
     if (displayImages[0].aspectRatio === "9:16") {
       return displayImages.length <= 2
         ? "grid-cols-2 gap-3"
@@ -408,7 +392,7 @@ export const ImageEditorGenerator = () => {
   };
 
   return (
-    <div className="grid lg:grid-cols-2 gap-8 h-full">
+    <div className="grid lg:grid-cols-2 gap-8">
       {/* Left Panel - Input */}
       <div className="space-y-6">
         <Card className="bg-neutral-900/30 border border-neutral-800 py-1">
@@ -704,39 +688,34 @@ export const ImageEditorGenerator = () => {
 
       {/* Right Panel - Result */}
       <div>
-        <Card className="bg-transparent border-neutral-800 h-[60%] p-1">
+        <Card className="bg-transparent border-neutral-800 h-[600px] overflow-y-auto p-1">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-neutral-100">Result</h3>
 
               {status !== "idle" && (
-                <Badge
-                  variant={
-                    status === "completed"
-                      ? "default"
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-neutral-700 bg-transparent text-white text-sm">
+                  <span
+                    className={`w-2.5 h-2.5 rounded-full ${
+                      status === "completed"
+                        ? "bg-green-500"
+                        : status === "generating"
+                        ? "bg-amber-400"
+                        : status === "in-progress"
+                        ? "bg-blue-400"
+                        : "bg-neutral-500"
+                    }`}
+                  />
+                  <span>
+                    {status === "completed"
+                      ? "Completed"
+                      : status === "generating"
+                      ? "Generating"
                       : status === "in-progress"
-                      ? "secondary"
-                      : "outline"
-                  }
-                  className="flex items-center gap-1 px-3 py-1 text-sm"
-                >
-                  {status === "generating" && (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" /> Processing
-                    </>
-                  )}
-                  {status === "in-progress" && (
-                    <>
-                      <Clock className="w-4 h-4" /> In Progress
-                    </>
-                  )}
-                  {status === "completed" && (
-                    <>
-                      <CheckCircle className="w-4 h-4 text-green-500" />{" "}
-                      Completed
-                    </>
-                  )}
-                </Badge>
+                      ? "In Progress"
+                      : ""}
+                  </span>
+                </div>
               )}
             </div>
 

@@ -181,7 +181,7 @@ const Home = () => {
             <div className="container mx-auto">
               <div className="text-center mb-16">
                 <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-                  Choose Your <span className="text-cyan-400">AI Model</span>
+                  Choose Your <span className="text-blue-400">AI Model</span>
                 </h2>
                 <p className="text-xl text-gray-400 max-w-2xl mx-auto">
                   Two specialized AI models designed for different thumbnail
@@ -222,7 +222,7 @@ const Home = () => {
       <section className="py-12 bg-neutral-900 text-white">
         <div className="max-w-6xl mx-auto px-6">
           <h2 className="text-3xl font-bold mb-8 text-center">
-            Showcase <span className="text-cyan-400">Thumbnails</span>
+            Showcase <span className="text-blue-400">Thumbnails</span>
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

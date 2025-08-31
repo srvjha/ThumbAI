@@ -1,4 +1,3 @@
-// utils/resizeImage.ts
 
 const sizeMap: Record<string, { width: number; height: number }> = {
   "youtube-horizontal": { width: 1280, height: 720 },
@@ -12,16 +11,15 @@ const sizeMap: Record<string, { width: number; height: number }> = {
 
 export function resizedImages(images: string[], sizes: string[]) {
  const results: string[] = [];
-  
-  // Platform-specific strategies that NEVER crop
+
   const platformStrategy: Record<string, string> = {
-    "youtube-horizontal": "auto",      // Best fit for landscape
-    "youtube-shorts": "smart-pad",     // Pad to vertical format
-    "instagram-post": "smart-pad",     // Pad to square format  
-    "instagram-story": "smart-pad",    // Pad to story format
-    "tiktok": "smart-pad",            // Pad to vertical format
-    "twitter-post": "auto",           // Best fit
-    "facebook-post": "auto",          // Best fit
+    "youtube-horizontal": "auto",      
+    "youtube-shorts": "smart-pad",     
+    "instagram-post": "smart-pad",       
+    "instagram-story": "smart-pad",   
+    "tiktok": "smart-pad",            
+    "twitter-post": "auto",           
+    "facebook-post": "auto",         
   };
 
   for (const img of images) {
