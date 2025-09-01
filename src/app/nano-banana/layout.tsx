@@ -16,7 +16,7 @@ const modes = [
   },
   {
     id: "edit-image",
-    label: "Image Editor",
+    label: "Image to Image",
     description: "Edit existing images with AI",
     icon: <Settings className="w-4 h-4" />,
     path: "/nano-banana/edit-image",

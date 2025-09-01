@@ -52,7 +52,6 @@ export const TextToImageGenerator = () => {
   const [status, setStatus] = useState<
     "idle" | "generating" | "in-progress" | "completed"
   >("idle");
-  const [imageSizes, setImageSizes] = useState<string[]>([]);
 
   const {
     control,
@@ -129,16 +128,12 @@ export const TextToImageGenerator = () => {
   const handleDownload = async (
     url: string,
     filename = "image.jpg",
-    sizes: string[] = []
   ) => {
     try {
-      console.log("sizes: ", sizes);
-      toast.loading("Downloading image...", { id: "download" });
-      const urlsToDownload =
-        sizes.length > 0 ? resizedImages([url], sizes) : [url];
+     
 
-      for (let i = 0; i < urlsToDownload.length; i++) {
-        const response = await fetch(urlsToDownload[i]);
+    
+        const response = await fetch(url);
         if (!response.ok) throw new Error("Failed to fetch image");
 
         const blob = await response.blob();
@@ -146,16 +141,13 @@ export const TextToImageGenerator = () => {
 
         const link = document.createElement("a");
         link.href = blobUrl;
-        link.download =
-          sizes.length > 1
-            ? `${filename.replace(/\.\w+$/, "")}-${i + 1}.jpg`
-            : filename;
+        link.download = filename;
         document.body.appendChild(link);
         link.click();
         link.remove();
 
         URL.revokeObjectURL(blobUrl);
-      }
+      
 
       toast.success("Image downloaded successfully!", { id: "download" });
     } catch (error) {
@@ -620,8 +612,7 @@ export const TextToImageGenerator = () => {
                                   displayImages[0].url,
                                   `${
                                     isShowingDefault ? "default" : "generated"
-                                  }-image.jpg`,
-                                  imageSizes
+                                  }-image.jpg`
                                 )
                               }
                               className="text-neutral-300 hover:text-white"
@@ -686,8 +677,7 @@ export const TextToImageGenerator = () => {
                                       }-image-${img.aspectRatio.replace(
                                         ":",
                                         "x"
-                                      )}-${idx + 1}.jpg`,
-                                      imageSizes
+                                      )}-${idx + 1}.jpg`
                                     )
                                   }
                                   className="text-neutral-300 hover:text-white p-1"

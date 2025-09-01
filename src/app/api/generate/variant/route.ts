@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fal } from "@fal-ai/client";
 import { ApiResponse } from "@/utils/ApiResponse";
-import { queryRewrting } from "@/utils/queryRewrting";
+import { queryRewrting } from "@/utils/prompts/aspectRatio";
 
 export const POST = async (req: NextRequest) => {
   const {
