@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fal } from "@fal-ai/client";
 import { ApiResponse } from "@/utils/ApiResponse";
-
-import { userPromptRewriting } from "@/utils/userPromptRewriting";
-import { userChoiceRewriting } from "@/utils/userChoiceRewrting";
 import { generateThumbnailPrompt } from "@/utils/userFinalPrompt";
 
 function getDimensions(aspectRatio?: string) {
