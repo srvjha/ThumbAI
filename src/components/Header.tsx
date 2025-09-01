@@ -20,14 +20,14 @@ export const Header = () => {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
             <SignedOut>
-              <SignInButton mode="modal">
+              <Link href="/sign-in">
                 <Button
                   variant="outline"
                   className="border-gray-600 text-gray-300 hover:bg-gray-800"
                 >
                   Sign In
                 </Button>
-              </SignInButton>
+              </Link>
             </SignedOut>
 
             <SignedIn>
