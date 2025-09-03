@@ -1,24 +1,28 @@
-import crypto from "crypto";
+import { Webhook } from "svix";
 import { headers } from "next/headers";
+import { WebhookEvent, UserJSON } from "@clerk/nextjs/server";
+import { ApiError } from "@/utils/ApiError";
+import { db } from "@/db";
 import { NextResponse } from "next/server";
 import { ApiResponse } from "@/utils/ApiResponse";
-import { db } from "@/db"; // assuming Prisma is used
 
 export const POST = async (req: Request): Promise<NextResponse> => {
-  const WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET;
+  const WEBHOOK_SECRET = process.env.NEXT_CLERK_WEBHOOK_SECRET;
   if (!WEBHOOK_SECRET) {
     return NextResponse.json(
-      new ApiResponse(404, null, "Razorpay webhook secret required"),
+      new ApiResponse(404, null, "webhook secret required"),
       { status: 404 }
     );
   }
 
   const headerPayload = await headers();
-  const razorpaySignature = headerPayload.get("x-razorpay-signature");
+  const svixId = headerPayload.get("svix-id");
+  const svixTimestamp = headerPayload.get("svix-timestamp");
+  const svixSignature = headerPayload.get("svix-signature");
 
-  if (!razorpaySignature) {
+  if (!svixId || !svixTimestamp || !svixSignature) {
     return NextResponse.json(
-      new ApiResponse(400, null, "No Razorpay signature found in headers"),
+      new ApiResponse(400, null, "Error Occured - No Svix Details Found"),
       { status: 400 }
     );
   }
@@ -26,65 +30,69 @@ export const POST = async (req: Request): Promise<NextResponse> => {
   const payload = await req.json();
   const body = JSON.stringify(payload);
 
-  console.log("🔔 Razorpay webhook received!");
+  const wh = new Webhook(WEBHOOK_SECRET);
 
-  // ✅ Verify signature
-  const expectedSignature = crypto
-    .createHmac("sha256", WEBHOOK_SECRET)
-    .update(body)
-    .digest("hex");
-
-  if (razorpaySignature !== expectedSignature) {
-    console.error("❌ Invalid Razorpay signature!");
+  let evt: WebhookEvent;
+  try {
+    evt = wh.verify(body, {
+      "svix-id": svixId,
+      "svix-timestamp": svixTimestamp,
+      "svix-signature": svixSignature,
+    }) as WebhookEvent;
+  } catch (error: any) {
+    console.error("Error verifying webhook", error.message);
     return NextResponse.json(
-      new ApiResponse(400, null, "Invalid signature"),
+      new ApiResponse(400, null, `Error verifying webhook: ${error.message}`),
       { status: 400 }
     );
   }
 
-  // ✅ Extract event + payment
-  const event = payload.event;
-  const payment = payload.payload?.payment?.entity;
+  const eventType = evt.type;
 
-  console.log("📦 Event type:", event);
+  if (eventType === "user.created") {
+    const data = evt.data as UserJSON;
+    const { id, email_addresses, primary_email_address_id } = data;
 
-  let statusToUpdate: "paid" | "failed" | null = null;
+    const primaryEmail = email_addresses.find(
+      (email) => email.id === primary_email_address_id
+    )?.email_address;
 
-  if (event === "payment.captured") {
-    statusToUpdate = "paid";
-  } else if (event === "payment.failed") {
-    statusToUpdate = "failed";
-  }
+    if (!primaryEmail || !id) {
+      return NextResponse.json(
+        new ApiResponse(400, null, "Email and Clerk ID are required"),
+        { status: 400 }
+      );
+    }
 
-  if (statusToUpdate && payment?.order_id) {
     try {
-      const updatedOrder = await db.order.update({
-        where: { razorpayOrderId: payment.order_id },
+      const newUser = await db.user.create({
         data: {
-          status: statusToUpdate,
-          razorpayPaymentId: payment.id,
-          razorpaySignature,
+          email: primaryEmail,
+          clerk_id: id,
+          credits: 7,
+          plan: "FREE",
         },
       });
 
-      console.log(`✅ Order updated with status: ${statusToUpdate}`, updatedOrder);
-
       return NextResponse.json(
-        new ApiResponse(200, updatedOrder, "Order updated successfully"),
-        { status: 200 }
+        new ApiResponse(201, newUser, "User created successfully"),
+        { status: 201 }
       );
     } catch (err: any) {
-      console.error("💥 DB update error:", err.message);
       return NextResponse.json(
-        new ApiResponse(500, null, "Database update failed"),
-        { status: 500 }
+        new ApiResponse(
+          err.statusCode || 500,
+          null,
+          err.message || "Server Error"
+        ),
+        { status: err.statusCode || 500 }
       );
     }
   }
 
-  // ✅ Always return something for unhandled events
+  // ✅ Handle other event types (so we don't return undefined)
   return NextResponse.json(
-    new ApiResponse(200, null, `Webhook received - Event: ${event}`),
+    new ApiResponse(200, null, `Unhandled event type: ${eventType}`),
     { status: 200 }
   );
 };
