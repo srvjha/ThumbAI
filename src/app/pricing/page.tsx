@@ -70,7 +70,7 @@ const PricingPage = () => {
             price="0"
             description="Perfect for testing our quality."
             features={[
-              "3 High Quality Thumbnails per month",
+              "3 High Quality Thumbnails",
               "Download Images in standard resolution",
               "Download URL links for easy sharing",
               "YouTube thumbnail and shorts thumbnail sizes",
@@ -86,7 +86,7 @@ const PricingPage = () => {
             originalPrice="200"
             description="Most popular! Huge savings."
             features={[
-              "8 High Quality Thumbnails per month",
+              "8 High Quality Thumbnails",
               "HD Download Images available",
               "Fast Download URL links",
               "YouTube thumbnail and shorts optimization",
@@ -111,7 +111,7 @@ const PricingPage = () => {
             originalPrice="300"
             description="⭐ Ultimate value!"
             features={[
-              "20 High Quality Thumbnails per month",
+              "20 High Quality Thumbnails",
               "HD Download Images available",
               "Priority Download URL links",
               "YouTube formats + custom sizes",
