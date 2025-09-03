@@ -1,12 +1,11 @@
 import { createOrder, refundOrder, verifyPayment } from "@/utils/order";
 import { NextRequest, NextResponse } from "next/server";
 
+export async function POST(req: NextRequest, { params }: any) {
+  const slugParam = params.slug;
 
-export const POST = async (
-  req: NextRequest,
-  context: { params: { slug: string[] } }
-) => {
-  const { slug } =  context.params; 
+  // Ensure it's always an array
+  const slug = Array.isArray(slugParam) ? slugParam : [slugParam];
 
   if (!slug || slug.length === 0) {
     return NextResponse.json(
@@ -30,4 +29,4 @@ export const POST = async (
         { status: 404 }
       );
   }
-};
+}

@@ -11,7 +11,6 @@ import { useThumbUser } from "@/hooks/useThumbUser";
 export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
    const { data, isLoading, error } = useThumbUser();
-   console.log("error while geeting the user info: ",error)
 
   return (
     <header className="fixed top-0 w-full bg-transparent backdrop-blur-md border-b border-neutral-800 z-50">
