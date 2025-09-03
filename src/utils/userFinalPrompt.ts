@@ -10,16 +10,18 @@ export const generateThumbnailPrompt = async (
   rawUserChoice: any,
   aspectRatio: "16:9" | "9:16"
 ) => {
-  // Step 1: Rewrite user free-text prompt
+  //  Rewriting user prompt
   const enhancedPrompt = await userPromptRewriting(rawUserPrompt);
+  console.log({enhancedPrompt})
 
-  // Step 2: Rewrite structured user choices
+  // Rewriting user choices
   let enhancedChoicePrompt = ""
-  if(rawUserChoice.length>0){
+  if(Object.values(rawUserChoice).length>0){
    enhancedChoicePrompt = await userChoiceRewriting(rawUserChoice);
+   console.log({enhancedChoicePrompt})
   }
 
-  // Step 3: Apply aspect ratio instructions
+  //  Applying aspect ratio instructions
   const aspectRatioResponse = await client.chat.completions.create({
     model: "gpt-4.1-mini",
     messages: [
@@ -34,7 +36,7 @@ export const generateThumbnailPrompt = async (
   const refinedAspectRatioPrompt =
     aspectRatioResponse.choices[0].message.content?.trim() ?? "";
 
-  // Step 4: Generate final thumbnail design instructions
+  //  Generating final thumbnail design instructions
   const finalResponse = await client.chat.completions.create({
     model: "gpt-4.1-mini",
     messages: [
@@ -49,6 +51,7 @@ export const generateThumbnailPrompt = async (
 
   const finalThumbnailPrompt =
     finalResponse.choices[0].message.content?.trim() ?? refinedAspectRatioPrompt;
+    console.log({finalThumbnailPrompt})
 
   return finalThumbnailPrompt;
 };

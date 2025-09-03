@@ -26,11 +26,12 @@ export const POST = async (req: NextRequest) => {
 
   const { width, height } = getDimensions(aspectRatio[0]);
 
-  const finalPrompt = generateThumbnailPrompt(
+  const finalPrompt = await generateThumbnailPrompt(
     prompt,
     userChoices,
     aspectRatio[0]
   );
+  console.log({images_urls,numImages,outputFormat,aspectRatio,width,height})
 
   const result = await fal.subscribe("fal-ai/nano-banana/edit", {
     input: {

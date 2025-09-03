@@ -11,6 +11,7 @@ import {
   Download,
   Edit,
   Eye,
+  ImageIcon,
   Loader2,
   Share2,
   Wand2,
@@ -29,10 +30,13 @@ import {
   AccordionTrigger,
 } from "./ui/accordion";
 import axios from "axios";
-import { Badge } from "./ui/badge";
 import toast from "react-hot-toast";
-import { resizedImages } from "@/utils/imageUtils";
 import { useRouter } from "next/navigation";
+import { ChatToggleButton, PopoutChat } from "./ChatPopup";
+import { useChat } from "@ai-sdk/react";
+import { YouTubeThumbnailQuestionnaire } from "./Questionarie";
+import { deductCredits } from "@/utils/credits";
+import { useThumbUser } from "@/hooks/useThumbUser";
 
 type FormValues = {
   prompt: string;
@@ -61,14 +65,11 @@ export const TextToImageGenerator = () => {
     formState: { errors },
   } = useForm<FormValues>({
     defaultValues: {
-      prompt:
-        "Generate an image where man is sitting below a tree and coding in laptop.",
+      prompt: "",
       numImages: 1,
       outputFormat: "jpeg",
       aspectRatios: ["16:9"],
-      imagesUrl: [
-        "https://v3.fal.media/files/zebra/eKy38gYAhM3NCDmqiLe0d.jpeg",
-      ],
+      imagesUrl: [""],
     },
     mode: "onChange",
   });
@@ -78,9 +79,15 @@ export const TextToImageGenerator = () => {
   const prompt = watch("prompt");
   const aspectRatios = watch("aspectRatios");
   const defaultImage = watch("imagesUrl") || [];
+  const [questionnaireData, setQuestionnaireData] = useState<any>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const { data: userInfo } = useThumbUser();
 
   const onSubmit = async (data: FormValues) => {
-    console.log({ data });
+    if (userInfo?.credits === 0) {
+      toast.error("Your Free Credits Exhausted, Buy a Plan to use ThumbAI");
+      return;
+    }
     setIsGenerating(true);
     setStatus("generating");
 
@@ -95,6 +102,13 @@ export const TextToImageGenerator = () => {
           outputFormat: data.outputFormat,
           aspectRatio: data.aspectRatios,
         });
+        if (res.data.success) {
+          // decrease the credit by one
+          const updateCredits = await deductCredits(userInfo!.id);
+          if (!updateCredits) {
+            console.log("credits not updated");
+          }
+        }
 
         const imgs =
           res.data?.data?.data?.images?.map((img: any) => ({
@@ -125,29 +139,22 @@ export const TextToImageGenerator = () => {
     toast.success("Form reset successfully!");
   };
 
-  const handleDownload = async (
-    url: string,
-    filename = "image.jpg",
-  ) => {
+  const handleDownload = async (url: string, filename = "image.jpg") => {
     try {
-     
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Failed to fetch image");
 
-    
-        const response = await fetch(url);
-        if (!response.ok) throw new Error("Failed to fetch image");
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
 
-        const blob = await response.blob();
-        const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
 
-        const link = document.createElement("a");
-        link.href = blobUrl;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-
-        URL.revokeObjectURL(blobUrl);
-      
+      URL.revokeObjectURL(blobUrl);
 
       toast.success("Image downloaded successfully!", { id: "download" });
     } catch (error) {
@@ -247,13 +254,7 @@ export const TextToImageGenerator = () => {
     }
   };
 
-  const defaultImageData: ImageData[] = defaultImage.map((url) => ({
-    url,
-    aspectRatio: "16:9",
-  }));
-
-  const displayImages =
-    generatedImages.length > 0 ? generatedImages : defaultImageData;
+  const displayImages = generatedImages.length > 0 ? generatedImages : [];
   const isShowingDefault =
     generatedImages.length === 0 && defaultImage.length > 0;
 
@@ -303,6 +304,97 @@ export const TextToImageGenerator = () => {
     );
   };
 
+  const handleQuestionnaireComplete = (data: any) => {
+    setQuestionnaireData(data);
+    toast.success("Form filled Successfully");
+  };
+
+  const [input, setInput] = useState("");
+  const {
+    messages,
+    setMessages,
+    sendMessage,
+    status: chatStatus,
+    regenerate,
+  } = useChat();
+
+  const handleChatSubmit = async (input: string) => {
+    if (userInfo?.credits === 0) {
+      toast.error("Your Free Credits Exhausted, Buy a Plan to use ThumbAI");
+      return;
+    }
+    if (!input.trim()) return;
+    sendMessage({ text: input });
+
+    setIsGenerating(true);
+    setStatus("generating");
+    const userPrompt = input;
+    setInput("");
+    const imagesToSend = generatedImages
+      .map((img) => img.url)
+      .filter((e) => e.trim().length > 0);
+    try {
+      const res = await axios.post("/api/edit", {
+        prompt: userPrompt,
+        numImages: watch("numImages"),
+        outputFormat: watch("outputFormat"),
+        images_urls: imagesToSend,
+        aspectRatio: aspectRatios,
+        userChoices: questionnaireData ?? "",
+      });
+
+      if (res.data.success) {
+        // decrease the credit by one
+        const updateCredits = await deductCredits(userInfo!.id);
+        if (!updateCredits) {
+          console.log("credits not updated");
+        }
+      }
+
+      const imgs =
+        res.data?.data?.data?.images?.map((img: any) => ({
+          url: img.url,
+          aspectRatio: aspectRatios[0] || "16:9",
+        })) || [];
+
+      setGeneratedImages(imgs);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          parts: [
+            {
+              type: "text",
+              text: `I’ve updated your images as per "${userPrompt}".`,
+            },
+          ],
+        },
+      ]);
+
+      setStatus("completed");
+    } catch (err) {
+      console.error(err);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          parts: [
+            {
+              type: "text",
+              text: `Sorry, I couldn’t process your request.`,
+            },
+          ],
+        },
+      ]);
+
+      setStatus("idle");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   return (
     <div className="grid lg:grid-cols-2 gap-8">
       {/* Left Panel - Input */}
@@ -345,6 +437,10 @@ export const TextToImageGenerator = () => {
                     )}
                   </div>
                 )}
+              />
+
+              <YouTubeThumbnailQuestionnaire
+                onComplete={handleQuestionnaireComplete}
               />
 
               <Controller
@@ -730,14 +826,34 @@ export const TextToImageGenerator = () => {
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center gap-3 text-neutral-400 h-full min-h-[400px]">
-                  <Eye className="w-16 h-16" />
-                  <p>No images to display</p>
+                  <ImageIcon className="w-16 h-16" />
+                  <p className="text-lg mb-1">No images generated yet</p>
+                  <p className="text-sm text-center">
+                    Enter a prompt to start generating
+                  </p>
                 </div>
               )}
             </div>
           </CardContent>
         </Card>
       </div>
+      {displayImages.length > 0 && (
+        <ChatToggleButton
+          onClick={() => setIsChatOpen(true)}
+          hasMessages={messages.length > 0}
+          isGenerating={isGenerating}
+        />
+      )}
+
+      <PopoutChat
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        messages={messages}
+        onSendMessage={handleChatSubmit}
+        onRegenerate={regenerate}
+        chatStatus={chatStatus}
+        isGenerating={isGenerating}
+      />
     </div>
   );
 };

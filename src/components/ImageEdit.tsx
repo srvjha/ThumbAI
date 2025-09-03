@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, DragEvent, ChangeEvent, useRef, useEffect } from "react";
+import { useState, DragEvent, ChangeEvent } from "react";
 import { useForm, Controller } from "react-hook-form";
-import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import {
@@ -14,9 +13,6 @@ import {
   Upload,
   X,
   ImageIcon,
-  Send,
-  MessageCircle,
-  RefreshCw,
 } from "lucide-react";
 import {
   Select,
@@ -35,6 +31,10 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { fal } from "@fal-ai/client";
 import { YouTubeThumbnailQuestionnaire } from "./Questionarie";
+import { useChat } from "@ai-sdk/react";
+import { ChatToggleButton, PopoutChat } from "./ChatPopup";
+import { deductCredits } from "@/utils/credits";
+import { useThumbUser } from "@/hooks/useThumbUser";
 
 type FormValues = {
   prompt: string;
@@ -49,35 +49,7 @@ type ImageData = {
   aspectRatio: string;
 };
 
-type ChatMessage = {
-  id: string;
-  type: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
-  isProcessing?: boolean;
-};
-
 export const ImageEditorGenerator = () => {
-  const searchParams = useSearchParams();
-  const promptFromQuery = searchParams.get("prompt") || "";
-  const aspectRatioFromQuery = searchParams.get("aspectRatio") || "16:9";
-  const urlFromQuery = searchParams.get("url") || "";
-  const outputFormatFromQuery = searchParams.get("outputFormat") || "jpeg";
-  const finalPrompt =
-    promptFromQuery.length > 0
-      ? promptFromQuery
-      : "A professional YouTube thumbnail for a tutorial video titled 'How to Create a YouTube Thumbnail Generator with AI'. The background should be a sleek, dark gradient with modern tech vibes.";
-  const finalAspectRatio =
-    aspectRatioFromQuery.length > 0 ? [aspectRatioFromQuery] : ["16:9"];
-  const finalImage =
-    urlFromQuery.length > 0
-      ? [urlFromQuery]
-      : [
-          "https://i.ytimg.com/vi/Ecygj87WhZs/hqdefault.jpg?sqp=-oaymwEnCNACELwBSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLALuqRUZ4UCevhLJZ5hHcR4_koCRA",
-        ];
-  const finalOutputFormat =
-    outputFormatFromQuery.length > 0 ? outputFormatFromQuery : "jpeg";
-
   const {
     control,
     handleSubmit,
@@ -87,11 +59,11 @@ export const ImageEditorGenerator = () => {
     formState: { errors },
   } = useForm<FormValues>({
     defaultValues: {
-      prompt: finalPrompt,
+      prompt: "",
       numImages: 1,
-      outputFormat: finalOutputFormat,
-      aspectRatios: finalAspectRatio,
-      uploadedImages: finalImage,
+      outputFormat: "jpeg",
+      aspectRatios: [],
+      uploadedImages: [],
     },
     mode: "onChange",
   });
@@ -99,12 +71,10 @@ export const ImageEditorGenerator = () => {
   const prompt = watch("prompt");
   const aspectRatios = watch("aspectRatios");
   const uploadedImages = watch("uploadedImages") || [];
+
   const [editedImages, setEditedImages] = useState<ImageData[]>([
     {
-      url:
-        urlFromQuery.length > 0
-          ? urlFromQuery
-          : "https://v3.fal.media/files/panda/Z_BYnI4_8T-nNGe5n0FJQ.jpeg",
+      url: "",
       aspectRatio: "16:9",
     },
   ]);
@@ -115,35 +85,9 @@ export const ImageEditorGenerator = () => {
   const [localPreviews, setLocalPreviews] = useState<string[]>(uploadedImages);
   const [isGenerating, setIsGenerating] = useState(false);
   const [questionnaireData, setQuestionnaireData] = useState<any>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
-  // Chat-related state
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [chatInput, setChatInput] = useState("");
-  const [isChatProcessing, setIsChatProcessing] = useState(false);
-  const [showChat, setShowChat] = useState(false);
-  const chatMessagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Auto-scroll chat to bottom when new messages are added
-  useEffect(() => {
-    chatMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatMessages]);
-
-  // Show chat when images are generated
-  useEffect(() => {
-    if (editedImages.length > 0 && status === "completed") {
-      setShowChat(true);
-      // Add initial assistant message
-      if (chatMessages.length === 0) {
-        const initialMessage: ChatMessage = {
-          id: Date.now().toString(),
-          type: 'assistant',
-          content: "Great! I've generated your images. What modifications would you like to make? You can ask me to adjust colors, add text, change the style, or make any other changes.",
-          timestamp: new Date(),
-        };
-        setChatMessages([initialMessage]);
-      }
-    }
-  }, [editedImages, status]);
+  const { data: userInfo } = useThumbUser();
 
   const uploadFileToFal = async (file: File): Promise<string> => {
     fal.config({
@@ -218,7 +162,12 @@ export const ImageEditorGenerator = () => {
   };
 
   const onSubmit = async (data: FormValues) => {
-    console.log({ data });
+    if (userInfo?.credits === 0) {
+       toast.error(
+        "Your Free Credits Exhausted, Buy a Plan to use ThumbAI"
+      );
+      return;
+    }
     setIsGenerating(true);
     setStatus("generating");
 
@@ -233,9 +182,16 @@ export const ImageEditorGenerator = () => {
           outputFormat: data.outputFormat,
           images_urls: data.uploadedImages,
           aspectRatio: data.aspectRatios,
-          userChoices: questionnaireData ? questionnaireData : ""
+          userChoices: questionnaireData ? questionnaireData : "",
         });
 
+        if (res.data.success) {
+          // decrease the credit by one
+          const updateCredits = await deductCredits(userInfo!.id);
+          if (!updateCredits) {
+            console.log("credits not updated");
+          }
+        }
         const imgs =
           res.data?.data?.data?.images?.map((img: any) => ({
             url: img.url,
@@ -258,95 +214,12 @@ export const ImageEditorGenerator = () => {
     }
   };
 
-  const handleChatSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!chatInput.trim() || isChatProcessing) return;
-
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      type: 'user',
-      content: chatInput.trim(),
-      timestamp: new Date(),
-    };
-
-    setChatMessages(prev => [...prev, userMessage]);
-    setChatInput("");
-    setIsChatProcessing(true);
-
-    // Add processing message
-    const processingMessage: ChatMessage = {
-      id: (Date.now() + 1).toString(),
-      type: 'assistant',
-      content: "Processing your request...",
-      timestamp: new Date(),
-      isProcessing: true,
-    };
-
-    setChatMessages(prev => [...prev, processingMessage]);
-
-    try {
-      // Call API with the chat message and current images
-      const response = await axios.post("/api/edit", {
-        prompt: `Based on the previous images, ${userMessage.content}`,
-        numImages: watch("numImages"),
-        outputFormat: watch("outputFormat"),
-        images_urls: editedImages.map(img => img.url),
-        aspectRatio: aspectRatios,
-        userChoices: questionnaireData ? questionnaireData : "",
-        isFollowup: true,
-      });
-
-      const newImages =
-        response.data?.data?.data?.images?.map((img: any, index: number) => ({
-          url: img.url,
-          aspectRatio: aspectRatios[index % aspectRatios.length],
-        })) || [];
-
-      // Update images
-      setEditedImages(newImages);
-
-      // Remove processing message and add success response
-      setChatMessages(prev => {
-        const filtered = prev.filter(msg => !msg.isProcessing);
-        const successMessage: ChatMessage = {
-          id: Date.now().toString(),
-          type: 'assistant',
-          content: "I've updated your images based on your request. What else would you like me to adjust?",
-          timestamp: new Date(),
-        };
-        return [...filtered, successMessage];
-      });
-
-      toast.success("Images updated successfully!");
-    } catch (error) {
-      console.error("Chat processing failed:", error);
-      
-      // Remove processing message and add error response
-      setChatMessages(prev => {
-        const filtered = prev.filter(msg => !msg.isProcessing);
-        const errorMessage: ChatMessage = {
-          id: Date.now().toString(),
-          type: 'assistant',
-          content: "Sorry, I couldn't process that request. Please try rephrasing your modification or try again.",
-          timestamp: new Date(),
-        };
-        return [...filtered, errorMessage];
-      });
-
-      toast.error("Failed to process your request. Please try again.");
-    } finally {
-      setIsChatProcessing(false);
-    }
-  };
-
   const handleReset = () => {
     reset();
     setEditedImages([]);
     setLocalPreviews([]);
     setUrlInput("");
     setStatus("idle");
-    setChatMessages([]);
-    setShowChat(false);
     toast.success("Form reset successfully!");
   };
 
@@ -461,7 +334,11 @@ export const ImageEditorGenerator = () => {
     }
   };
 
-  const displayImages = editedImages.length > 0 ? editedImages : [];
+  let displayImages: ImageData[] = [];
+  displayImages = editedImages.filter(
+    (img) => img.url && img.url.trim() !== ""
+  );
+
   const isShowingEdited = editedImages.length > 0;
 
   const getImageContainerStyle = (aspectRatio: string) => {
@@ -493,15 +370,98 @@ export const ImageEditorGenerator = () => {
 
   const handleQuestionnaireComplete = (data: any) => {
     setQuestionnaireData(data);
-    console.log("Questionnaire completed:", data);
     toast.success("Form filled Successfully");
+  };
+
+  const [input, setInput] = useState("");
+  const {
+    messages,
+    setMessages,
+    sendMessage,
+    status: chatStatus,
+    regenerate,
+  } = useChat();
+
+  const handleChatSubmit = async (input: string) => {
+    if (userInfo?.credits === 0) {
+      toast.error("Your Free Credits Exhausted, Buy a Plan to use ThumbAI");
+      return;
+    }
+    if (!input.trim()) return;
+    sendMessage({ text: input });
+
+    setIsGenerating(true);
+    setStatus("generating");
+    const userPrompt = input;
+    setInput("");
+
+    try {
+      const res = await axios.post("/api/edit", {
+        prompt: userPrompt,
+        numImages: watch("numImages"),
+        outputFormat: watch("outputFormat"),
+        images_urls: editedImages,
+        aspectRatio: aspectRatios,
+        userChoices: questionnaireData ?? "",
+      });
+
+       if (res.data.success) {
+          // decrease the credit by one
+          const updateCredits = await deductCredits(userInfo!.id);
+          if (!updateCredits) {
+            console.log("credits not updated");
+          }
+        }
+
+      const imgs =
+        res.data?.data?.data?.images?.map((img: any) => ({
+          url: img.url,
+          aspectRatio: aspectRatios[0] || "16:9",
+        })) || [];
+
+      setEditedImages(imgs);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          parts: [
+            {
+              type: "text",
+              text: `I’ve updated your images as per "${userPrompt}".`,
+            },
+          ],
+        },
+      ]);
+
+      setStatus("completed");
+    } catch (err) {
+      console.error(err);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          parts: [
+            {
+              type: "text",
+              text: `Sorry, I couldn’t process your request.`,
+            },
+          ],
+        },
+      ]);
+
+      setStatus("idle");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
     <div className="grid lg:grid-cols-2 gap-8">
       {/* Left Panel - Input */}
       <div className="space-y-6">
-        <Card className="bg-neutral-900/30 border border-neutral-800 py-1">
+        <Card className="p-1 h-auto bg-transparent">
           <CardContent className="p-6">
             <h3 className="text-lg font-semibold text-neutral-100 mb-4">
               Input
@@ -622,7 +582,10 @@ export const ImageEditorGenerator = () => {
                 control={control}
                 rules={{
                   required: "Number of images is required",
-                  min: { value: 1, message: "Must generate at least 1 image" },
+                  min: {
+                    value: 1,
+                    message: "Must generate at least 1 image",
+                  },
                   max: {
                     value: 4,
                     message: "Cannot generate more than 4 images",
@@ -798,7 +761,7 @@ export const ImageEditorGenerator = () => {
 
       {/* Right Panel - Result */}
       <div>
-        <Card className="bg-transparent border-neutral-800 h-[600px] overflow-y-auto p-1">
+        <Card className="bg-transparent border-neutral-800 h-auto overflow-y-auto p-1">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-neutral-100">Result</h3>
@@ -829,7 +792,7 @@ export const ImageEditorGenerator = () => {
               )}
             </div>
 
-            <div className="min-h-[400px] bg-neutral-950 rounded-lg border-none p-4 flex flex-col">
+            <div className="min-h-auto bg-neutral-950 rounded-lg border-none p-4 flex flex-col">
               {status === "generating" || status === "in-progress" ? (
                 <div className="flex flex-col items-center justify-center gap-3 h-full min-h-[400px]">
                   <Loader2 className="w-16 h-16 animate-spin text-neutral-400" />
@@ -984,103 +947,6 @@ export const ImageEditorGenerator = () => {
                       Download All as ZIP
                     </Button>
                   </div>
-
-                  {/* Chat Section */}
-                  {showChat && (
-                    <div className="flex-1 flex flex-col border-t border-neutral-800 pt-4">
-                      {/* Chat Header */}
-                      <div className="flex items-center gap-2 mb-3">
-                        <MessageCircle className="w-4 h-4 text-neutral-400" />
-                        <span className="text-sm text-neutral-300 font-medium">
-                          Make Changes
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setChatMessages([])}
-                          className="ml-auto text-neutral-500 hover:text-neutral-300 p-1"
-                          title="Clear chat"
-                        >
-                          <RefreshCw className="w-3 h-3" />
-                        </Button>
-                      </div>
-
-                      {/* Chat Messages */}
-                      <div className="flex-1 overflow-y-auto max-h-48 mb-3 space-y-2">
-                        {chatMessages.map((message) => (
-                          <div
-                            key={message.id}
-                            className={`flex ${
-                              message.type === 'user' ? 'justify-end' : 'justify-start'
-                            }`}
-                          >
-                            <div
-                              className={`max-w-[80%] px-3 py-2 rounded-lg text-sm ${
-                                message.type === 'user'
-                                  ? 'bg-blue-600 text-white'
-                                  : 'bg-neutral-800 text-neutral-200 border border-neutral-700'
-                              }`}
-                            >
-                              {message.isProcessing ? (
-                                <div className="flex items-center gap-2">
-                                  <Loader2 className="w-3 h-3 animate-spin" />
-                                  {message.content}
-                                </div>
-                              ) : (
-                                message.content
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                        <div ref={chatMessagesEndRef} />
-                      </div>
-
-                      {/* Chat Input */}
-                      <form onSubmit={handleChatSubmit} className="flex gap-2">
-                        <input
-                          type="text"
-                          value={chatInput}
-                          onChange={(e) => setChatInput(e.target.value)}
-                          placeholder="Ask me to modify the images..."
-                          className="flex-1 bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-300 placeholder-neutral-500 focus:outline-none focus:border-blue-500"
-                          disabled={isChatProcessing}
-                        />
-                        <Button
-                          type="submit"
-                          disabled={!chatInput.trim() || isChatProcessing}
-                          className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {isChatProcessing ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Send className="w-4 h-4" />
-                          )}
-                        </Button>
-                      </form>
-
-                      {/* Quick suggestions */}
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {[
-                          "Make it brighter",
-                          "Add more contrast",
-                          "Change colors",
-                          "Add text overlay",
-                          "Make it more vibrant"
-                        ].map((suggestion) => (
-                          <Button
-                            key={suggestion}
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setChatInput(suggestion)}
-                            className="text-xs px-2 py-1 h-6 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800"
-                            disabled={isChatProcessing}
-                          >
-                            {suggestion}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center gap-3 text-neutral-400 h-full min-h-[400px]">
@@ -1095,6 +961,24 @@ export const ImageEditorGenerator = () => {
           </CardContent>
         </Card>
       </div>
+
+      {displayImages.length > 0 && (
+        <ChatToggleButton
+          onClick={() => setIsChatOpen(true)}
+          hasMessages={messages.length > 0}
+          isGenerating={isGenerating}
+        />
+      )}
+
+      <PopoutChat
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        messages={messages}
+        onSendMessage={handleChatSubmit}
+        onRegenerate={regenerate}
+        chatStatus={chatStatus}
+        isGenerating={isGenerating}
+      />
     </div>
   );
 };

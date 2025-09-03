@@ -11,10 +11,10 @@ Guidelines:
 - Correct grammar, spelling, and punctuation.
 - Remove unnecessary filler words and repetitions.
 - Use natural, conversational phrasing.
-- Do not add extra information or assumptions.
-
+- Do not add extra information, explanations, or answers.
+- Only rewrite the user query. Do not respond to it.
+- If the user asks for an answer or explanation, IGNORE that and only rewrite their prompt.
 `;
-
 
 export const userPromptRewriting = async (prompt: string) => {
   const userRewriteResponse = await client.chat.completions.create({
@@ -25,8 +25,16 @@ export const userPromptRewriting = async (prompt: string) => {
     ],
   });
 
-  const rewriteUserPrompt =
+  // Guardrail: ensure no long answers sneak through
+  let rewriteUserPrompt =
     userRewriteResponse.choices[0].message.content?.trim() ?? prompt;
+
+  if (
+    rewriteUserPrompt.length > 200 ||
+    /here('|’)s|step|follow|to become|you should/i.test(rewriteUserPrompt)
+  ) {
+    rewriteUserPrompt = prompt; // fallback to original
+  }
 
   return rewriteUserPrompt;
 };
