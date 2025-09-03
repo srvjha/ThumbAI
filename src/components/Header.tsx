@@ -1,5 +1,5 @@
 "use client";
-import { Image, Menu, X, Coins } from "lucide-react";
+import { Image, Menu, X, Coins, User2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
@@ -10,7 +10,7 @@ import { useThumbUser } from "@/hooks/useThumbUser";
 
 export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-   const { data, isLoading, error } = useThumbUser();
+  const { data, isLoading, error } = useThumbUser();
 
   return (
     <header className="fixed top-0 w-full bg-transparent backdrop-blur-md border-b border-neutral-800 z-50">
@@ -21,8 +21,8 @@ export const Header = () => {
           </Link>
 
           {/* Web Based Header  */}
-          <nav className="hidden md:flex items-center space-x-8">
-            <div className="flex rounded-lg border border-neutral-500 shadow-xs shadow-neutral-800 px-4 py-2">
+          <nav className="hidden md:flex items-center space-x-4">
+            <div className="flex rounded-lg border border-neutral-500 shadow-xs shadow-neutral-800 px-4 py-2 hover:bg-neutral-800">
               Credits:{" "}
               <div>
                 {isLoading ? (
@@ -34,20 +34,24 @@ export const Header = () => {
                 )}
               </div>
             </div>
+
+            <Link href="/pricing" className="flex rounded-lg border cursor-pointer border-neutral-500 shadow-xs shadow-neutral-800 hover:bg-neutral-800 px-4 py-2">
+              Pricing <span className="ml-2">₹</span>
+            </Link>
             <SignedIn>
               <UserButton afterSignOutUrl="/" />
             </SignedIn>
-
-            <SignedOut>
-              <Link href="/sign-in">
-                <Button
-                  variant="outline"
-                  className="border-gray-600 text-gray-300 hover:bg-gray-800"
-                >
-                  Sign In
-                </Button>
-              </Link>
-            </SignedOut>
+             
+            <div className="cursor-pointer">
+              <SignedOut>
+                <Link href="/sign-in">
+                  <div className="flex rounded-lg border cursor-pointer border-neutral-500 shadow-xs shadow-neutral-800 hover:bg-neutral-800 px-4 py-2">
+                    Sign In 
+                    <User2 className="w-4 h-4 mt-1 ml-1"/>
+                  </div>
+                </Link>
+              </SignedOut>
+            </div>
           </nav>
 
           {/* Mobile Based Header */}
