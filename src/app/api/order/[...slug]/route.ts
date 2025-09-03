@@ -4,9 +4,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const POST = async (
   req: NextRequest,
-  context: { params: Promise<{ slug: string[] }> }
+  context: { params: { slug: string[] } }
 ) => {
-  const { slug } = await context.params; 
+  const { slug } =  context.params; 
 
   if (!slug || slug.length === 0) {
     return NextResponse.json(
