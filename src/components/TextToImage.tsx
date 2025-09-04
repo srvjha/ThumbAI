@@ -87,6 +87,14 @@ export const TextToImageGenerator = () => {
     if (userInfo?.credits === 0) {
       toast.error("Your Free Credits Exhausted, Buy a Plan to use ThumbAI");
       return;
+    } else if (
+      userInfo?.credits !== undefined &&
+      userInfo.credits < data.numImages
+    ) {
+      toast.error(
+        "Credits are less than the no of images you want to generate"
+      );
+      return;
     }
     setIsGenerating(true);
     setStatus("generating");
@@ -104,7 +112,10 @@ export const TextToImageGenerator = () => {
         });
         if (res.data.success) {
           // decrease the credit by one
-          const updateCredits = await deductCredits(userInfo!.id);
+          const updateCredits = await deductCredits(
+            userInfo!.id,
+            data.numImages
+          );
           if (!updateCredits) {
             console.log("credits not updated");
           }
@@ -345,7 +356,7 @@ export const TextToImageGenerator = () => {
 
       if (res.data.success) {
         // decrease the credit by one
-        const updateCredits = await deductCredits(userInfo!.id);
+        const updateCredits = await deductCredits(userInfo!.id, 1);
         if (!updateCredits) {
           console.log("credits not updated");
         }
@@ -438,7 +449,9 @@ export const TextToImageGenerator = () => {
                   </div>
                 )}
               />
-
+              <label className="block text-sm font-medium text-neutral-300 mb-2">
+                (Optional)
+              </label>
               <YouTubeThumbnailQuestionnaire
                 onComplete={handleQuestionnaireComplete}
               />

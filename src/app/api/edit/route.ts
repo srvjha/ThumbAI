@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { fal } from "@fal-ai/client";
 import { ApiResponse } from "@/utils/ApiResponse";
 import { generateThumbnailPrompt } from "@/utils/userFinalPrompt";
+import { generateChatPrompt } from "@/utils/userChatPrompt";
 
 function getDimensions(aspectRatio?: string) {
   switch (aspectRatio) {
@@ -16,6 +17,7 @@ function getDimensions(aspectRatio?: string) {
 
 export const POST = async (req: NextRequest) => {
   const {
+    mode,
     prompt,
     numImages = 1,
     outputFormat = "jpeg",
@@ -25,13 +27,17 @@ export const POST = async (req: NextRequest) => {
   } = await req.json();
 
   const { width, height } = getDimensions(aspectRatio[0]);
-
-  const finalPrompt = await generateThumbnailPrompt(
+   
+  const finalPrompt = mode === "normal" ? await generateThumbnailPrompt(
     prompt,
     userChoices,
     aspectRatio[0]
+  ) : await generateChatPrompt(
+    prompt
   );
-  console.log({images_urls,numImages,outputFormat,aspectRatio,width,height})
+
+
+  console.log({mode,images_urls,finalPrompt})
 
   const result = await fal.subscribe("fal-ai/nano-banana/edit", {
     input: {
@@ -39,7 +45,7 @@ export const POST = async (req: NextRequest) => {
       image_urls: images_urls,
       num_images: numImages,
       output_format: outputFormat,
-      aspect_ratio: aspectRatio,
+      aspect_ratio: aspectRatio[0],
       width,
       height,
     },

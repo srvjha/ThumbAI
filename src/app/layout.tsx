@@ -19,7 +19,7 @@ export default function RootLayout({
     <ClerkProvider>
     <html lang="en">
       <body
-        className={` dark`}
+        className={` dark bg-neutral-950`}
       > 
          <Toaster/>
         <Header />

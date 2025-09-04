@@ -41,7 +41,7 @@ type FormValues = {
   numImages: number;
   outputFormat: string;
   aspectRatios: string[];
-  uploadedImages: string[];
+  uploadedFiles: File[]; // Changed from uploadedImages to uploadedFiles
 };
 
 type ImageData = {
@@ -63,14 +63,14 @@ export const ImageEditorGenerator = () => {
       numImages: 1,
       outputFormat: "jpeg",
       aspectRatios: [],
-      uploadedImages: [],
+      uploadedFiles: [], // Changed from uploadedImages
     },
     mode: "onChange",
   });
 
   const prompt = watch("prompt");
   const aspectRatios = watch("aspectRatios");
-  const uploadedImages = watch("uploadedImages") || [];
+  const uploadedFiles = watch("uploadedFiles") || []; // Changed from uploadedImages
 
   const [editedImages, setEditedImages] = useState<ImageData[]>([
     {
@@ -82,17 +82,76 @@ export const ImageEditorGenerator = () => {
     "idle" | "generating" | "in-progress" | "completed"
   >("idle");
   const [urlInput, setUrlInput] = useState("");
-  const [localPreviews, setLocalPreviews] = useState<string[]>(uploadedImages);
+  const [localPreviews, setLocalPreviews] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [questionnaireData, setQuestionnaireData] = useState<any>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [processedImageUrls, setProcessedImageUrls] = useState<string[]>([]); // Store processed URLs
 
   const { data: userInfo } = useThumbUser();
+
+  // Modified processImage function to accept aspect ratio
+  const processImage = (file: File, aspectRatio: string): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        img.src = e.target?.result as string;
+      };
+
+      img.onload = () => {
+        // Set dimensions based on aspect ratio
+        let targetWidth: number, targetHeight: number;
+
+        if (aspectRatio === "16:9") {
+          targetWidth = 1280;
+          targetHeight = 720;
+        } else if (aspectRatio === "9:16") {
+          targetWidth = 720;
+          targetHeight = 1280;
+        } else {
+          // Default to 16:9 if aspect ratio is not recognized
+          targetWidth = 1280;
+          targetHeight = 720;
+        }
+
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+
+        // Fill with white background
+        ctx!.fillStyle = "white";
+        ctx!.fillRect(0, 0, targetWidth, targetHeight);
+
+        if (img.width < targetWidth || img.height < targetHeight) {
+          // Place smaller image centered on white background
+          const offsetX = (targetWidth - img.width) / 2;
+          const offsetY = (targetHeight - img.height) / 2;
+          ctx!.drawImage(img, offsetX, offsetY, img.width, img.height);
+        } else {
+          // Crop/fit larger image to target dimensions
+          ctx!.drawImage(img, 0, 0, targetWidth, targetHeight);
+        }
+
+        canvas.toBlob((blob) => {
+          if (!blob) return reject(new Error("Canvas is empty"));
+          resolve(new File([blob], file.name, { type: file.type }));
+        }, file.type);
+      };
+
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
 
   const uploadFileToFal = async (file: File): Promise<string> => {
     fal.config({
       credentials: process.env.NEXT_PUBLIC_FAL_KEY,
     });
+
     const url = await fal.storage.upload(file);
     return url;
   };
@@ -101,17 +160,12 @@ export const ImageEditorGenerator = () => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
 
-      try {
-        const previews = files.map((file) => URL.createObjectURL(file));
-        setLocalPreviews((prev) => [...prev, ...previews]);
-        const uploadedUrls = await Promise.all(files.map(uploadFileToFal));
-        setValue("uploadedImages", [...uploadedImages, ...uploadedUrls]);
-      } catch (error) {
-        console.error("Upload failed:", error);
-        toast.error("Failed to upload images. Please try again.", {
-          id: "upload",
-        });
-      }
+      // Create previews for UI
+      const previews = files.map((file) => URL.createObjectURL(file));
+      setLocalPreviews((prev) => [...prev, ...previews]);
+
+      // Store files for later processing
+      setValue("uploadedFiles", [...uploadedFiles, ...files]);
     }
   };
 
@@ -121,77 +175,104 @@ export const ImageEditorGenerator = () => {
 
     if (files.length === 0) return;
 
-    toast.loading("Uploading images...", { id: "upload" });
+    // Create previews for UI
+    const previews = files.map((file) => URL.createObjectURL(file));
+    setLocalPreviews((prev) => [...prev, ...previews]);
 
-    try {
-      const previews = files.map((file) => URL.createObjectURL(file));
-      setLocalPreviews((prev) => [...prev, ...previews]);
+    // Store files for later processing
+    setValue("uploadedFiles", [...uploadedFiles, ...files]);
 
-      const uploadedUrls = await Promise.all(files.map(uploadFileToFal));
-      setValue("uploadedImages", [...uploadedImages, ...uploadedUrls]);
-
-      toast.success("Images uploaded successfully!", { id: "upload" });
-    } catch (error) {
-      console.error("Upload failed:", error);
-      toast.error("Failed to upload images. Please try again.", {
-        id: "upload",
-      });
-    }
+    toast.success("Files added successfully!");
   };
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
   };
 
-  const handleAddUrl = () => {
+  const handleAddUrl = async () => {
     if (urlInput.trim()) {
-      setLocalPreviews((prev) => [...prev, urlInput.trim()]);
-      setValue("uploadedImages", [...uploadedImages, urlInput.trim()]);
-      setUrlInput("");
-      toast.success("Image URL added!");
+      try {
+        // Convert URL to File object
+        const response = await fetch(urlInput.trim());
+        const blob = await response.blob();
+        const file = new File([blob], `url-image-${Date.now()}.jpg`, {
+          type: blob.type,
+        });
+
+        setLocalPreviews((prev) => [...prev, urlInput.trim()]);
+        setValue("uploadedFiles", [...uploadedFiles, file]);
+        setUrlInput("");
+        toast.success("Image URL added!");
+      } catch (error) {
+        toast.error("Failed to load image from URL");
+      }
     }
   };
 
   const handleRemoveImage = (index: number) => {
     setLocalPreviews((prev) => prev.filter((_, i) => i !== index));
     setValue(
-      "uploadedImages",
-      uploadedImages.filter((_, i) => i !== index)
+      "uploadedFiles",
+      uploadedFiles.filter((_, i) => i !== index)
     );
+    const formattedImages = editedImages.filter((_, e) => e !== index);
+    setEditedImages(formattedImages);
     toast.success("Image removed!");
   };
 
   const onSubmit = async (data: FormValues) => {
     if (userInfo?.credits === 0) {
-       toast.error(
-        "Your Free Credits Exhausted, Buy a Plan to use ThumbAI"
+      toast.error("Your Free Credits Exhausted, Buy a Plan to use ThumbAI");
+      return;
+    } else if (
+      userInfo?.credits !== undefined &&
+      userInfo.credits < data.numImages
+    ) {
+      toast.error(
+        "Credits are less than the no of images you want to generate"
       );
       return;
     }
+
     setIsGenerating(true);
     setStatus("generating");
+    toast.loading("Processing and uploading images...", { id: "generation" });
 
     try {
       let results: ImageData[] = [];
 
       // Process images for each selected aspect ratio
       for (const aspectRatio of data.aspectRatios) {
+        // Process and upload files for this aspect ratio
+        const processedFiles = await Promise.all(
+          data.uploadedFiles.map((file) => processImage(file, aspectRatio))
+        );
+
+        const uploadedUrls = await Promise.all(
+          processedFiles.map((file) => uploadFileToFal(file))
+        );
+
         const res = await axios.post("/api/edit", {
+          mode: "normal",
           prompt: data.prompt,
           numImages: data.numImages,
           outputFormat: data.outputFormat,
-          images_urls: data.uploadedImages,
-          aspectRatio: data.aspectRatios,
+          images_urls: uploadedUrls,
+          aspectRatio: aspectRatio, // Pass single aspect ratio
           userChoices: questionnaireData ? questionnaireData : "",
         });
 
         if (res.data.success) {
           // decrease the credit by one
-          const updateCredits = await deductCredits(userInfo!.id);
+          const updateCredits = await deductCredits(
+            userInfo!.id,
+            data.numImages
+          );
           if (!updateCredits) {
             console.log("credits not updated");
           }
         }
+
         const imgs =
           res.data?.data?.data?.images?.map((img: any) => ({
             url: img.url,
@@ -201,6 +282,7 @@ export const ImageEditorGenerator = () => {
       }
 
       setEditedImages(results);
+      setProcessedImageUrls(results.map((img) => img.url));
       setStatus("completed");
       toast.success("Images edited successfully!", { id: "generation" });
     } catch (err) {
@@ -218,6 +300,7 @@ export const ImageEditorGenerator = () => {
     reset();
     setEditedImages([]);
     setLocalPreviews([]);
+    setProcessedImageUrls([]);
     setUrlInput("");
     setStatus("idle");
     toast.success("Form reset successfully!");
@@ -395,23 +478,30 @@ export const ImageEditorGenerator = () => {
     const userPrompt = input;
     setInput("");
 
+    // Use processed image URLs instead of re-processing
+    const formattedImages =
+      processedImageUrls.length > 0
+        ? processedImageUrls
+        : editedImages.filter((img) => img.url.length > 0).map((e) => e.url);
+
     try {
       const res = await axios.post("/api/edit", {
+        mode: "chat",
         prompt: userPrompt,
         numImages: watch("numImages"),
         outputFormat: watch("outputFormat"),
-        images_urls: editedImages,
-        aspectRatio: aspectRatios,
+        images_urls: formattedImages,
+        aspectRatio: aspectRatios[0] || "16:9", // Pass single aspect ratio
         userChoices: questionnaireData ?? "",
       });
 
-       if (res.data.success) {
-          // decrease the credit by one
-          const updateCredits = await deductCredits(userInfo!.id);
-          if (!updateCredits) {
-            console.log("credits not updated");
-          }
+      if (res.data.success) {
+        // decrease the credit by one
+        const updateCredits = await deductCredits(userInfo!.id, 1);
+        if (!updateCredits) {
+          console.log("credits not updated");
         }
+      }
 
       const imgs =
         res.data?.data?.data?.images?.map((img: any) => ({
@@ -428,7 +518,7 @@ export const ImageEditorGenerator = () => {
           parts: [
             {
               type: "text",
-              text: `I’ve updated your images as per "${userPrompt}".`,
+              text: `I've updated your images as per "${userPrompt}".`,
             },
           ],
         },
@@ -445,7 +535,7 @@ export const ImageEditorGenerator = () => {
           parts: [
             {
               type: "text",
-              text: `Sorry, I couldn’t process your request.`,
+              text: `Sorry, I couldn't process your request.`,
             },
           ],
         },
@@ -500,7 +590,9 @@ export const ImageEditorGenerator = () => {
                   </div>
                 )}
               />
-
+              <label className="block text-sm font-medium text-neutral-300 mb-2">
+                (Optional)
+              </label>
               <YouTubeThumbnailQuestionnaire
                 onComplete={handleQuestionnaireComplete}
               />
@@ -549,7 +641,8 @@ export const ImageEditorGenerator = () => {
                       Choose or Drop Images
                     </p>
                     <p className="text-xs text-neutral-500">
-                      Drag & drop or select files to upload
+                      Drag & drop or select files to upload (will be processed
+                      on submit)
                     </p>
                   </label>
                 </div>
@@ -736,7 +829,7 @@ export const ImageEditorGenerator = () => {
                   disabled={
                     !prompt.trim() ||
                     isGenerating ||
-                    uploadedImages.length === 0 ||
+                    uploadedFiles.length === 0 ||
                     (aspectRatios?.length || 0) === 0
                   }
                   className=" cursor-pointer flex-1 bg-gradient-to-r from-neutral-200 to-neutral-300 text-neutral-900 hover:from-neutral-300 hover:to-neutral-400 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"

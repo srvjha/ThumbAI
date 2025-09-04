@@ -4,7 +4,7 @@ import { ApiResponse } from "@/utils/ApiResponse";
 import { NextRequest, NextResponse } from "next/server";
 
 export const PATCH = async (req: NextRequest) => {
-  const { userId } = await req.json();
+  const { userId,credits = 1 } = await req.json();
 
   if (!userId) {
     throw new ApiError("User ID is required", 400);
@@ -12,7 +12,7 @@ export const PATCH = async (req: NextRequest) => {
 
   const updateUserCredits = await db.user.update({
     where: { id: userId },
-    data: { credits: { decrement: 1 } },
+    data: { credits: { decrement: credits } },
   });
 
   if (!updateUserCredits) {
