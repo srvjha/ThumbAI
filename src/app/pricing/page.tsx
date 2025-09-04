@@ -82,7 +82,7 @@ const PricingPage = () => {
 
           <PricingCard
             title="Creator Pro"
-            price="50"
+            price="80"
             originalPrice="200"
             description="Most popular! Huge savings."
             features={[
@@ -93,21 +93,21 @@ const PricingPage = () => {
             ]}
             highlighted={true}
             popular={true}
-            badge="75% OFF"
+            badge="60% OFF"
             ctaText="Get Pro Now - Save ₹150!"
             onClick={() =>
               handleBuyNow({
                 id: "2",
                 name: "Creator Pro",
                 credit: 8,
-                amount: 50,
+                amount: 80,
               })
             }
           />
 
           <PricingCard
             title="Business Elite"
-            price="100"
+            price="150"
             originalPrice="300"
             description="⭐ Ultimate value!"
             features={[
@@ -116,14 +116,14 @@ const PricingPage = () => {
               "Priority Download URL links",
               "YouTube formats + custom sizes",
             ]}
-            badge="67% OFF"
+            badge="50% OFF"
             ctaText="Go Elite - Save ₹200!"
             onClick={() =>
               handleBuyNow({
                 id: "3",
                 name: "Business Elite",
                 credit: 20,
-                amount: 100,
+                amount: 150,
               })
             }
           />

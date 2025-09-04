@@ -69,7 +69,7 @@ export const POST = async (req: Request): Promise<NextResponse> => {
         data: {
           email: primaryEmail,
           clerk_id: id,
-          credits: 7,
+          credits: 3,
           plan: "FREE",
         },
       });
