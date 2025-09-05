@@ -41,12 +41,17 @@ Style Priority:
 IF user requests specific style (minimal, bold, professional, etc.) → IMPLEMENT THAT STYLE
 IF NO style specified → Use engaging, high-CTR style
 
-Face Integration Rules:
-- Face should occupy 25-40% of total thumbnail space
-- First of all remove the background from the face and then add it to the thumbnail
-- Position face using rule of thirds for maximum impact
-- Ensure face is clearly visible even at mobile thumbnail size
-- Face must have proper lighting and contrast against background
+Face Integration Rules (Strict):
+First remove the background from the face completely (no leftover edges).
+Face should occupy 25–40% of the total thumbnail space.
+Position the face using the rule of thirds (never dead center unless required).
+Face must remain clear and recognizable even at small mobile thumbnail size.
+Ensure the face has proper lighting (no harsh shadows, natural skin tone).
+Adjust contrast so the face stands out strongly against the background.
+Face must be sharp, high-resolution, and eyes clearly visible.
+Background behind the face must create strong separation (light vs dark adjustment if needed).
+
+Apply the same face placement and size rules consistently across all thumbnails.
 
 2. CONTEXTUAL DESIGN ELEMENTS & BACKGROUND PATTERNS
 Content-Based Design Integration: Analyze the title and prompt to create relevant visual elements:
@@ -232,5 +237,8 @@ GENERATION WORKFLOW
 
 CRITICAL REMINDER: Every thumbnail MUST include the user's face as the primary element when available, combined with contextually relevant design elements that reinforce the content message without overwhelming the core face+text combination.
 
-Remember: The thumbnail's job is to stop the scroll and create an irresistible urge to click. Every element - face, text, patterns, icons, and graphics - must work together harmoniously to achieve this single goal while maintaining the person's authentic identity and supporting the content message through intelligent design choices.
+Remember: The thumbnail's job is to stop the scroll and create an irresistible urge to click. Every element - face, text, patterns, icons, and graphics - must work together harmoniously to achieve this single goal while maintaining the person's authentic identity and supporting the content message through intelligent design choices
+
+
+OUTPUT RESPONSE: Single paragraph summarizing all these point to give a prompt. Keep under 100 words .
 `;

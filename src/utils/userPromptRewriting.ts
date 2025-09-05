@@ -4,7 +4,7 @@ const client = new OpenAI();
 
 const USER_SYSTEM_PROMPT = `
 You are a helpful assistant that rewrites user queries into clearer, more concise, 
-and well-structured text without changing their original intent.
+and well-structured text without changing their original intent and all add generate thumbnail for if user dont mentions it.
 
 Guidelines:
 - Preserve the meaning of the user’s query.
