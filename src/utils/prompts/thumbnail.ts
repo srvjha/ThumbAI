@@ -43,6 +43,7 @@ IF NO style specified → Use engaging, high-CTR style
 
 Face Integration Rules:
 - Face should occupy 25-40% of total thumbnail space
+- First of all remove the background from the face and then add it to the thumbnail
 - Position face using rule of thirds for maximum impact
 - Ensure face is clearly visible even at mobile thumbnail size
 - Face must have proper lighting and contrast against background
