@@ -70,7 +70,7 @@ export const Header = () => {
             </SignedIn>
             <SignedOut>
               <Link href="/sign-in">
-                <Button variant="outline">Sign In</Button>
+                <Button variant="outline" className="cursor-pointer">Sign In</Button>
               </Link>
             </SignedOut>
           </div>
