@@ -16,7 +16,7 @@ const beamVariants: Variants = {
     transition: {
       duration: 1,
       repeat: Infinity,
-      repeatDelay:  1,
+      repeatDelay: 1,
       ease: "easeInOut" as const,
     },
   },
@@ -24,7 +24,7 @@ const beamVariants: Variants = {
 
 export const ImageBackground = () => {
   return (
-    <div className="absolute bg-neutral-950 inset-0 overflow-hidden -z-10">
+    <div className="fixed top-0 left-0 w-full h-full bg-neutral-950 overflow-hidden -z-10">
       <GridBeams />
     </div>
   );
@@ -47,10 +47,38 @@ const GridBeams: React.FC = () => {
     // { start: [19, 0], corners: [[14, 0], [14, 6], [5, 6]], end: [0, 11] },
 
     // // Corner-based L-shaped beams
-    { start: [0, 0], corners: [[0, 4], [8, 4]], end: [8, 4] },
-    { start: [19, 0], corners: [[19, 3], [11, 3]], end: [11, 3] },
-    { start: [0, 11], corners: [[0, 8], [7, 8]], end: [7, 8] },
-    { start: [19, 11], corners: [[19, 8], [12, 8]], end: [12, 8] },
+    {
+      start: [0, 0],
+      corners: [
+        [0, 4],
+        [8, 4],
+      ],
+      end: [8, 4],
+    },
+    {
+      start: [19, 0],
+      corners: [
+        [19, 3],
+        [11, 3],
+      ],
+      end: [11, 3],
+    },
+    {
+      start: [0, 11],
+      corners: [
+        [0, 8],
+        [7, 8],
+      ],
+      end: [7, 8],
+    },
+    {
+      start: [19, 11],
+      corners: [
+        [19, 8],
+        [12, 8],
+      ],
+      end: [12, 8],
+    },
 
     // // Edge-based beams from corners
     // { start: [0, 2], corners: [[6, 2], [6, 9]], end: [6, 11] },
@@ -128,9 +156,27 @@ const GridBeams: React.FC = () => {
 
       {/* Corner glow effects */}
       <circle cx="0" cy="0" r="30" fill="url(#cornerGlow)" opacity="0.3" />
-      <circle cx={cols * gridSize} cy="0" r="30" fill="url(#cornerGlow)" opacity="0.3" />
-      <circle cx="0" cy={rows * gridSize} r="30" fill="url(#cornerGlow)" opacity="0.3" />
-      <circle cx={cols * gridSize} cy={rows * gridSize} r="30" fill="url(#cornerGlow)" opacity="0.3" />
+      <circle
+        cx={cols * gridSize}
+        cy="0"
+        r="30"
+        fill="url(#cornerGlow)"
+        opacity="0.3"
+      />
+      <circle
+        cx="0"
+        cy={rows * gridSize}
+        r="30"
+        fill="url(#cornerGlow)"
+        opacity="0.3"
+      />
+      <circle
+        cx={cols * gridSize}
+        cy={rows * gridSize}
+        r="30"
+        fill="url(#cornerGlow)"
+        opacity="0.3"
+      />
 
       {/* Animated beams */}
       {beamPaths.map((beam, index) => (
@@ -166,9 +212,27 @@ const GridBeams: React.FC = () => {
 
       {/* Corner indicator dots */}
       <circle cx="0" cy="0" r="2" fill="rgb(139 92 246)" opacity="0.8" />
-      <circle cx={cols * gridSize} cy="0" r="2" fill="rgb(139 92 246)" opacity="0.8" />
-      <circle cx="0" cy={rows * gridSize} r="2" fill="rgb(139 92 246)" opacity="0.8" />
-      <circle cx={cols * gridSize} cy={rows * gridSize} r="2" fill="rgb(139 92 246)" opacity="0.8" />
+      <circle
+        cx={cols * gridSize}
+        cy="0"
+        r="2"
+        fill="rgb(139 92 246)"
+        opacity="0.8"
+      />
+      <circle
+        cx="0"
+        cy={rows * gridSize}
+        r="2"
+        fill="rgb(139 92 246)"
+        opacity="0.8"
+      />
+      <circle
+        cx={cols * gridSize}
+        cy={rows * gridSize}
+        r="2"
+        fill="rgb(139 92 246)"
+        opacity="0.8"
+      />
     </svg>
   );
 };

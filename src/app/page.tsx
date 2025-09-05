@@ -20,6 +20,8 @@ import {
   VideoIcon,
   Youtube,
   Play,
+  Download,
+  Link2,
 } from "lucide-react";
 import { Header } from "@/components/Header";
 import UploadImage from "@/components/UploadImage";
@@ -27,44 +29,27 @@ import FeatureCard from "@/components/Feature";
 import Link from "next/link";
 import { ImageBackground } from "@/components/ImagesBackground";
 import { InfiniteMovingCards } from "@/components/ui/infinite-moving-cards";
+import { Footer } from "@/components/ui/Footer";
 
 const Home = () => {
   const features = [
     {
+      icon: <Download className="w-6 h-6" />,
+      title: "Instant Downloads",
+      description:
+        "Get your generated thumbnail immediately with a single click. High-quality downloads in multiple formats for any platform.",
+    },
+    {
+      icon: <Link2 className="w-6 h-6" />,
+      title: "Shareable Image Links",
+      description:
+        "Every thumbnail comes with a unique shareable link. Easily preview, share, or integrate your design anywhere online.",
+    },
+    {
       icon: <MessageCircle className="w-6 h-6" />,
-      title: "Chat-Based Interface",
+      title: "Smart Follow-up Chat",
       description:
-        "Simply describe what you want in natural language. Our AI understands your vision and creates accordingly.",
-    },
-    {
-      icon: <Upload className="w-6 h-6" />,
-      title: "Easy Upload",
-      description:
-        "Drag and drop your images or upload from anywhere. Support for all major image formats.",
-    },
-    {
-      icon: <Wand2 className="w-6 h-6" />,
-      title: "AI-Powered Magic",
-      description:
-        "Advanced AI algorithms understand context and create stunning thumbnails that capture attention.",
-    },
-    {
-      icon: <Clock className="w-6 h-6" />,
-      title: "Lightning Fast",
-      description:
-        "Generate professional thumbnails in seconds, not hours. Save time and focus on content creation.",
-    },
-    {
-      icon: <Shield className="w-6 h-6" />,
-      title: "High Quality",
-      description:
-        "Export in multiple resolutions and formats. Perfect for YouTube, social media, and web.",
-    },
-    {
-      icon: <Sparkles className="w-6 h-6" />,
-      title: "Endless Variations",
-      description:
-        "Generate multiple versions and pick your favorite. Iterate until it's perfect.",
+        "Not happy with the first draft? Continue chatting with ThumbAI to refine, tweak colors, or explore new styles—just like a designer on demand.",
     },
   ];
 
@@ -151,41 +136,22 @@ const Home = () => {
               describe what you want in plain English.
             </p>
 
-            {/* <div className="flex flex-col sm:flex-row gap-4 justify-center mb-17 mt-5">
-            <Link href="/nano-banana/edit-image">
-              <Button
-                size="lg"
-                className="cursor-pointer bg-gradient-to-r from-blue-700 to-cyan-700 hover:from-blue-700 hover:to-cyan-600 text-lg text-neutral-300 px-8 py-6 font-semibold shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all"
-              >
-                Start Creating
-                <ArrowRight className=" w-5 h-5" />
-              </Button>
-            </Link>
-           <a href="https://youtu.be/dnqDogyenHg" target="_blank">
-            <Button
-              variant="outline"
-              size="lg"
-              className="border-gray-600 cursor-pointer text-gray-300 hover:bg-gray-800 text-lg px-8 py-6"
+            <Link
+              href="/nano-banana/edit-image"
+              className="flex flex-col sm:flex-row gap-4 justify-center mb-16"
             >
-              Watch Demo
-               <Youtube className=" w-5 h-5" />
-            </Button>
-            </a>
-          </div> */}
-
-            <Link href="/nano-banana/edit-image" className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
               <button className="bg-gradient-to-r cursor-pointer from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white px-5 py-3  rounded-xl font-semibold text-lg shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all flex items-center justify-center">
                 Start Creating Free
                 <ArrowRight className="w-5 h-5 ml-2" />
               </button>
             </Link>
 
-            <div className="max-w-4xl mx-auto mb-20 bg-neutral-900 rounded-2xl ">
-              <div className="relative rounded-2xl overflow-hidden border border-neutral-900 shadow-xl shadow-neutral-800">
-                <div className="aspect-video bg-black">
+            <div className="max-w-5xl mx-auto mb-20 bg-transparent rounded-2xl ">
+              <div className="relative rounded-2xl overflow-hidden border border-neutral-900 shadow-sm shadow-neutral-800">
+                <div className=" ">
                   <video
-                    className="w-full h-full object-fill" // ensures it fills container
-                    src="/vid.mp4" // place vid.mp4 inside public/
+                    className="w-full h-full object-cover"
+                    src="/thumbai.mp4"
                     autoPlay
                     muted
                     loop
@@ -234,42 +200,59 @@ const Home = () => {
             </section>
           </div>
         </section>
+
         {/* Showcase Thumbnails  */}
         <section className="max-w-7xl mx-auto">
-        <div>
+          <div>
             <h2 className="text-3xl text-center sm:text-5xl font-bold mb-4">
-            Tutorial <span className="text-blue-400">Thumbnail</span>
-          </h2>
-          <InfiniteMovingCards
-            items={[
-              "./pgmarry.jpeg",
-              "./hiteshdsa.jpg",
-              "./hiteshdocker.jpg"
-            ]}
-            direction="right"
-            speed="normal"
-          />
-        </div>
+              Tutorial <span className="text-blue-400">Thumbnails</span>
+            </h2>
+            <InfiniteMovingCards
+              items={[
+                "./pgmarry.jpeg",
+                "./hiteshdsa.jpg",
+                "./hiteshdocker.jpg",
+              ]}
+              direction="right"
+              speed="normal"
+            />
+          </div>
 
-         <div className="mt-28">
+          <div className="mt-28">
             <h2 className="text-3xl text-center sm:text-5xl font-bold mb-4">
-            Gaming <span className="text-blue-400">Thumbnail</span>
-          </h2>
-          <InfiniteMovingCards
-            items={[
-              "https://v3.fal.media/files/lion/X6JDNajUhwbqavCtZVYd9.jpeg",
-              "https://v3.fal.media/files/zebra/ieZr7-cVRJLoYjqy3A7fR.jpeg",
-              "https://v3.fal.media/files/elephant/IpgCSlkEtwpJsp2LrG7qs.jpeg"
-            ]}
-            direction="right"
-            speed="normal"
-          />
-        </div>
+              Gaming/Vlogging <span className="text-blue-400">Thumbnails</span>
+            </h2>
+            <InfiniteMovingCards
+              items={[
+                "https://v3.fal.media/files/lion/X6JDNajUhwbqavCtZVYd9.jpeg",
+                "https://v3.fal.media/files/zebra/ieZr7-cVRJLoYjqy3A7fR.jpeg",
+                "https://v3.fal.media/files/elephant/IpgCSlkEtwpJsp2LrG7qs.jpeg",
+                "./mrbeast.jpg",
+              ]}
+              direction="right"
+              speed="normal"
+            />
+          </div>
+
+          <div className="mt-28">
+            <h2 className="text-3xl text-center sm:text-5xl font-bold mb-4">
+              Review <span className="text-blue-400">Thumbnails</span>
+            </h2>
+            <InfiniteMovingCards
+              items={[
+                "https://v3.fal.media/files/zebra/iWJh6VpT4bulQnV3ib5FO.jpeg",
+                "https://v3.fal.media/files/koala/7tpjveeHxpK8RNreZRplv.jpeg",
+              ]}
+              direction="right"
+              speed="normal"
+            />
+          </div>
         </section>
+
         {/* Features Section */}
         <section
           id="features"
-          className="py-20 px-4 sm:px-6 lg:px-8 bg-transparent"
+          className="py-20 px-4 sm:px-6 lg:px-8 bg-transparent max-w-6xl mx-auto"
         >
           <div className="container mx-auto">
             <div className="text-center mb-16">
@@ -286,16 +269,16 @@ const Home = () => {
               {features.map((feature, index) => (
                 <Card
                   key={index}
-                  className="bg-neutral-900 border-neutral-800 hover:border-neutral-700 transition-all hover:shadow-lg hover:shadow-blue-500/10 group"
+                  className="bg-neutral-950/50 border-neutral-800 hover:border-neutral-700 py-4 transition-all hover:shadow-lg hover:shadow-blue-500/10 group"
                 >
-                  <CardContent className="p-6">
-                    <div className="w-12 h-12 bg-neutral-600 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <CardContent className="px-6 py-4 flex flex-col items-center justify-center">
+                    <div className="w-12 h-12 bg-blue-500  rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                       {feature.icon}
                     </div>
                     <h3 className="text-xl font-semibold mb-2 text-white">
                       {feature.title}
                     </h3>
-                    <p className="text-gray-400 leading-relaxed">
+                    <p className="text-gray-400 leading-relaxed text-center">
                       {feature.description}
                     </p>
                   </CardContent>
@@ -304,8 +287,10 @@ const Home = () => {
             </div>
           </div>
         </section>
+
+
         {/* How It Works Section */}
-        <section id="how-it-works" className="py-20 px-4 sm:px-6 lg:px-8">
+        <section id="how-it-works" className="py-20 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
           <div className="container mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-3xl sm:text-4xl font-bold mb-4">
@@ -321,8 +306,8 @@ const Home = () => {
             <div className="grid lg:grid-cols-3 gap-8">
               {steps.map((step, index) => (
                 <div key={index} className="relative">
-                  <Card className="bg-gradient-to-br from-neutral-900 to-neutral-800 border-neutral-700 h-full hover:shadow-xs hover:shadow-blue-500/20 transition-all">
-                    <CardContent className="p-8 text-center">
+                  <Card className="bg-neutral-950/50 border-neutral-800 hover:border-neutral-700 h-full py-4 hover:shadow-xs hover:shadow-blue-500/20 transition-all">
+                    <CardContent className="px-6 py-4 flex flex-col items-center justify-center">
                       <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold">
                         {step.step}
                       </div>
@@ -344,6 +329,8 @@ const Home = () => {
             </div>
           </div>
         </section>
+
+
         {/* Demo Section */}
         <section className="py-20 px-4 sm:px-6 lg:px-8 bg-transparent">
           <div className="container mx-auto">
@@ -409,102 +396,10 @@ const Home = () => {
             </div>
           </div>
         </section>
+
+
         {/* Footer */}
-        <footer className="py-12 px-4 sm:px-6 lg:px-8 border-t border-gray-800">
-          <div className="container mx-auto">
-            <div className="grid md:grid-cols-4 gap-8 mb-8">
-              <div>
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-lg flex items-center justify-center">
-                    <Image className="w-5 h-5 text-white" />
-                  </div>
-                  <span className="text-xl font-bold text-white">ThumbAI</span>
-                </div>
-                <p className="text-gray-400">
-                  Create stunning thumbnails with the power of AI conversation.
-                </p>
-              </div>
-              <div>
-                <h4 className="font-semibold text-white mb-4">Product</h4>
-                <ul className="space-y-2 text-gray-400">
-                  <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      Features
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      Pricing
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      API
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      Templates
-                    </a>
-                  </li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold text-white mb-4">Company</h4>
-                <ul className="space-y-2 text-gray-400">
-                  <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      About
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      Blog
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      Careers
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      Contact
-                    </a>
-                  </li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold text-white mb-4">Support</h4>
-                <ul className="space-y-2 text-gray-400">
-                  <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      Help Center
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      Documentation
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      Community
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      Status
-                    </a>
-                  </li>
-                </ul>
-              </div>
-            </div>
-            <div className="border-t border-gray-800 pt-8 text-center text-gray-400">
-              <p>&copy; 2025 ThumbAI. All rights reserved.</p>
-            </div>
-          </div>
-        </footer>
+       <Footer/>
       </div>
     </>
   );

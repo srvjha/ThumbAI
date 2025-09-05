@@ -88,7 +88,7 @@ export const ImageEditorGenerator = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [processedImageUrls, setProcessedImageUrls] = useState<string[]>([]); // Store processed URLs
 
-  const { data: userInfo } = useThumbUser();
+  const { data: userInfo, refetch,setData } = useThumbUser();
 
   // Modified processImage function to accept aspect ratio
   const processImage = (file: File, aspectRatio: string): Promise<File> => {
@@ -268,7 +268,12 @@ export const ImageEditorGenerator = () => {
             userInfo!.id,
             data.numImages
           );
-          if (!updateCredits) {
+          if (updateCredits) {
+            setData((prev) =>
+              prev ? { ...prev, credits: prev.credits - data.numImages } : prev
+            );
+            await refetch();
+          } else {
             console.log("credits not updated");
           }
         }
@@ -484,11 +489,13 @@ export const ImageEditorGenerator = () => {
         ? processedImageUrls
         : editedImages.filter((img) => img.url.length > 0).map((e) => e.url);
 
+        const noOfImages =  watch("numImages")
+
     try {
       const res = await axios.post("/api/edit", {
         mode: "chat",
         prompt: userPrompt,
-        numImages: watch("numImages"),
+        numImages:noOfImages,
         outputFormat: watch("outputFormat"),
         images_urls: formattedImages,
         aspectRatio: aspectRatios[0] || "16:9", // Pass single aspect ratio
@@ -498,8 +505,11 @@ export const ImageEditorGenerator = () => {
       if (res.data.success) {
         // decrease the credit by one
         const updateCredits = await deductCredits(userInfo!.id, 1);
-        if (!updateCredits) {
-          console.log("credits not updated");
+        if (updateCredits) {
+          setData((prev) =>
+            prev ? { ...prev, credits: prev.credits - noOfImages } : prev
+          );
+          await refetch();
         }
       }
 

@@ -81,7 +81,7 @@ export const TextToImageGenerator = () => {
   const defaultImage = watch("imagesUrl") || [];
   const [questionnaireData, setQuestionnaireData] = useState<any>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const { data: userInfo } = useThumbUser();
+  const { data: userInfo, setData, refetch } = useThumbUser();
 
   const onSubmit = async (data: FormValues) => {
     if (userInfo?.credits === 0) {
@@ -116,7 +116,12 @@ export const TextToImageGenerator = () => {
             userInfo!.id,
             data.numImages
           );
-          if (!updateCredits) {
+          if (updateCredits) {
+            setData((prev) =>
+              prev ? { ...prev, credits: prev.credits - data.numImages } : prev
+            );
+            await refetch();
+          } else {
             console.log("credits not updated");
           }
         }
@@ -340,6 +345,7 @@ export const TextToImageGenerator = () => {
     setIsGenerating(true);
     setStatus("generating");
     const userPrompt = input;
+    const noOfImages = watch("numImages");
     setInput("");
     const imagesToSend = generatedImages
       .map((img) => img.url)
@@ -347,7 +353,7 @@ export const TextToImageGenerator = () => {
     try {
       const res = await axios.post("/api/edit", {
         prompt: userPrompt,
-        numImages: watch("numImages"),
+        numImages: noOfImages,
         outputFormat: watch("outputFormat"),
         images_urls: imagesToSend,
         aspectRatio: aspectRatios,
@@ -357,8 +363,11 @@ export const TextToImageGenerator = () => {
       if (res.data.success) {
         // decrease the credit by one
         const updateCredits = await deductCredits(userInfo!.id, 1);
-        if (!updateCredits) {
-          console.log("credits not updated");
+        if (updateCredits) {
+          setData((prev) =>
+            prev ? { ...prev, credits: prev.credits - noOfImages } : prev
+          );
+          await refetch();
         }
       }
 

@@ -10,6 +10,13 @@ export const PATCH = async (req: NextRequest) => {
     throw new ApiError("User ID is required", 400);
   }
 
+  const user = await db.user.findUnique({ where: { id: userId } });
+  if (!user) throw new ApiError("User not found", 404);
+
+  if (user.credits < credits) {
+    throw new ApiError("Not enough credits", 400);
+  }
+
   const updateUserCredits = await db.user.update({
     where: { id: userId },
     data: { credits: { decrement: credits } },
