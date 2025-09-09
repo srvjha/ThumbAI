@@ -88,7 +88,7 @@ export const ImageEditorGenerator = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [processedImageUrls, setProcessedImageUrls] = useState<string[]>([]); // Store processed URLs
 
-  const { data: userInfo, refetch,setData } = useThumbUser();
+  const { data: userInfo, refetch, setData } = useThumbUser();
 
   // Modified processImage function to accept aspect ratio
   const processImage = (file: File, aspectRatio: string): Promise<File> => {
@@ -239,11 +239,9 @@ export const ImageEditorGenerator = () => {
     toast.loading("Processing and uploading images...", { id: "generation" });
 
     try {
-      let results: ImageData[] = [];
-
-      // Process images for each selected aspect ratio
+      // Loop over aspect ratios
       for (const aspectRatio of data.aspectRatios) {
-        // Process and upload files for this aspect ratio
+        // 1. Process and upload files
         const processedFiles = await Promise.all(
           data.uploadedFiles.map((file) => processImage(file, aspectRatio))
         );
@@ -252,18 +250,20 @@ export const ImageEditorGenerator = () => {
           processedFiles.map((file) => uploadFileToFal(file))
         );
 
+        // 2. Submit job
         const res = await axios.post("/api/edit", {
           mode: "normal",
           prompt: data.prompt,
           numImages: data.numImages,
           outputFormat: data.outputFormat,
           images_urls: uploadedUrls,
-          aspectRatio: aspectRatio, // Pass single aspect ratio
+          aspectRatio,
           userChoices: questionnaireData ? questionnaireData : "",
+          userId: userInfo!.id,
         });
 
         if (res.data.success) {
-          // decrease the credit by one
+          // Deduct credits immediately (can move into COMPLETED if you want)
           const updateCredits = await deductCredits(
             userInfo!.id,
             data.numImages
@@ -273,23 +273,36 @@ export const ImageEditorGenerator = () => {
               prev ? { ...prev, credits: prev.credits - data.numImages } : prev
             );
             await refetch();
-          } else {
-            console.log("credits not updated");
           }
         }
 
-        const imgs =
-          res.data?.data?.data?.images?.map((img: any) => ({
-            url: img.url,
-            aspectRatio: aspectRatio,
-          })) || [];
-        results = [...results, ...imgs];
-      }
+        const { requestId } = res.data.data;
 
-      setEditedImages(results);
-      setProcessedImageUrls(results.map((img) => img.url));
-      setStatus("completed");
-      toast.success("Images edited successfully!", { id: "generation" });
+        // 3. Open SSE connection
+        const evtSource = new EventSource(
+          `/api/result-stream?requestId=${requestId}`
+        );
+
+        evtSource.onmessage = (event) => {
+          const payload = JSON.parse(event.data);
+
+          if (payload.status === "COMPLETED") {
+            console.log("Thumbnail ready:", payload.image_url);
+
+           setEditedImages([{ url: payload.image_url, aspectRatio }]);
+
+
+            setProcessedImageUrls((prev) => [...prev, payload.image_url]);
+
+            setStatus("completed");
+            toast.success("Images edited successfully!", { id: "generation" });
+
+            evtSource.close();
+          } else {
+            console.log("Still processing:", payload.status);
+          }
+        };
+      }
     } catch (err) {
       console.error(err);
       setStatus("idle");
@@ -489,17 +502,18 @@ export const ImageEditorGenerator = () => {
         ? processedImageUrls
         : editedImages.filter((img) => img.url.length > 0).map((e) => e.url);
 
-        const noOfImages =  watch("numImages")
+    const noOfImages = watch("numImages");
 
     try {
       const res = await axios.post("/api/edit", {
         mode: "chat",
         prompt: userPrompt,
-        numImages:noOfImages,
+        numImages: noOfImages,
         outputFormat: watch("outputFormat"),
         images_urls: formattedImages,
         aspectRatio: aspectRatios[0] || "16:9", // Pass single aspect ratio
         userChoices: questionnaireData ?? "",
+        userId: userInfo!.id,
       });
 
       if (res.data.success) {
@@ -513,28 +527,44 @@ export const ImageEditorGenerator = () => {
         }
       }
 
-      const imgs =
-        res.data?.data?.data?.images?.map((img: any) => ({
-          url: img.url,
-          aspectRatio: aspectRatios[0] || "16:9",
-        })) || [];
+      const { requestId } = res.data.data;
 
-      setEditedImages(imgs);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          parts: [
+      // 3. Open SSE connection
+      const evtSource = new EventSource(
+        `/api/result-stream?requestId=${requestId}`
+      );
+
+      evtSource.onmessage = (event) => {
+        const payload = JSON.parse(event.data);
+
+        if (payload.status === "COMPLETED") {
+          console.log("Thumbnail ready:", payload.image_url);
+
+          setEditedImages([{ url: payload.image_url, aspectRatio:aspectRatios[0] }]);
+
+
+          setMessages((prev) => [
+            ...prev,
             {
-              type: "text",
-              text: `I've updated your images as per "${userPrompt}".`,
+              id: crypto.randomUUID(),
+              role: "assistant",
+              parts: [
+                {
+                  type: "text",
+                  text: `I've updated your images as per "${userPrompt}".`,
+                },
+              ],
             },
-          ],
-        },
-      ]);
+          ]);
 
-      setStatus("completed");
+          setStatus("completed");
+
+          evtSource.close();
+        } else {
+          console.log("Still processing:", payload.status);
+        }
+      };
+
     } catch (err) {
       console.error(err);
       setMessages((prev) => [

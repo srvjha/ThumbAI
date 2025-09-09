@@ -21,7 +21,7 @@ export const POST = async (req: Request) => {
   const payload = await req.json();
   const body = JSON.stringify(payload);
 
-  console.log("🔔 Razorpay webhook received!");
+  // console.log("🔔 Razorpay webhook received!");
 
   // ✅ Verify signature
   const expectedSignature = crypto
@@ -41,7 +41,7 @@ export const POST = async (req: Request) => {
   const event = payload.event;
   const payment = payload.payload?.payment?.entity;
 
-  console.log("📦 Event type:", event);
+  // console.log("📦 Event type:", event);
 
   let statusToUpdate: "paid" | "failed" | null = null;
 
@@ -62,7 +62,7 @@ export const POST = async (req: Request) => {
         },
       });
 
-      console.log(`✅ Order updated with status: ${statusToUpdate}`, updatedOrder);
+      // console.log(`✅ Order updated with status: ${statusToUpdate}`, updatedOrder);
 
       return NextResponse.json(
         new ApiResponse(200, updatedOrder, "Order updated successfully"),

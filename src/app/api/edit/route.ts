@@ -3,6 +3,7 @@ import { fal } from "@fal-ai/client";
 import { ApiResponse } from "@/utils/ApiResponse";
 import { generateThumbnailPrompt } from "@/utils/userFinalPrompt";
 import { generateChatPrompt } from "@/utils/userChatPrompt";
+import { db } from "@/db";
 
 function getDimensions(aspectRatio?: string) {
   switch (aspectRatio) {
@@ -24,22 +25,17 @@ export const POST = async (req: NextRequest) => {
     images_urls = [],
     aspectRatio,
     userChoices,
+    userId, // ✅ get userId
   } = await req.json();
 
   const { width, height } = getDimensions(aspectRatio[0]);
-   
-  const finalPrompt = mode === "normal" ? await generateThumbnailPrompt(
-    prompt,
-    userChoices,
-    aspectRatio[0]
-  ) : await generateChatPrompt(
-    prompt
-  );
 
+  const finalPrompt =
+    mode === "normal"
+      ? await generateThumbnailPrompt(prompt, userChoices, aspectRatio[0])
+      : await generateChatPrompt(prompt);
 
-  console.log({mode,images_urls,finalPrompt})
-
-  const result = await fal.subscribe("fal-ai/nano-banana/edit", {
+  const { request_id } = await fal.queue.submit("fal-ai/nano-banana/edit", {
     input: {
       prompt: finalPrompt,
       image_urls: images_urls,
@@ -49,23 +45,37 @@ export const POST = async (req: NextRequest) => {
       width,
       height,
     },
-    logs: true,
-    onQueueUpdate: (update) => {
-      if (update.status === "IN_PROGRESS") {
-        update.logs?.map((log) => log.message).forEach(console.log);
-      }
-    },
+    webhookUrl: `${process.env.NEXT_PUBLIC_FAL_WEBHOOK_URL}/api/fal/webhook`,
   });
+
+  if (request_id) {
+    await db.thumbnail.create({
+      data: {
+        request_id,
+        status: "PENDING",
+        input: {
+          prompt: finalPrompt,
+          image_urls: images_urls,
+          num_images: numImages,
+          output_format: outputFormat,
+          aspect_ratio: aspectRatio[0],
+          width,
+          height,
+        },
+        image_url: null,
+        user_id:userId, 
+      },
+    });
+  }
 
   return NextResponse.json(
     new ApiResponse(
       200,
       {
         success: true,
-        requestId: result.requestId,
-        data: result.data,
+        requestId: request_id,
       },
-      "Image generated Successfully"
+      "Request Submitted Successfully"
     ),
     { status: 200 }
   );

@@ -30,7 +30,7 @@ export const userPromptRewriting = async (prompt: string) => {
     userRewriteResponse.choices[0].message.content?.trim() ?? prompt;
 
   if (
-    rewriteUserPrompt.length > 200 ||
+    rewriteUserPrompt.length > 500 ||
     /here('|’)s|step|follow|to become|you should/i.test(rewriteUserPrompt)
   ) {
     rewriteUserPrompt = prompt; // fallback to original

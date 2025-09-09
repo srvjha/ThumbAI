@@ -80,11 +80,11 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
   useEffect(() => {
     if (user) {
       userRef.current = user;
-      console.log("User data updated in ref:", user);
+      // console.log("User data updated in ref:", user);
     }
   }, [user]);
 
-  console.log({user});
+  // console.log({user});
 
   const displayRazorpay = async () => {
     const res = await loadScript(
@@ -120,7 +120,7 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
 
       // ✅ Success handler
       handler: (response: any) => {
-        console.log("✅ Payment Success:", response);
+        // console.log("✅ Payment Success:", response);
         try {
           if (razorpayInstance.current) {
             razorpayInstance.current.close();
@@ -144,11 +144,11 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
               signature: response.razorpay_signature,
             });
 
-            console.log("🎉 Payment verified:", verifyRes.data);
+            // console.log("🎉 Payment verified:", verifyRes.data);
             
             // 🔥 Use ref to get current user data
             const currentUser = userRef.current;
-            console.log("Current user from ref:", { user: currentUser });
+            // console.log("Current user from ref:", { user: currentUser });
             
             if (currentUser?.id) {
               // ✅ Update user credits
@@ -157,7 +157,7 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
                 credits: planDetails.credit,
               });
 
-              console.log("💳 Credits updated:", updateRes.data);
+              // console.log("💳 Credits updated:", updateRes.data);
               toast.success(
                 `Payment Successful ✅ ${planDetails.credit} credits added`
               );
@@ -178,7 +178,7 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
       modal: {
         confirm_close: true,
         ondismiss: () => {
-          console.log("❌ Payment modal closed/cancelled.");
+          // console.log("❌ Payment modal closed/cancelled.");
           forceCloseRazorpay();
         },
       },
@@ -191,12 +191,12 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
     razorpayInstance.current = rzp;
 
     rzp.on("payment.submit", (response: any) => {
-      console.log("✅ Payment Submitted:", response);
+      // console.log("✅ Payment Submitted:", response);
       paymentMethod.current = response.method;
     });
 
     rzp.on("payment.failed", (response: any) => {
-      console.error("❌ Payment Failed", response);
+      // console.error("❌ Payment Failed", response);
       paymentId.current = response.error.metadata.payment_id;
 
       try {
@@ -211,7 +211,7 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
     });
 
     rzp.on("payment.success", () => {
-      console.log("✅ Payment Success Event Triggered");
+      // console.log("✅ Payment Success Event Triggered");
       forceCloseRazorpay();
     });
 

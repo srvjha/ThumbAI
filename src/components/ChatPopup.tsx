@@ -147,13 +147,16 @@ export const PopoutChat: React.FC<PopoutChatProps> = ({
           <div className="flex flex-col h-full">
             {/* Welcome Message */}
             {messages.length === 0 && (
-              <div className="flex p-4 justify-center items-center text-center text-sm text-gray-400">
-                Great! I've generated your images. What modifications would you
-                like to make? <br />
+              <div className="flex flex-col gap-2 p-4 justify-center items-center text-center text-sm text-gray-400">
                 <span className="mt-2 block text-xs text-gray-500">
                   ⚠️ Currently, image upload is not supported. You can only edit
                   the generated images through this chat.
                 </span>
+                
+                <div>Great! I've generated your images. What modifications would you
+                like to make on the generated image only ? 
+                </div>
+               
               </div>
             )}
 

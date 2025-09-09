@@ -122,7 +122,7 @@ export const TextToImageGenerator = () => {
             );
             await refetch();
           } else {
-            console.log("credits not updated");
+            // console.log("credits not updated");
           }
         }
 
@@ -350,50 +350,70 @@ export const TextToImageGenerator = () => {
     const imagesToSend = generatedImages
       .map((img) => img.url)
       .filter((e) => e.trim().length > 0);
-    try {
-      const res = await axios.post("/api/edit", {
-        prompt: userPrompt,
-        numImages: noOfImages,
-        outputFormat: watch("outputFormat"),
-        images_urls: imagesToSend,
-        aspectRatio: aspectRatios,
-        userChoices: questionnaireData ?? "",
-      });
-
-      if (res.data.success) {
-        // decrease the credit by one
-        const updateCredits = await deductCredits(userInfo!.id, 1);
-        if (updateCredits) {
-          setData((prev) =>
-            prev ? { ...prev, credits: prev.credits - noOfImages } : prev
-          );
-          await refetch();
-        }
-      }
-
-      const imgs =
-        res.data?.data?.data?.images?.map((img: any) => ({
-          url: img.url,
-          aspectRatio: aspectRatios[0] || "16:9",
-        })) || [];
-
-      setGeneratedImages(imgs);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          parts: [
-            {
-              type: "text",
-              text: `I’ve updated your images as per "${userPrompt}".`,
-            },
-          ],
-        },
-      ]);
-
-      setStatus("completed");
-    } catch (err) {
+        try {
+            const res = await axios.post("/api/edit", {
+              mode: "chat",
+              prompt: userPrompt,
+              numImages: noOfImages,
+              outputFormat: watch("outputFormat"),
+              images_urls: imagesToSend,
+              aspectRatio: aspectRatios[0] || "16:9", // Pass single aspect ratio
+              userChoices: questionnaireData ?? "",
+              userId: userInfo!.id,
+            });
+      
+            if (res.data.success) {
+              // decrease the credit by one
+              const updateCredits = await deductCredits(userInfo!.id, 1);
+              if (updateCredits) {
+                setData((prev) =>
+                  prev ? { ...prev, credits: prev.credits - noOfImages } : prev
+                );
+                await refetch();
+              }
+            }
+      
+            const { requestId } = res.data.data;
+      
+            // 3. Open SSE connection
+            const evtSource = new EventSource(
+              `/api/result-stream?requestId=${requestId}`
+            );
+      
+            evtSource.onmessage = (event) => {
+              const payload = JSON.parse(event.data);
+      
+              if (payload.status === "COMPLETED") {
+                console.log("Thumbnail ready:", payload.image_url);
+      
+                setGeneratedImages((prev) => [
+                  ...prev,
+                  { url: payload.image_url, aspectRatio: aspectRatios[0] },
+                ]);
+      
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    id: crypto.randomUUID(),
+                    role: "assistant",
+                    parts: [
+                      {
+                        type: "text",
+                        text: `I've updated your images as per "${userPrompt}".`,
+                      },
+                    ],
+                  },
+                ]);
+      
+                setStatus("completed");
+      
+                evtSource.close();
+              } else {
+                console.log("Still processing:", payload.status);
+              }
+            };
+          }
+      catch (err) {
       console.error(err);
       setMessages((prev) => [
         ...prev,
