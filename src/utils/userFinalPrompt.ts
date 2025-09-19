@@ -7,36 +7,24 @@ const client = new OpenAI();
 
 export const generateThumbnailPrompt = async (
   rawUserPrompt: string,
+  choices: string,
   rawUserChoice: any,
   aspectRatio: "16:9" | "9:16"
 ) => {
   //  Rewriting user prompt
-  const enhancedPrompt = await userPromptRewriting(rawUserPrompt);
-  console.log({rawUserPrompt,enhancedPrompt})
-
-  // Rewriting user choices
-  let enhancedChoicePrompt = ""
-  if(Object.values(rawUserChoice).length>0){
-   enhancedChoicePrompt = await userChoiceRewriting(rawUserChoice);
-   console.log({enhancedChoicePrompt})
+  const { valid_prompt, enhanced_prompt } = await userPromptRewriting(
+    rawUserPrompt
+  );
+  if (!valid_prompt) {
+    return { valid_prompt, response: "Please give a meaningfull prompt." };
   }
 
-  //  Applying aspect ratio instructions-> Not required now
-  const aspectRatioResponse = await client.chat.completions.create({
-    model: "gpt-4.1-mini",
-    messages: [
-      { role: "system", content: ASPECT_RATIO_INSTRUCTIONS },
-      {
-        role: "user",
-        content: `Please refine this thumbnail request with correct aspect ratio (${aspectRatio}):  
-        ${enhancedPrompt}\n\n${enhancedChoicePrompt}`,
-      },
-    ],
-  });
-  const refinedAspectRatioPrompt =
-    aspectRatioResponse.choices[0].message.content?.trim() ?? "";
-
-    console.log({refinedAspectRatioPrompt})
+  // Rewriting user choices
+  // let enhancedChoicePrompt = "";
+  // if (choices.trim() === "form") {
+  //   enhancedChoicePrompt = await userChoiceRewriting(rawUserChoice);
+  //   console.log({ enhancedChoicePrompt });
+  // }
 
   //  Generating final thumbnail design instructions
   const finalResponse = await client.chat.completions.create({
@@ -45,15 +33,23 @@ export const generateThumbnailPrompt = async (
       { role: "system", content: THUMBNAIL_DESIGN_INSTRUCTIONS },
       {
         role: "user",
-        content: `Here is the user request with their prompt and thumbnail choices if provided:  
-        ${refinedAspectRatioPrompt}`,
+        content: `
+        Here is the user request with their prompt and thumbnail choices:
+        Prompt: ${enhanced_prompt}
+        Choice: ${choices}
+        ${
+          choices.trim() === "form"
+            ? `UserChoice: ${JSON.stringify(rawUserChoice, null, 2)}`
+            : ""
+        }
+        AspectRatio: ${aspectRatio}
+        `,
       },
     ],
   });
 
   const finalThumbnailPrompt =
-    finalResponse.choices[0].message.content?.trim() ?? enhancedPrompt;
-     console.log({finalThumbnailPrompt})
+    finalResponse.choices[0].message.content?.trim() ?? enhanced_prompt;
 
-  return finalThumbnailPrompt;
+  return { valid_prompt, response: finalThumbnailPrompt };
 };

@@ -25,7 +25,8 @@ clear, descriptive, and professional design specification for a YouTube thumbnai
 ### Example:
 Input:
 {
-  "videoType": ["tutorial"],
+  "category": ["tutorial"],
+  "appearance":["left"]
   "colorScheme": ["vibrant"],
   "thumbnailStyle": ["face","text"],
   "audience": ["young-adults"],
@@ -48,7 +49,7 @@ export const userChoiceRewriting = async (userChoice: Record<string, any>) => {
       { role: "system", content: USER_CHOICE_PROMPT },
       {
         role: "user",
-        content: JSON.stringify(userChoice, null, 2), // ✅ safe format
+        content: JSON.stringify(userChoice, null, 2),
       },
     ],
   });

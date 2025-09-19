@@ -4,16 +4,12 @@ import { ApiResponse } from "@/utils/ApiResponse";
 import { generateThumbnailPrompt } from "@/utils/userFinalPrompt";
 import { generateChatPrompt } from "@/utils/userChatPrompt";
 import { db } from "@/db";
+import { env } from "@/config/env";
 
-function getDimensions(aspectRatio?: string) {
-  switch (aspectRatio) {
-    case "16:9":
-      return { width: 1920, height: 1080 };
-    case "9:16":
-      return { width: 1080, height: 1920 };
-    default:
-      return { width: 1024, height: 1024 };
-  }
+
+export interface FinalPrompt {
+  valid_prompt: boolean;
+  response: string;
 }
 
 export const POST = async (req: NextRequest) => {
@@ -24,28 +20,36 @@ export const POST = async (req: NextRequest) => {
     outputFormat = "jpeg",
     images_urls = [],
     aspectRatio,
+    choices,
     userChoices,
-    userId, // ✅ get userId
+    userId,
   } = await req.json();
 
-  const { width, height } = getDimensions(aspectRatio[0]);
 
-  const finalPrompt =
+  const finalPrompt: FinalPrompt =
     mode === "normal"
-      ? await generateThumbnailPrompt(prompt, userChoices, aspectRatio[0])
+      ? await generateThumbnailPrompt(
+          prompt,
+          choices,
+          userChoices,
+          aspectRatio[0]
+        )
       : await generateChatPrompt(prompt);
+
+  if (!finalPrompt.valid_prompt) {
+    return NextResponse.json(
+      new ApiResponse(200, finalPrompt, "valid prompt not provided")
+    );
+  }
 
   const { request_id } = await fal.queue.submit("fal-ai/nano-banana/edit", {
     input: {
-      prompt: finalPrompt,
+      prompt: finalPrompt.response,
       image_urls: images_urls,
       num_images: numImages,
       output_format: outputFormat,
-      aspect_ratio: aspectRatio[0],
-      width,
-      height,
     },
-    webhookUrl: `${process.env.NEXT_PUBLIC_FAL_WEBHOOK_URL}/api/fal/webhook`,
+    webhookUrl: `${env.NEXT_PUBLIC_FAL_WEBHOOK_URL}/api/fal/webhook`,
   });
 
   if (request_id) {
@@ -54,16 +58,14 @@ export const POST = async (req: NextRequest) => {
         request_id,
         status: "PENDING",
         input: {
-          prompt: finalPrompt,
+          prompt: finalPrompt.response,
           image_urls: images_urls,
           num_images: numImages,
           output_format: outputFormat,
-          aspect_ratio: aspectRatio[0],
-          width,
-          height,
+          aspect_ratio: aspectRatio[0]
         },
         image_url: null,
-        user_id:userId, 
+        user_id: userId,
       },
     });
   }
@@ -72,6 +74,7 @@ export const POST = async (req: NextRequest) => {
     new ApiResponse(
       200,
       {
+        valid_prompt: finalPrompt.valid_prompt,
         success: true,
         requestId: request_id,
       },

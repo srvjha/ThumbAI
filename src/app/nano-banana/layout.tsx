@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, Wand2, Settings, Dot } from "lucide-react";
+import { ChevronDown, Wand2, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -23,7 +23,11 @@ const modes = [
   },
 ];
 
-export default function GeneratorLayout({ children }: { children: React.ReactNode }) {
+export default function GeneratorLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const pathname = usePathname();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -32,7 +36,10 @@ export default function GeneratorLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsDropdownOpen(false);
       }
     }
@@ -54,9 +61,8 @@ export default function GeneratorLayout({ children }: { children: React.ReactNod
             </p>
           </div>
 
-         
           <div className="flex items-center gap-4">
-             <Badge className="bg-neutral-900 flex justify-center items-center gap-2 text-center text-sm border-neutral-600  hover:bg-neutral-800 text-neutral-300 px-3 py-2 rounded-md">
+            <Badge className="bg-neutral-900 flex justify-center items-center gap-2 text-center text-sm border-neutral-600  hover:bg-neutral-800 text-neutral-300 px-3 py-2 rounded-md">
               <span className="w-2 h-2 rounded-full bg-green-600 -mt-0.5"></span>
               Nano Banana
             </Badge>
@@ -91,7 +97,9 @@ export default function GeneratorLayout({ children }: { children: React.ReactNod
                         >
                           <div className="flex items-center mb-1">
                             {mode.icon}
-                            <span className="ml-2 font-medium">{mode.label}</span>
+                            <span className="ml-2 font-medium">
+                              {mode.label}
+                            </span>
                             {pathname.includes(mode.id) && (
                               <Badge className="ml-auto bg-blue-500 text-white">
                                 Active
@@ -108,12 +116,8 @@ export default function GeneratorLayout({ children }: { children: React.ReactNod
                 </div>
               )}
             </div>
-
-           
-           
           </div>
         </div>
-
 
         <div className="min-h-[600px]">{children}</div>
       </div>

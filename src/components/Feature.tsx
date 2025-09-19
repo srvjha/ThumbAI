@@ -1,9 +1,8 @@
 "use client";
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Heart, Wand2, Edit3, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 interface ModelCardProps {
@@ -18,10 +17,8 @@ interface ModelCardProps {
 }
 
 const FeatureCard: React.FC<ModelCardProps> = ({
-  title,
   subtitle,
   description,
-  isNew = false,
   backgroundImage,
   icon,
   navigate,

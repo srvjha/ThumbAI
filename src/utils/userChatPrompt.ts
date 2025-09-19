@@ -22,7 +22,13 @@ export const generateChatPrompt = async (
 
 ) => {
 
-      const enhancedPrompt = await userPromptRewriting(chatPrompt);
+  const { valid_prompt, enhanced_prompt } = await userPromptRewriting(
+    chatPrompt
+  );
+  if (!valid_prompt) {
+    return { valid_prompt, response: "Please give a meaningful prompt." };
+  }
+
 
   const finalResponse = await client.chat.completions.create({
     model: "gpt-4.1-mini",
@@ -30,7 +36,7 @@ export const generateChatPrompt = async (
       { role: "system", content: CHAT_SYSTEM_PROMPT },
       {
         role: "user",
-        content: enhancedPrompt,
+        content: enhanced_prompt,
       },
     ],
   });
@@ -39,5 +45,5 @@ export const generateChatPrompt = async (
     finalResponse.choices[0].message.content?.trim() ?? chatPrompt;
     console.log({finalChatPrompt})
 
-  return finalChatPrompt;
+  return {valid_prompt,response:finalChatPrompt};
 };

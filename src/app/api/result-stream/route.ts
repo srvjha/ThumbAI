@@ -27,6 +27,8 @@ export async function GET(req: NextRequest) {
           done = true;
           controller.close();
         } else {
+          let counter = 0;
+          console.log(`Pending hai abhi ${counter++}`)
           controller.enqueue(
             encoder.encode(
               `data: ${JSON.stringify({ status: thumbnail?.status || "PENDING" })}\n\n`

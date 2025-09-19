@@ -22,7 +22,7 @@ const beamVariants: Variants = {
   },
 };
 
-export const ImageBackground = () => {
+export const HomePageBackground = () => {
   return (
     <div className="fixed top-0 left-0 w-full h-full bg-neutral-950 overflow-hidden -z-10">
       <GridBeams />

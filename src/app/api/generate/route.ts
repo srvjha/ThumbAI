@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { fal } from "@fal-ai/client";
 import { ApiResponse } from "@/utils/ApiResponse";
 import { generateThumbnailPrompt } from "@/utils/userFinalPrompt";
+import { FinalPrompt } from "../edit/route";
 
 function getDimensions(aspectRatio?: string) {
   switch (aspectRatio) {
@@ -18,6 +19,7 @@ export const POST = async (req: NextRequest) => {
   const {
     prompt,
     numImages = 1,
+    choices="random",
     outputFormat = "jpeg",
     aspectRatio,
     userChoices="",
@@ -25,15 +27,23 @@ export const POST = async (req: NextRequest) => {
 
   const { width, height } = getDimensions(aspectRatio[0]);
 
-  const finalPrompt = generateThumbnailPrompt(
+  const finalPrompt: FinalPrompt = await generateThumbnailPrompt(
     prompt,
+    choices,
     userChoices,
     aspectRatio[0]
   );
 
+   if (!finalPrompt.valid_prompt) {
+    return NextResponse.json(
+      new ApiResponse(200, finalPrompt, "valid prompt not provided")
+    );
+  }
+
+
   const result = await fal.subscribe("fal-ai/nano-banana/", {
     input: {
-      prompt: finalPrompt,
+      prompt: finalPrompt.response,
       num_images: numImages,
       output_format: outputFormat,
       aspect_ratio: aspectRatio,
@@ -51,7 +61,8 @@ export const POST = async (req: NextRequest) => {
   return NextResponse.json(
     new ApiResponse(
       200,
-      {
+      { 
+        valid_prompt: finalPrompt.valid_prompt,
         success: true,
         requestId: result.requestId,
         data: result.data,

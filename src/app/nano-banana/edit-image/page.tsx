@@ -1,5 +1,5 @@
-import { ImageEditorGenerator } from "@/components/ImageEdit";
+import { ImageToImage } from "@/components/ImageToImage";
 
 export default async function ImageEditorPage() {
-  return <ImageEditorGenerator />;
+  return <ImageToImage />;
 }

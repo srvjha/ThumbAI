@@ -26,12 +26,13 @@ import {
   PromptInputToolbar,
 } from "./ai-elements/prompt-input";
 import { UIMessage } from "ai";
+import { ToastType } from "react-hot-toast";
 
 interface PopoutChatProps {
   isOpen: boolean;
   onClose: () => void;
   messages: UIMessage[];
-  onSendMessage: (input: string) => Promise<void>;
+  onSendMessage: (input: string) => Promise<void> | ToastType;
   onRegenerate: () => void;
   chatStatus: any;
   isGenerating: boolean;

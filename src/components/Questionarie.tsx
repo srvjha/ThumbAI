@@ -11,7 +11,8 @@ import { Card, CardContent } from './ui/card';
 import { FileText, ChevronRight, ChevronLeft, Check } from 'lucide-react';
 
 type QuestionnaireData = {
-  videoType: string[];
+  category: string[];
+  appearance: string[];
   colorScheme: string[];
   thumbnailStyle: string[];
   audience: string[];
@@ -24,62 +25,75 @@ type QuestionnaireProps = {
 
 const questions = [
   {
-    id: 'videoType',
-    title: 'What type of video content are you creating?',
+    id: 'category',
+    title: 'For which category of video content are you creating?',
     options: [
-      { value: 'tutorial', label: 'Tutorial/Educational', description: 'How-to guides, lessons, explanations' },
-      { value: 'gaming', label: 'Gaming Content', description: 'Gameplay, reviews, gaming news' },
-      { value: 'vlog', label: 'Vlog/Lifestyle', description: 'Personal vlogs, daily life, lifestyle tips' },
-      { value: 'business', label: 'Business/Finance', description: 'Entrepreneurship, investing, business tips' },
+      { value: 'tutorial', label: 'Tutorial/Educational', description: 'How-to guides, lessons, and explanations' },
+      { value: 'gaming', label: 'Gaming Content', description: 'Gameplay, reviews, and gaming news' },
+      { value: 'vlog', label: 'Vlog/Lifestyle', description: 'Personal vlogs, daily life, and lifestyle tips' },
+      { value: 'business', label: 'Business/Finance', description: 'Entrepreneurship, investing, and business tips' },
+      { value: 'review', label: 'Review/Reaction', description: 'Reactions or reviews on a specific topic' },
+      { value: 'entertainment', label: 'Entertainment/Fun', description: 'Comedy, challenges, memes, and fun content' }
+    ]
+  },
+  {
+    id: 'appearance',
+    title: 'On which side do you want your face to appear?',
+    options: [
+      { value: 'left', label: 'Left Side', description: 'Your face will be positioned on the left side of the thumbnail' },
+      { value: 'right', label: 'Right Side', description: 'Your face will be positioned on the right side of the thumbnail' },
+      { value: 'center', label: 'Center', description: 'Your face will be positioned in the center of the thumbnail' }
     ]
   },
   {
     id: 'colorScheme',
-    title: 'What color scheme  do you prefer?',
+    title: 'What color scheme do you prefer?',
     options: [
-      { value: 'vibrant', label: 'Vibrant & Bold', description: 'Bright reds, yellows, electric blues' },
-      { value: 'dark', label: 'Dark & Moody', description: 'Black, dark grays, deep purples' },
-      { value: 'minimal', label: 'Clean & Minimal', description: 'White, light grays, pastels' },
-      { value: 'gradient', label: 'Gradients & Neon', description: 'Colorful gradients, neon accents' },
+      { value: 'vibrant', label: 'Vibrant & Bold', description: 'Bright reds, yellows, and electric blues' },
+      { value: 'dark', label: 'Dark & Moody', description: 'Black, dark grays, and deep purples' },
+      { value: 'minimal', label: 'Clean & Minimal', description: 'White, light grays, and pastel tones' },
+      { value: 'gradient', label: 'Gradients & Neon', description: 'Colorful gradients and neon accents' }
     ]
   },
   {
     id: 'thumbnailStyle',
     title: 'What thumbnail style do you prefer?',
     options: [
-      { value: 'face', label: 'Face-Focused', description: 'Large face with emotional expression' },
+      { value: 'face', label: 'Face-Focused', description: 'Large face with expressive emotions' },
       { value: 'text', label: 'Text-Heavy', description: 'Bold titles and text overlays' },
-      { value: 'product', label: 'Product/Object Focus', description: 'Showcasing items or tools' },
-      { value: 'scene', label: 'Cinematic Scene', description: 'Full scenes or environments' },
+      { value: 'product', label: 'Product/Object Focus', description: 'Highlighting items, gadgets, or tools' },
+      { value: 'scene', label: 'Cinematic Scene', description: 'Full scenes or dramatic environments' }
     ]
   },
   {
     id: 'audience',
     title: 'Who is your target audience?',
     options: [
-      { value: 'teens', label: 'Teens (13-17)', description: 'Young, energetic, trend-focused' },
-      { value: 'young-adults', label: 'Young Adults (18-25)', description: 'College age, lifestyle-oriented' },
-      { value: 'adults', label: 'Adults (26-40)', description: 'Professional, family-oriented' },
-      { value: 'mature', label: 'Mature (40+)', description: 'Experienced, quality-focused' },
+      { value: 'teens', label: 'Teens (13-17)', description: 'Young, energetic, and trend-focused' },
+      { value: 'young-adults', label: 'Young Adults (18-25)', description: 'College-aged, lifestyle-oriented viewers' },
+      { value: 'adults', label: 'Adults (26-40)', description: 'Professionals, families, and working adults' },
+      { value: 'mature', label: 'Mature (40+)', description: 'Experienced, quality-focused audience' }
     ]
   },
   {
     id: 'emotion',
     title: 'What emotion should your thumbnail convey?',
     options: [
-      { value: 'excitement', label: 'Excitement', description: 'High energy, enthusiasm, wow factor' },
-      { value: 'curiosity', label: 'Curiosity', description: 'Mystery, intrigue, questions' },
-      { value: 'trust', label: 'Trust & Authority', description: 'Professional, credible, reliable' },
-      { value: 'fun', label: 'Fun & Playful', description: 'Light-hearted, entertaining, humorous' },
+      { value: 'excitement', label: 'Excitement', description: 'High energy, enthusiasm, and wow factor' },
+      { value: 'curiosity', label: 'Curiosity', description: 'Mystery, intrigue, and thought-provoking visuals' },
+      { value: 'trust', label: 'Trust & Authority', description: 'Professional, credible, and reliable impression' },
+      { value: 'fun', label: 'Fun & Playful', description: 'Lighthearted, entertaining, and humorous vibe' }
     ]
   }
 ];
+
 
 export const YouTubeThumbnailQuestionnaire = ({ onComplete }: QuestionnaireProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<QuestionnaireData>({
-    videoType: [],
+    category: [],
+    appearance: [],
     colorScheme: [],
     thumbnailStyle: [],
     audience: [],
@@ -119,7 +133,8 @@ export const YouTubeThumbnailQuestionnaire = ({ onComplete }: QuestionnaireProps
     setIsOpen(false);
     setCurrentStep(0);
     setAnswers({
-      videoType: [],
+      category: [],
+      appearance: [],
       colorScheme: [],
       thumbnailStyle: [],
       audience: [],
@@ -143,14 +158,14 @@ export const YouTubeThumbnailQuestionnaire = ({ onComplete }: QuestionnaireProps
         </Button>
       </DialogTrigger>
       
-      <DialogContent className="bg-neutral-900 border-neutral-700 text-neutral-100 max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="bg-neutral-900 border-neutral-700 text-neutral-100 min-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">
             YouTube Thumbnail Questionnaire
           </DialogTitle>
           <div className="w-full bg-neutral-800 rounded-full h-2 mt-4">
             <div 
-              className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
+              className="bg-gradient-to-r from-green-500 to-orange-500 h-2 rounded-full transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -166,7 +181,7 @@ export const YouTubeThumbnailQuestionnaire = ({ onComplete }: QuestionnaireProps
                 {currentQuestion.title}
               </h3>
               
-              <div className="space-y-3">
+              <div className="space-y-3 flex flex-wrap gap-4">
                 {currentQuestion.options.map((option) => {
                   const isSelected = answers[currentQuestionId].includes(option.value);
                   
@@ -174,7 +189,7 @@ export const YouTubeThumbnailQuestionnaire = ({ onComplete }: QuestionnaireProps
                     <div
                       key={option.value}
                       onClick={() => handleOptionToggle(currentQuestionId, option.value)}
-                      className={`relative p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                      className={`relative w-full sm:w-[280px] md:w-[300px] lg:w-[320px] h-[120px]  p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
                         isSelected
                           ? 'border-blue-500 bg-blue-500/10'
                           : 'border-neutral-600 hover:border-neutral-500 bg-neutral-750'
@@ -202,23 +217,23 @@ export const YouTubeThumbnailQuestionnaire = ({ onComplete }: QuestionnaireProps
                 })}
               </div>
               
-              {answers[currentQuestionId].length > 0 && (
+              {/* {answers[currentQuestionId].length > 0 && (
                 <p className="text-sm text-neutral-400 mt-4">
                   Selected: {answers[currentQuestionId].length} option{answers[currentQuestionId].length !== 1 ? 's' : ''}
                 </p>
-              )}
+              )} */}
             </CardContent>
           </Card>
         </div>
 
-        <div className="flex justify-between mt-6">
+        <div className="flex justify-between -mt-6">
           <Button
             variant="outline"
             onClick={handlePrevious}
             disabled={currentStep === 0}
             className="cursor-pointer border-neutral-600 text-neutral-300 hover:bg-neutral-800 disabled:opacity-50"
           >
-            <ChevronLeft className="w-4 h-4 mr-2" />
+            <ChevronLeft className="w-4 h-4 mr-0" />
             Previous
           </Button>
 
@@ -226,10 +241,10 @@ export const YouTubeThumbnailQuestionnaire = ({ onComplete }: QuestionnaireProps
             <Button
               onClick={handleComplete}
               disabled={!isStepValid()}
-              className="cursor-pointer bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600 disabled:opacity-50"
+              className="cursor-pointer bg-gradient-to-r from-neutral-100 to-neutral-200 text-neutral-900 hover:from-neutral-600 hover:to-neutral-700 hover:text-white disabled:opacity-50"
             >
               Complete & Fill Form
-              <Check className="w-4 h-4 ml-2" />
+              <Check className="w-4 h-4 ml-0" />
             </Button>
           ) : (
             <Button

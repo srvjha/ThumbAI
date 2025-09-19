@@ -37,13 +37,17 @@ import { useChat } from "@ai-sdk/react";
 import { YouTubeThumbnailQuestionnaire } from "./Questionarie";
 import { deductCredits } from "@/utils/credits";
 import { useThumbUser } from "@/hooks/useThumbUser";
+import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
+import { Label } from "./ui/label";
 
 type FormValues = {
   prompt: string;
+  choices: string;
   numImages: number;
   outputFormat: string;
   aspectRatios: string[];
   imagesUrl?: string[];
+  questionnaire?: string[];
 };
 
 type ImageData = {
@@ -79,7 +83,6 @@ export const TextToImageGenerator = () => {
   const prompt = watch("prompt");
   const aspectRatios = watch("aspectRatios");
   const defaultImage = watch("imagesUrl") || [];
-  const [questionnaireData, setQuestionnaireData] = useState<any>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const { data: userInfo, setData, refetch } = useThumbUser();
 
@@ -108,8 +111,16 @@ export const TextToImageGenerator = () => {
           prompt: data.prompt,
           numImages: data.numImages,
           outputFormat: data.outputFormat,
+          userChoices: data.questionnaire ?? "",
           aspectRatio: data.aspectRatios,
         });
+
+        if (!res.data.data.valid_prompt) {
+          setIsGenerating(false);
+          setStatus("completed");
+          toast.error(res.data.data.response, { id: "generation" });
+          return;
+        }
         if (res.data.success) {
           // decrease the credit by one
           const updateCredits = await deductCredits(
@@ -320,12 +331,7 @@ export const TextToImageGenerator = () => {
     );
   };
 
-  const handleQuestionnaireComplete = (data: any) => {
-    setQuestionnaireData(data);
-    toast.success("Form filled Successfully");
-  };
-
-  const [input, setInput] = useState("");
+  const [_, setInput] = useState("");
   const {
     messages,
     setMessages,
@@ -350,70 +356,75 @@ export const TextToImageGenerator = () => {
     const imagesToSend = generatedImages
       .map((img) => img.url)
       .filter((e) => e.trim().length > 0);
-        try {
-            const res = await axios.post("/api/edit", {
-              mode: "chat",
-              prompt: userPrompt,
-              numImages: noOfImages,
-              outputFormat: watch("outputFormat"),
-              images_urls: imagesToSend,
-              aspectRatio: aspectRatios[0] || "16:9", // Pass single aspect ratio
-              userChoices: questionnaireData ?? "",
-              userId: userInfo!.id,
-            });
-      
-            if (res.data.success) {
-              // decrease the credit by one
-              const updateCredits = await deductCredits(userInfo!.id, 1);
-              if (updateCredits) {
-                setData((prev) =>
-                  prev ? { ...prev, credits: prev.credits - noOfImages } : prev
-                );
-                await refetch();
-              }
-            }
-      
-            const { requestId } = res.data.data;
-      
-            // 3. Open SSE connection
-            const evtSource = new EventSource(
-              `/api/result-stream?requestId=${requestId}`
-            );
-      
-            evtSource.onmessage = (event) => {
-              const payload = JSON.parse(event.data);
-      
-              if (payload.status === "COMPLETED") {
-                console.log("Thumbnail ready:", payload.image_url);
-      
-                setGeneratedImages((prev) => [
-                  ...prev,
-                  { url: payload.image_url, aspectRatio: aspectRatios[0] },
-                ]);
-      
-                setMessages((prev) => [
-                  ...prev,
-                  {
-                    id: crypto.randomUUID(),
-                    role: "assistant",
-                    parts: [
-                      {
-                        type: "text",
-                        text: `I've updated your images as per "${userPrompt}".`,
-                      },
-                    ],
-                  },
-                ]);
-      
-                setStatus("completed");
-      
-                evtSource.close();
-              } else {
-                console.log("Still processing:", payload.status);
-              }
-            };
-          }
-      catch (err) {
+    try {
+      const res = await axios.post("/api/edit", {
+        mode: "chat",
+        prompt: userPrompt,
+        numImages: noOfImages,
+        outputFormat: watch("outputFormat"),
+        images_urls: imagesToSend,
+        aspectRatio: aspectRatios[0] || "16:9",
+        userId: userInfo!.id,
+      });
+
+      if (!res.data.data.valid_prompt) {
+        setIsGenerating(false);
+        setStatus("completed");
+        toast.error(res.data.data.response, { id: "generation" });
+        return;
+      }
+
+      if (res.data.success) {
+        // decrease the credit by one
+        const updateCredits = await deductCredits(userInfo!.id, 1);
+        if (updateCredits) {
+          setData((prev) =>
+            prev ? { ...prev, credits: prev.credits - noOfImages } : prev
+          );
+          await refetch();
+        }
+      }
+
+      const { requestId } = res.data.data;
+
+      // 3. Open SSE connection
+      const evtSource = new EventSource(
+        `/api/result-stream?requestId=${requestId}`
+      );
+
+      evtSource.onmessage = (event) => {
+        const payload = JSON.parse(event.data);
+
+        if (payload.status === "COMPLETED") {
+          console.log("Thumbnail ready:", payload.image_url);
+
+          setGeneratedImages((prev) => [
+            ...prev,
+            { url: payload.image_url, aspectRatio: aspectRatios[0] },
+          ]);
+
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              role: "assistant",
+              parts: [
+                {
+                  type: "text",
+                  text: `I've updated your images as per "${userPrompt}".`,
+                },
+              ],
+            },
+          ]);
+
+          setStatus("completed");
+
+          evtSource.close();
+        } else {
+          console.log("Still processing:", payload.status);
+        }
+      };
+    } catch (err) {
       console.error(err);
       setMessages((prev) => [
         ...prev,
@@ -478,13 +489,67 @@ export const TextToImageGenerator = () => {
                   </div>
                 )}
               />
-              <label className="block text-sm font-medium text-neutral-300 mb-2">
-                (Optional)
-              </label>
-              <YouTubeThumbnailQuestionnaire
-                onComplete={handleQuestionnaireComplete}
-              />
+              <Controller
+                name="choices"
+                control={control}
+                rules={{
+                  required: "Please select a choice",
+                }}
+                render={({ field }) => (
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-300 mb-2">
+                      Choose Thumbnail Generation *
+                    </label>
 
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      className={`flex gap-6 p-3 rounded-lg ${
+                        errors.choices
+                          ? "border border-red-500"
+                          : "border border-neutral-700"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <RadioGroupItem value="random" id="r2" />
+                        <Label htmlFor="r2">Random Generation</Label>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <RadioGroupItem value="form" id="r3" />
+                        <Label htmlFor="r3">Fill Form to Customize</Label>
+                      </div>
+                    </RadioGroup>
+
+                    {errors.choices && (
+                      <p className="text-red-400 text-xs mt-1">
+                        {errors.choices.message}
+                      </p>
+                    )}
+
+                    {field.value === "form" && (
+                      <div className="mt-4">
+                        <Controller
+                          name="questionnaire"
+                          control={control}
+                          rules={{
+                            required: "Please complete the questionnaire",
+                          }}
+                          render={({ field }) => (
+                            <YouTubeThumbnailQuestionnaire
+                              onComplete={(data) => field.onChange(data)} // saves data into react-hook-form
+                            />
+                          )}
+                        />
+                        {errors.questionnaire && (
+                          <p className="text-red-400 text-xs mt-1">
+                            {errors.questionnaire.message}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              />
               <Controller
                 name="numImages"
                 control={control}

@@ -5,9 +5,10 @@ import { ApiError } from "@/utils/ApiError";
 import { db } from "@/db";
 import { NextResponse } from "next/server";
 import { ApiResponse } from "@/utils/ApiResponse";
+import { env } from "@/config/env";
 
 export const POST = async (req: Request): Promise<NextResponse> => {
-  const WEBHOOK_SECRET = process.env.NEXT_CLERK_WEBHOOK_SECRET;
+  const WEBHOOK_SECRET = env.NEXT_CLERK_WEBHOOK_SECRET;
   if (!WEBHOOK_SECRET) {
     return NextResponse.json(
       new ApiResponse(404, null, "webhook secret required"),

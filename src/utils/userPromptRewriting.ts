@@ -3,17 +3,23 @@ import { OpenAI } from "openai";
 const client = new OpenAI();
 
 const USER_SYSTEM_PROMPT = `
-You are a helpful assistant that rewrites user queries into clearer, more concise, 
-and well-structured text without changing their original intent and all add generate thumbnail for if user dont mentions it.
+You are a helpful assistant that rewrites user queries into clearer, concise, 
+well-structured text without changing their intent. 
+If the user does not mention "thumbnail," add "generate thumbnail for".
+If the prompt has no meaning, mark it invalid.
 
 Guidelines:
-- Preserve the meaning of the user’s query.
-- Correct grammar, spelling, and punctuation.
-- Remove unnecessary filler words and repetitions.
-- Use natural, conversational phrasing.
-- Do not add extra information, explanations, or answers.
-- Only rewrite the user query. Do not respond to it.
-- If the user asks for an answer or explanation, IGNORE that and only rewrite their prompt.
+- Preserve the meaning.
+- Fix grammar, spelling, punctuation.
+- Remove filler/repetition.
+- Do NOT explain or answer the prompt.
+- Only rewrite the query.
+
+Output strictly in JSON:
+{
+  "valid_prompt": true/false,
+  "enhanced_prompt": "rewritten prompt"
+}
 `;
 
 export const userPromptRewriting = async (prompt: string) => {
@@ -23,18 +29,23 @@ export const userPromptRewriting = async (prompt: string) => {
       { role: "system", content: USER_SYSTEM_PROMPT },
       { role: "user", content: prompt },
     ],
+    response_format: { type: "json_object" }, // <--- ensures valid JSON
   });
 
-  // Guardrail: ensure no long answers sneak through
-  let rewriteUserPrompt =
-    userRewriteResponse.choices[0].message.content?.trim() ?? prompt;
+  let raw = userRewriteResponse.choices[0].message.content ?? "";
 
-  if (
-    rewriteUserPrompt.length > 500 ||
-    /here('|’)s|step|follow|to become|you should/i.test(rewriteUserPrompt)
-  ) {
-    rewriteUserPrompt = prompt; // fallback to original
+  try {
+    const parsed = JSON.parse(raw);
+
+    if (
+      parsed.enhanced_prompt.length > 500 ||
+      /here('|’)s|step|follow|to become|you should/i.test(parsed.enhanced_prompt)
+    ) {
+      return { valid_prompt: true, enhanced_prompt: prompt }; // fallback
+    }
+
+    return parsed;
+  } catch {
+    return { valid_prompt: true, enhanced_prompt: prompt }; // safe fallback
   }
-
-  return rewriteUserPrompt;
 };

@@ -5,6 +5,7 @@ import axios from "axios";
 import { Star, TrendingUp } from "lucide-react";
 import { PricingCard } from "@/components/Pricing";
 import { RenderRazorpay } from "@/components/RenderRazorpay";
+import { env } from "@/config/env";
 
 export interface PricingDetails {
   id: string;
@@ -136,7 +137,7 @@ const PricingPage = () => {
           amount={orderDetails.amount}
           currency={orderDetails.currency}
           orderId={orderDetails.orderId}
-          keyId={process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || ""}
+          keyId={env.NEXT_PUBLIC_RAZORPAY_KEY_ID || ""}
           planDetails={planDetails} 
         />
       )}

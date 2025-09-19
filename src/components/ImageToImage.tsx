@@ -35,12 +35,17 @@ import { useChat } from "@ai-sdk/react";
 import { ChatToggleButton, PopoutChat } from "./ChatPopup";
 import { deductCredits } from "@/utils/credits";
 import { useThumbUser } from "@/hooks/useThumbUser";
+import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
+import { Label } from "./ui/label";
+import { env } from "@/config/env";
 
 type FormValues = {
   prompt: string;
+  choices: string;
   numImages: number;
   outputFormat: string;
   aspectRatios: string[];
+  questionnaire?: string[];
   uploadedFiles: File[]; // Changed from uploadedImages to uploadedFiles
 };
 
@@ -49,7 +54,7 @@ type ImageData = {
   aspectRatio: string;
 };
 
-export const ImageEditorGenerator = () => {
+export const ImageToImage = () => {
   const {
     control,
     handleSubmit,
@@ -60,6 +65,7 @@ export const ImageEditorGenerator = () => {
   } = useForm<FormValues>({
     defaultValues: {
       prompt: "",
+      choices: "",
       numImages: 1,
       outputFormat: "jpeg",
       aspectRatios: [],
@@ -149,7 +155,7 @@ export const ImageEditorGenerator = () => {
 
   const uploadFileToFal = async (file: File): Promise<string> => {
     fal.config({
-      credentials: process.env.NEXT_PUBLIC_FAL_KEY,
+      credentials: env.NEXT_PUBLIC_FAL_KEY,
     });
 
     const url = await fal.storage.upload(file);
@@ -258,9 +264,18 @@ export const ImageEditorGenerator = () => {
           outputFormat: data.outputFormat,
           images_urls: uploadedUrls,
           aspectRatio,
-          userChoices: questionnaireData ? questionnaireData : "",
+          choices: data.choices,
+          userChoices: data.questionnaire || "",
           userId: userInfo!.id,
         });
+
+        console.log({ res: res.data });
+
+        if (!res.data.data.valid_prompt) {
+          setIsGenerating(false);
+          setStatus("completed");
+          return toast.error(res.data.data.response, { id: "generation" });
+        }
 
         if (res.data.success) {
           // Deduct credits immediately (can move into COMPLETED if you want)
@@ -285,12 +300,12 @@ export const ImageEditorGenerator = () => {
 
         evtSource.onmessage = (event) => {
           const payload = JSON.parse(event.data);
+          console.log("payload status: ", payload.status);
 
           if (payload.status === "COMPLETED") {
             console.log("Thumbnail ready:", payload.image_url);
 
-           setEditedImages([{ url: payload.image_url, aspectRatio }]);
-
+            setEditedImages([{ url: payload.image_url, aspectRatio }]);
 
             setProcessedImageUrls((prev) => [...prev, payload.image_url]);
 
@@ -469,12 +484,12 @@ export const ImageEditorGenerator = () => {
     return "grid-cols-1 gap-3";
   };
 
-  const handleQuestionnaireComplete = (data: any) => {
-    setQuestionnaireData(data);
-    toast.success("Form filled Successfully");
-  };
+  // const handleQuestionnaireComplete = (data: any) => {
+  //   setQuestionnaireData(data);
+  //   toast.success("Form filled Successfully");
+  // };
 
-  const [input, setInput] = useState("");
+  const [_, setInput] = useState("");
   const {
     messages,
     setMessages,
@@ -511,10 +526,16 @@ export const ImageEditorGenerator = () => {
         numImages: noOfImages,
         outputFormat: watch("outputFormat"),
         images_urls: formattedImages,
-        aspectRatio: aspectRatios[0] || "16:9", // Pass single aspect ratio
-        userChoices: questionnaireData ?? "",
+        aspectRatio: aspectRatios[0] || "16:9",
         userId: userInfo!.id,
       });
+
+      if (!res.data.data.valid_prompt) {
+        setIsGenerating(false);
+        setStatus("completed");
+        toast.error(res.data.data.response, { id: "generation" });
+        return;
+      }
 
       if (res.data.success) {
         // decrease the credit by one
@@ -540,8 +561,9 @@ export const ImageEditorGenerator = () => {
         if (payload.status === "COMPLETED") {
           console.log("Thumbnail ready:", payload.image_url);
 
-          setEditedImages([{ url: payload.image_url, aspectRatio:aspectRatios[0] }]);
-
+          setEditedImages([
+            { url: payload.image_url, aspectRatio: aspectRatios[0] },
+          ]);
 
           setMessages((prev) => [
             ...prev,
@@ -564,7 +586,6 @@ export const ImageEditorGenerator = () => {
           console.log("Still processing:", payload.status);
         }
       };
-
     } catch (err) {
       console.error(err);
       setMessages((prev) => [
@@ -607,6 +628,10 @@ export const ImageEditorGenerator = () => {
                     value: 10,
                     message: "Prompt must be at least 10 characters",
                   },
+                  maxLength: {
+                    value: 300,
+                    message: "Prompt should have at max 300 characters",
+                  },
                 }}
                 render={({ field }) => (
                   <div>
@@ -630,12 +655,69 @@ export const ImageEditorGenerator = () => {
                   </div>
                 )}
               />
-              <label className="block text-sm font-medium text-neutral-300 mb-2">
-                (Optional)
-              </label>
-              <YouTubeThumbnailQuestionnaire
-                onComplete={handleQuestionnaireComplete}
+              {/* had to give choice for either random generate or fill questionare */}
+              <Controller
+                name="choices"
+                control={control}
+                rules={{
+                  required: "Please select a choice",
+                }}
+                render={({ field }) => (
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-300 mb-2">
+                      Choose Thumbnail Generation *
+                    </label>
+
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      className={`flex gap-6 p-3 rounded-lg ${
+                        errors.choices
+                          ? "border border-red-500"
+                          : "border border-neutral-700"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <RadioGroupItem value="random" id="r2" />
+                        <Label htmlFor="r2">Random Generation</Label>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <RadioGroupItem value="form" id="r3" />
+                        <Label htmlFor="r3">Fill Form to Customize</Label>
+                      </div>
+                    </RadioGroup>
+
+                    {errors.choices && (
+                      <p className="text-red-400 text-xs mt-1">
+                        {errors.choices.message}
+                      </p>
+                    )}
+
+                    {field.value === "form" && (
+                      <div className="mt-4">
+                        <Controller
+                          name="questionnaire"
+                          control={control}
+                          rules={{
+                            required: "Please complete the questionnaire",
+                          }}
+                          render={({ field }) => (
+                            <YouTubeThumbnailQuestionnaire
+                              onComplete={(data) => field.onChange(data)} // saves data into react-hook-form
+                            />
+                          )}
+                        />
+                        {errors.questionnaire && (
+                          <p className="text-red-400 text-xs mt-1">
+                            {errors.questionnaire.message}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               />
+
               {/* Image Upload Section */}
               <div>
                 <label className="block text-sm font-medium text-neutral-300 mb-2">

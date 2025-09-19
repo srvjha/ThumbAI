@@ -4,9 +4,10 @@ import { NextResponse } from "next/server";
 import { ApiError } from "@/utils/ApiError";
 import { ApiResponse } from "@/utils/ApiResponse";
 import { db } from "@/db"; // assuming Prisma is used
+import { env } from "@/config/env";
 
 export const POST = async (req: Request) => {
-  const WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET;
+  const WEBHOOK_SECRET = env.RAZORPAY_WEBHOOK_SECRET;
   if (!WEBHOOK_SECRET) {
     throw new ApiError("Razorpay webhook secret required", 404);
   }

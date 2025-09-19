@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { razorpay } from "@/config/razorpay";
 import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { env } from "@/config/env";
 
 export const createOrder = async (req: NextRequest) => {
   try {
@@ -38,7 +39,6 @@ export const createOrder = async (req: NextRequest) => {
       {
         success: true,
         order,
-        keyId: process.env.RAZORPAY_KEY_ID,
         message: "Order created successfully",
       },
       { status: 200 }
@@ -96,7 +96,7 @@ export const verifyPayment = async (req: NextRequest) => {
     const { orderId, paymentId, signature } = await req.json();
 
     const expectedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET as string)
+      .createHmac("sha256",env.RAZORPAY_KEY_SECRET as string)
       .update(`${orderId}|${paymentId}`)
       .digest("hex");
 
