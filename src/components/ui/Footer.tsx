@@ -7,7 +7,7 @@ export const Footer = () => {
 
       <div className="flex justify-center space-x-6">
         <a
-          href="https://x.com/J_srv001" 
+          href="https://x.com/J_srv001"
           target="_blank"
           rel="noopener noreferrer"
           className="text-gray-400 hover:text-blue-400 transition-colors"
@@ -23,7 +23,7 @@ export const Footer = () => {
           <Linkedin className="w-5 h-5" />
         </a>
         <a
-          href="mailto:jhasaurav0209001@gmail.com" 
+          href="mailto:jhasaurav0209001@gmail.com"
           className="text-gray-400 hover:text-blue-400 transition-colors"
         >
           <Mail className="w-5 h-5" />

@@ -95,7 +95,7 @@ export const TextToImageGenerator = () => {
       userInfo.credits < data.numImages
     ) {
       toast.error(
-        "Credits are less than the no of images you want to generate"
+        "Credits are less than the no of images you want to generate",
       );
       return;
     }
@@ -125,11 +125,11 @@ export const TextToImageGenerator = () => {
           // decrease the credit by one
           const updateCredits = await deductCredits(
             userInfo!.id,
-            data.numImages
+            data.numImages,
           );
           if (updateCredits) {
             setData((prev) =>
-              prev ? { ...prev, credits: prev.credits - data.numImages } : prev
+              prev ? { ...prev, credits: prev.credits - data.numImages } : prev,
             );
             await refetch();
           } else {
@@ -149,7 +149,6 @@ export const TextToImageGenerator = () => {
       setStatus("completed");
       toast.success("Images edited successfully!", { id: "generation" });
     } catch (err) {
-      console.error(err);
       setStatus("idle");
       toast.error("Failed to edit images. Please try again.", {
         id: "generation",
@@ -185,7 +184,6 @@ export const TextToImageGenerator = () => {
 
       toast.success("Image downloaded successfully!", { id: "download" });
     } catch (error) {
-      console.error("Download failed:", error);
       toast.error("Failed to download image. Please try again.", {
         id: "download",
       });
@@ -197,7 +195,6 @@ export const TextToImageGenerator = () => {
       await navigator.clipboard.writeText(url);
       toast.success("Image URL copied to clipboard!");
     } catch (error) {
-      console.error("Copy failed:", error);
       toast.error("Failed to copy URL. Please try again.");
     }
   };
@@ -213,7 +210,6 @@ export const TextToImageGenerator = () => {
         toast.success("Image shared successfully!");
       } catch (err) {
         if ((err as Error).name !== "AbortError") {
-          console.error("Share failed:", err);
           toast.error("Failed to share image.");
         }
       }
@@ -253,7 +249,6 @@ export const TextToImageGenerator = () => {
 
           zip.file(filename, blob);
         } catch (error) {
-          console.error(`Failed to add image ${i + 1} to zip:`, error);
           toast.error(`Failed to add image ${i + 1} to zip`);
         }
       }
@@ -274,7 +269,6 @@ export const TextToImageGenerator = () => {
       URL.revokeObjectURL(zipUrl);
       toast.success("All images downloaded as zip!", { id: "zip-download" });
     } catch (error) {
-      console.error("Zip download failed:", error);
       toast.error("Failed to create zip file. Please try again.", {
         id: "zip-download",
       });
@@ -297,7 +291,7 @@ export const TextToImageGenerator = () => {
 
     // Check if we have mixed aspect ratios
     const hasLandscape = displayImages.some(
-      (img) => img.aspectRatio === "16:9"
+      (img) => img.aspectRatio === "16:9",
     );
     const hasPortrait = displayImages.some((img) => img.aspectRatio === "9:16");
 
@@ -326,8 +320,8 @@ export const TextToImageGenerator = () => {
       `/nano-banana/edit-image?url=${encodeURIComponent(img.url)}&aspectRatio=${
         img.aspectRatio
       }&prompt=${encodeURIComponent(prompt)}&outputFormat=${watch(
-        "outputFormat"
-      )}`
+        "outputFormat",
+      )}`,
     );
   };
 
@@ -379,7 +373,7 @@ export const TextToImageGenerator = () => {
         const updateCredits = await deductCredits(userInfo!.id, 1);
         if (updateCredits) {
           setData((prev) =>
-            prev ? { ...prev, credits: prev.credits - noOfImages } : prev
+            prev ? { ...prev, credits: prev.credits - noOfImages } : prev,
           );
           await refetch();
         }
@@ -389,15 +383,13 @@ export const TextToImageGenerator = () => {
 
       // 3. Open SSE connection
       const evtSource = new EventSource(
-        `/api/result-stream?requestId=${requestId}`
+        `/api/result-stream?requestId=${requestId}`,
       );
 
       evtSource.onmessage = (event) => {
         const payload = JSON.parse(event.data);
 
         if (payload.status === "COMPLETED") {
-          console.log("Thumbnail ready:", payload.image_url);
-
           setGeneratedImages((prev) => [
             ...prev,
             { url: payload.image_url, aspectRatio: aspectRatios[0] },
@@ -425,7 +417,6 @@ export const TextToImageGenerator = () => {
         }
       };
     } catch (err) {
-      console.error(err);
       setMessages((prev) => [
         ...prev,
         {
@@ -627,8 +618,8 @@ export const TextToImageGenerator = () => {
                                 } else {
                                   field.onChange(
                                     currentValue.filter(
-                                      (r) => r !== option.value
-                                    )
+                                      (r) => r !== option.value,
+                                    ),
                                   );
                                 }
                               }}
@@ -742,20 +733,20 @@ export const TextToImageGenerator = () => {
                       status === "completed"
                         ? "bg-green-500"
                         : status === "generating"
-                        ? "bg-amber-400"
-                        : status === "in-progress"
-                        ? "bg-blue-400"
-                        : "bg-neutral-500"
+                          ? "bg-amber-400"
+                          : status === "in-progress"
+                            ? "bg-blue-400"
+                            : "bg-neutral-500"
                     }`}
                   />
                   <span>
                     {status === "completed"
                       ? "Completed"
                       : status === "generating"
-                      ? "Generating"
-                      : status === "in-progress"
-                      ? "In Progress"
-                      : ""}
+                        ? "Generating"
+                        : status === "in-progress"
+                          ? "In Progress"
+                          : ""}
                   </span>
                 </div>
               )}
@@ -778,7 +769,7 @@ export const TextToImageGenerator = () => {
                       <div className="flex justify-center items-start h-full">
                         <div
                           className={`relative rounded-lg overflow-hidden border-none group ${getImageContainerStyle(
-                            displayImages[0].aspectRatio
+                            displayImages[0].aspectRatio,
                           )}`}
                         >
                           <img
@@ -815,7 +806,7 @@ export const TextToImageGenerator = () => {
                                   displayImages[0].url,
                                   `${
                                     isShowingDefault ? "default" : "generated"
-                                  }-image.jpg`
+                                  }-image.jpg`,
                                 )
                               }
                               className="text-neutral-300 hover:text-white"
@@ -839,7 +830,7 @@ export const TextToImageGenerator = () => {
                           <div key={idx} className="flex justify-center">
                             <div
                               className={`relative rounded-lg overflow-hidden border border-neutral-700 group ${getImageContainerStyle(
-                                img.aspectRatio
+                                img.aspectRatio,
                               )}`}
                             >
                               <img
@@ -879,8 +870,8 @@ export const TextToImageGenerator = () => {
                                           : "generated"
                                       }-image-${img.aspectRatio.replace(
                                         ":",
-                                        "x"
-                                      )}-${idx + 1}.jpg`
+                                        "x",
+                                      )}-${idx + 1}.jpg`,
                                     )
                                   }
                                   className="text-neutral-300 hover:text-white p-1"

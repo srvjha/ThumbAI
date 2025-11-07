@@ -207,7 +207,7 @@ const GridBeams: React.FC = () => {
             fill="rgb(113 113 122)"
             opacity="0.4"
           />
-        ))
+        )),
       )}
 
       {/* Corner indicator dots */}

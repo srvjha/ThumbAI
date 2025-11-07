@@ -10,7 +10,7 @@ export const createOrder = async (req: NextRequest) => {
     if (!productId || !amount) {
       return NextResponse.json(
         { success: false, message: "Product ID and amount are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -41,17 +41,16 @@ export const createOrder = async (req: NextRequest) => {
         order,
         message: "Order created successfully",
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error: any) {
-    console.error("Error while creating order:", error);
     return NextResponse.json(
       {
         success: false,
         message: "Failed to create order",
         error: error.message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 };
@@ -63,7 +62,7 @@ export const refundOrder = async (req: NextRequest) => {
     if (!paymentId || !amount) {
       return NextResponse.json(
         { success: false, message: "Payment ID and amount are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
     const razorpayResponse = await razorpay.payments.refund(paymentId, {
@@ -76,17 +75,16 @@ export const refundOrder = async (req: NextRequest) => {
         message: "Successfully refunded",
         data: razorpayResponse,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error: any) {
-    console.error("Refund error:", error);
     return NextResponse.json(
       {
         success: false,
         message: "Unable to issue refund",
         error: error?.error?.description || error.message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 };
@@ -96,7 +94,7 @@ export const verifyPayment = async (req: NextRequest) => {
     const { orderId, paymentId, signature } = await req.json();
 
     const expectedSignature = crypto
-      .createHmac("sha256",env.RAZORPAY_KEY_SECRET as string)
+      .createHmac("sha256", env.RAZORPAY_KEY_SECRET as string)
       .update(`${orderId}|${paymentId}`)
       .digest("hex");
 
@@ -115,14 +113,12 @@ export const verifyPayment = async (req: NextRequest) => {
 
       return NextResponse.json({ status: "success" }, { status: 200 });
     } else {
-      console.warn("❌ Signature mismatch");
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }
   } catch (error: any) {
-    console.error("Payment verification error:", error);
     return NextResponse.json(
       { error: error.message || "Something went wrong" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 };

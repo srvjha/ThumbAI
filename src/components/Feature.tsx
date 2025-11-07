@@ -12,7 +12,7 @@ interface ModelCardProps {
   isNew?: boolean;
   backgroundImage: string;
   icon: React.ReactNode;
-  navigate:string;
+  navigate: string;
   onClick?: () => void;
 }
 
@@ -55,12 +55,12 @@ const FeatureCard: React.FC<ModelCardProps> = ({
           <p className="text-gray-400 text-left text-sm leading-relaxed">
             {description}
           </p>
-          
+
           <Link href={`${navigate}`}>
-          <Button className="w-full mt-4 cursor-pointer  bg-neutral-300  border border-black/10 text-neutral-900 hover:bg-neutral-400 hover:border-neutral-600 transition-all">
-            Try Now
-            <ArrowRight className="w-4 h-4 ml-1" />
-          </Button>
+            <Button className="w-full mt-4 cursor-pointer  bg-neutral-300  border border-black/10 text-neutral-900 hover:bg-neutral-400 hover:border-neutral-600 transition-all">
+              Try Now
+              <ArrowRight className="w-4 h-4 ml-1" />
+            </Button>
           </Link>
         </div>
       </CardContent>

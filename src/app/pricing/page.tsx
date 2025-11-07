@@ -77,8 +77,7 @@ const PricingPage = () => {
               "YouTube thumbnail and shorts thumbnail sizes",
             ]}
             ctaText="Start Free Today"
-            onClick={()=>{}}
-            
+            onClick={() => {}}
           />
 
           <PricingCard
@@ -138,7 +137,7 @@ const PricingPage = () => {
           currency={orderDetails.currency}
           orderId={orderDetails.orderId}
           keyId={env.NEXT_PUBLIC_RAZORPAY_KEY_ID || ""}
-          planDetails={planDetails} 
+          planDetails={planDetails}
         />
       )}
     </div>

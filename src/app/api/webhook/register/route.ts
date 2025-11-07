@@ -12,7 +12,7 @@ export const POST = async (req: Request): Promise<NextResponse> => {
   if (!WEBHOOK_SECRET) {
     return NextResponse.json(
       new ApiResponse(404, null, "webhook secret required"),
-      { status: 404 }
+      { status: 404 },
     );
   }
 
@@ -24,7 +24,7 @@ export const POST = async (req: Request): Promise<NextResponse> => {
   if (!svixId || !svixTimestamp || !svixSignature) {
     return NextResponse.json(
       new ApiResponse(400, null, "Error Occured - No Svix Details Found"),
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -41,10 +41,9 @@ export const POST = async (req: Request): Promise<NextResponse> => {
       "svix-signature": svixSignature,
     }) as WebhookEvent;
   } catch (error: any) {
-    console.error("Error verifying webhook", error.message);
     return NextResponse.json(
       new ApiResponse(400, null, `Error verifying webhook: ${error.message}`),
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -55,13 +54,13 @@ export const POST = async (req: Request): Promise<NextResponse> => {
     const { id, email_addresses, primary_email_address_id } = data;
 
     const primaryEmail = email_addresses.find(
-      (email) => email.id === primary_email_address_id
+      (email) => email.id === primary_email_address_id,
     )?.email_address;
 
     if (!primaryEmail || !id) {
       return NextResponse.json(
         new ApiResponse(400, null, "Email and Clerk ID are required"),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -77,16 +76,16 @@ export const POST = async (req: Request): Promise<NextResponse> => {
 
       return NextResponse.json(
         new ApiResponse(201, newUser, "User created successfully"),
-        { status: 201 }
+        { status: 201 },
       );
     } catch (err: any) {
       return NextResponse.json(
         new ApiResponse(
           err.statusCode || 500,
           null,
-          err.message || "Server Error"
+          err.message || "Server Error",
         ),
-        { status: err.statusCode || 500 }
+        { status: err.statusCode || 500 },
       );
     }
   }
@@ -94,6 +93,6 @@ export const POST = async (req: Request): Promise<NextResponse> => {
   // ✅ Handle other event types (so we don't return undefined)
   return NextResponse.json(
     new ApiResponse(200, null, `Unhandled event type: ${eventType}`),
-    { status: 200 }
+    { status: 200 },
   );
 };

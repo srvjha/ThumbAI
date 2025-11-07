@@ -1,11 +1,12 @@
 {
-  "name": "chaicodebot",
+  "name": "thumbai",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "format": "prettier --write ."
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.19",
@@ -38,14 +39,18 @@
     "axios": "^1.11.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "deeconsole": "^1.0.1",
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.23.12",
+    "fuse.js": "^7.1.0",
     "jszip": "^3.10.1",
+    "lodash": "^4.17.21",
     "lucide-react": "^0.541.0",
     "moment": "^2.30.1",
     "momment": "^0.0.1",
     "next": "15.5.0",
     "openai": "^5.16.0",
+    "prettier": "^3.6.2",
     "prisma": "^6.15.0",
     "razorpay": "^2.9.6",
     "react": "19.1.0",
@@ -64,6 +69,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/lodash": "^4.17.20",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

@@ -4,7 +4,7 @@ import { ApiResponse } from "@/utils/ApiResponse";
 import { NextRequest, NextResponse } from "next/server";
 
 export const PATCH = async (req: NextRequest) => {
-  const { userId,credits = 1 } = await req.json();
+  const { userId, credits = 1 } = await req.json();
 
   if (!userId) {
     throw new ApiError("User ID is required", 400);
@@ -28,7 +28,7 @@ export const PATCH = async (req: NextRequest) => {
 
   return NextResponse.json(
     new ApiResponse(200, updateUserCredits, "Credit Deducted Successfully"),
-    { status: 200 }
+    { status: 200 },
   );
 };
 
@@ -63,6 +63,6 @@ export const PUT = async (req: NextRequest) => {
 
   return NextResponse.json(
     new ApiResponse(200, updateUserCredits, "Credits Added Successfully"),
-    { status: 200 }
+    { status: 200 },
   );
 };

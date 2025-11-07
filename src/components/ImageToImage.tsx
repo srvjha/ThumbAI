@@ -219,7 +219,7 @@ export const ImageToImage = () => {
     setLocalPreviews((prev) => prev.filter((_, i) => i !== index));
     setValue(
       "uploadedFiles",
-      uploadedFiles.filter((_, i) => i !== index)
+      uploadedFiles.filter((_, i) => i !== index),
     );
     const formattedImages = editedImages.filter((_, e) => e !== index);
     setEditedImages(formattedImages);
@@ -235,7 +235,7 @@ export const ImageToImage = () => {
       userInfo.credits < data.numImages
     ) {
       toast.error(
-        "Credits are less than the no of images you want to generate"
+        "Credits are less than the no of images you want to generate",
       );
       return;
     }
@@ -249,11 +249,11 @@ export const ImageToImage = () => {
       for (const aspectRatio of data.aspectRatios) {
         // 1. Process and upload files
         const processedFiles = await Promise.all(
-          data.uploadedFiles.map((file) => processImage(file, aspectRatio))
+          data.uploadedFiles.map((file) => processImage(file, aspectRatio)),
         );
 
         const uploadedUrls = await Promise.all(
-          processedFiles.map((file) => uploadFileToFal(file))
+          processedFiles.map((file) => uploadFileToFal(file)),
         );
 
         // 2. Submit job
@@ -281,11 +281,11 @@ export const ImageToImage = () => {
           // Deduct credits immediately (can move into COMPLETED if you want)
           const updateCredits = await deductCredits(
             userInfo!.id,
-            data.numImages
+            data.numImages,
           );
           if (updateCredits) {
             setData((prev) =>
-              prev ? { ...prev, credits: prev.credits - data.numImages } : prev
+              prev ? { ...prev, credits: prev.credits - data.numImages } : prev,
             );
             await refetch();
           }
@@ -295,7 +295,7 @@ export const ImageToImage = () => {
 
         // 3. Open SSE connection
         const evtSource = new EventSource(
-          `/api/result-stream?requestId=${requestId}`
+          `/api/result-stream?requestId=${requestId}`,
         );
 
         evtSource.onmessage = (event) => {
@@ -452,7 +452,7 @@ export const ImageToImage = () => {
 
   let displayImages: ImageData[] = [];
   displayImages = editedImages.filter(
-    (img) => img.url && img.url.trim() !== ""
+    (img) => img.url && img.url.trim() !== "",
   );
 
   const isShowingEdited = editedImages.length > 0;
@@ -467,7 +467,7 @@ export const ImageToImage = () => {
   const getGridLayout = () => {
     if (displayImages.length === 1) return "grid-cols-1";
     const hasLandscape = displayImages.some(
-      (img) => img.aspectRatio === "16:9"
+      (img) => img.aspectRatio === "16:9",
     );
     const hasPortrait = displayImages.some((img) => img.aspectRatio === "9:16");
 
@@ -542,7 +542,7 @@ export const ImageToImage = () => {
         const updateCredits = await deductCredits(userInfo!.id, 1);
         if (updateCredits) {
           setData((prev) =>
-            prev ? { ...prev, credits: prev.credits - noOfImages } : prev
+            prev ? { ...prev, credits: prev.credits - noOfImages } : prev,
           );
           await refetch();
         }
@@ -552,7 +552,7 @@ export const ImageToImage = () => {
 
       // 3. Open SSE connection
       const evtSource = new EventSource(
-        `/api/result-stream?requestId=${requestId}`
+        `/api/result-stream?requestId=${requestId}`,
       );
 
       evtSource.onmessage = (event) => {
@@ -872,8 +872,8 @@ export const ImageToImage = () => {
                                 } else {
                                   field.onChange(
                                     currentValue.filter(
-                                      (r) => r !== option.value
-                                    )
+                                      (r) => r !== option.value,
+                                    ),
                                   );
                                 }
                               }}
@@ -988,20 +988,20 @@ export const ImageToImage = () => {
                       status === "completed"
                         ? "bg-green-500"
                         : status === "generating"
-                        ? "bg-amber-400"
-                        : status === "in-progress"
-                        ? "bg-blue-400"
-                        : "bg-neutral-500"
+                          ? "bg-amber-400"
+                          : status === "in-progress"
+                            ? "bg-blue-400"
+                            : "bg-neutral-500"
                     }`}
                   />
                   <span>
                     {status === "completed"
                       ? "Completed"
                       : status === "generating"
-                      ? "Generating"
-                      : status === "in-progress"
-                      ? "In Progress"
-                      : ""}
+                        ? "Generating"
+                        : status === "in-progress"
+                          ? "In Progress"
+                          : ""}
                   </span>
                 </div>
               )}
@@ -1025,7 +1025,7 @@ export const ImageToImage = () => {
                       <div className="flex justify-center items-start">
                         <div
                           className={`relative rounded-lg overflow-hidden border-none group ${getImageContainerStyle(
-                            displayImages[0].aspectRatio
+                            displayImages[0].aspectRatio,
                           )}`}
                         >
                           <img
@@ -1064,7 +1064,7 @@ export const ImageToImage = () => {
                                   displayImages[0].url,
                                   `${
                                     isShowingEdited ? "edited" : "uploaded"
-                                  }-image.jpg`
+                                  }-image.jpg`,
                                 )
                               }
                               className="text-neutral-300 hover:text-white"
@@ -1088,7 +1088,7 @@ export const ImageToImage = () => {
                           <div key={idx} className="flex justify-center">
                             <div
                               className={`relative rounded-lg overflow-hidden border border-neutral-700 group ${getImageContainerStyle(
-                                img.aspectRatio
+                                img.aspectRatio,
                               )}`}
                             >
                               <img
@@ -1126,8 +1126,8 @@ export const ImageToImage = () => {
                                         isShowingEdited ? "edited" : "uploaded"
                                       }-image-${img.aspectRatio.replace(
                                         ":",
-                                        "x"
-                                      )}-${idx + 1}.jpg`
+                                        "x",
+                                      )}-${idx + 1}.jpg`,
                                     )
                                   }
                                   className="text-neutral-300 hover:text-white p-1"

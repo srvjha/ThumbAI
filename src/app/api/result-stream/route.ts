@@ -20,19 +20,17 @@ export async function GET(req: NextRequest) {
         });
 
         if (thumbnail?.status === "COMPLETED") {
-            console.log("complete ho gya")
           controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify(thumbnail)}\n\n`)
+            encoder.encode(`data: ${JSON.stringify(thumbnail)}\n\n`),
           );
           done = true;
           controller.close();
         } else {
           let counter = 0;
-          console.log(`Pending hai abhi ${counter++}`)
           controller.enqueue(
             encoder.encode(
-              `data: ${JSON.stringify({ status: thumbnail?.status || "PENDING" })}\n\n`
-            )
+              `data: ${JSON.stringify({ status: thumbnail?.status || "PENDING" })}\n\n`,
+            ),
           );
           await new Promise((resolve) => setTimeout(resolve, 2000));
         }

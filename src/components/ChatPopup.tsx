@@ -153,11 +153,11 @@ export const PopoutChat: React.FC<PopoutChatProps> = ({
                   ⚠️ Currently, image upload is not supported. You can only edit
                   the generated images through this chat.
                 </span>
-                
-                <div>Great! I've generated your images. What modifications would you
-                like to make on the generated image only ? 
+
+                <div>
+                  Great! I've generated your images. What modifications would
+                  you like to make on the generated image only ?
                 </div>
-               
               </div>
             )}
 
@@ -199,7 +199,7 @@ export const PopoutChat: React.FC<PopoutChatProps> = ({
                                             <Action
                                               onClick={() =>
                                                 navigator.clipboard.writeText(
-                                                  part.text
+                                                  part.text,
                                                 )
                                               }
                                             >

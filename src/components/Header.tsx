@@ -58,19 +58,20 @@ export const Header = () => {
             </div>
 
             <Link
-                
-                href="/pricing"
-                className="text-neutral-50 hover:text-neutral-200 transition-colors"
-              >
-                Pricing
-              </Link>
+              href="/pricing"
+              className="text-neutral-50 hover:text-neutral-200 transition-colors"
+            >
+              Pricing
+            </Link>
 
             <SignedIn>
               <UserButton afterSignOutUrl="/" />
             </SignedIn>
             <SignedOut>
               <Link href="/sign-in">
-                <Button variant="outline" className="cursor-pointer">Sign In</Button>
+                <Button variant="outline" className="cursor-pointer">
+                  Sign In
+                </Button>
               </Link>
             </SignedOut>
           </div>
@@ -80,7 +81,11 @@ export const Header = () => {
             className="md:hidden text-gray-700"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
-            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {isMenuOpen ? (
+              <X className="w-6 h-6" />
+            ) : (
+              <Menu className="w-6 h-6" />
+            )}
           </button>
         </div>
 

@@ -70,12 +70,12 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
   const paymentId = useRef<string | null>(null);
   const paymentMethod = useRef<string | null>(null);
   const razorpayInstance = useRef<any>(null);
-  
+
   // 🔥 Store user data in a ref to prevent stale closure
   const userRef = useRef<any>(null);
 
   const { data: user, isLoading, error } = useThumbUser();
-  
+
   // Update ref whenever user data changes
   useEffect(() => {
     if (user) {
@@ -88,10 +88,9 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
 
   const displayRazorpay = async () => {
     const res = await loadScript(
-      "https://checkout.razorpay.com/v1/checkout.js"
+      "https://checkout.razorpay.com/v1/checkout.js",
     );
     if (!res) {
-      console.error("❌ Razorpay SDK failed to load");
       toast.error("Payment system failed to load ❌");
       return;
     }
@@ -145,11 +144,11 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
             });
 
             // console.log("🎉 Payment verified:", verifyRes.data);
-            
+
             // 🔥 Use ref to get current user data
             const currentUser = userRef.current;
             // console.log("Current user from ref:", { user: currentUser });
-            
+
             if (currentUser?.id) {
               // ✅ Update user credits
               const updateRes = await axios.put("/api/user/update", {
@@ -159,17 +158,12 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
 
               // console.log("💳 Credits updated:", updateRes.data);
               toast.success(
-                `Payment Successful ✅ ${planDetails.credit} credits added`
+                `Payment Successful ✅ ${planDetails.credit} credits added`,
               );
             } else {
-              console.error("❌ User data not available for credit update");
               toast.error("Payment successful but credit update failed");
             }
           } catch (error: any) {
-            console.error(
-              "❌ Verification failed:",
-              error.response?.data || error.message
-            );
             toast.error("Payment verification failed ❌");
           }
         }, 200);
@@ -246,5 +240,4 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
   }
 
   return null;
-
-}
+};

@@ -9,12 +9,11 @@ export const generateThumbnailPrompt = async (
   rawUserPrompt: string,
   choices: string,
   rawUserChoice: any,
-  aspectRatio: "16:9" | "9:16"
+  aspectRatio: "16:9" | "9:16",
 ) => {
   //  Rewriting user prompt
-  const { valid_prompt, enhanced_prompt } = await userPromptRewriting(
-    rawUserPrompt
-  );
+  const { valid_prompt, enhanced_prompt } =
+    await userPromptRewriting(rawUserPrompt);
   if (!valid_prompt) {
     return { valid_prompt, response: "Please give a meaningfull prompt." };
   }

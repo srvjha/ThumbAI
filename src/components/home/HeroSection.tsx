@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import { models } from "@/app/data/homeData";
 import { ArrowRight, Sparkles } from "lucide-react";
 import Link from "next/link";

@@ -5,12 +5,14 @@ A powerful, AI-driven image editing tool designed specifically for content creat
 ## Features
 
 ### Core Functionality
+
 - **AI-Powered Image Editing** - Transform images using natural language prompts
 - **Multiple Format Support** - Generate images in YouTube (16:9) and Shorts/Reels (9:16) aspect ratios
 - **Batch Processing** - Edit multiple images simultaneously
 - **Format Flexibility** - Output in JPEG, PNG, or WEBP formats
 
 ### User Experience
+
 - **Drag & Drop Upload** - Intuitive file uploading with visual feedback
 - **URL Import** - Direct image import via URL
 - **Real-time Preview** - See your images before processing
@@ -57,6 +59,7 @@ NEXT_PUBLIC_FAL_KEY=your_fal_ai_api_key_here
 ## Getting Started
 
 1. **Start the development server**:
+
 ```bash
 npm run dev
 # or
@@ -88,16 +91,19 @@ pnpm dev
 ## Use Cases
 
 ### Content Creators
+
 - **YouTube Thumbnails**: Create eye-catching thumbnails with consistent branding
 - **Social Media Posts**: Generate content for Instagram, Twitter, Facebook
 - **Video Covers**: Design covers for Shorts, Reels, and TikTok videos
 
 ### Marketers
+
 - **Campaign Assets**: Quickly adapt images for different platforms
 - **A/B Testing**: Generate multiple variations for testing
 - **Brand Consistency**: Apply consistent styling across image sets
 
 ### Developers
+
 - **Rapid Prototyping**: Generate placeholder images with specific styling
 - **Asset Generation**: Create themed images for applications
 - **Batch Processing**: Process multiple images with consistent edits
@@ -107,6 +113,7 @@ pnpm dev
 The component integrates with several APIs:
 
 ### FAL AI Integration
+
 ```typescript
 // Upload images to FAL storage
 const uploadFileToFal = async (file: File): Promise<string> => {
@@ -119,6 +126,7 @@ const uploadFileToFal = async (file: File): Promise<string> => {
 ```
 
 ### Custom Edit API
+
 ```typescript
 // Process images with custom prompts and settings
 const response = await axios.post("/api/edit", {
@@ -153,6 +161,7 @@ The component uses Tailwind CSS with a dark theme. Key design tokens:
 ## Deployment
 
 ### Vercel (Recommended)
+
 ```bash
 # Install Vercel CLI
 npm install -g vercel
@@ -162,6 +171,7 @@ vercel --prod
 ```
 
 ### Docker
+
 ```dockerfile
 FROM node:18-alpine
 WORKDIR /app
@@ -185,16 +195,19 @@ CMD ["npm", "start"]
 ### Common Issues
 
 **Images not uploading:**
+
 - Check FAL AI API key configuration
 - Verify network connectivity
 - Ensure image file formats are supported
 
 **Slow processing:**
+
 - Large images may take longer to process
 - Consider resizing images before upload
 - Check API rate limits
 
 **Download failures:**
+
 - Browser popup blockers may prevent downloads
 - Check CORS settings for external image URLs
 
@@ -207,6 +220,7 @@ CMD ["npm", "start"]
 5. Open a Pull Request
 
 ### Development Guidelines
+
 - Follow TypeScript best practices
 - Use meaningful component and variable names
 - Add proper error handling for all async operations

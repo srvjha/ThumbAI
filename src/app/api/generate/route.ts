@@ -19,10 +19,10 @@ export const POST = async (req: NextRequest) => {
   const {
     prompt,
     numImages = 1,
-    choices="random",
+    choices = "random",
     outputFormat = "jpeg",
     aspectRatio,
-    userChoices="",
+    userChoices = "",
   } = await req.json();
 
   const { width, height } = getDimensions(aspectRatio[0]);
@@ -31,15 +31,14 @@ export const POST = async (req: NextRequest) => {
     prompt,
     choices,
     userChoices,
-    aspectRatio[0]
+    aspectRatio[0],
   );
 
-   if (!finalPrompt.valid_prompt) {
+  if (!finalPrompt.valid_prompt) {
     return NextResponse.json(
-      new ApiResponse(200, finalPrompt, "valid prompt not provided")
+      new ApiResponse(200, finalPrompt, "valid prompt not provided"),
     );
   }
-
 
   const result = await fal.subscribe("fal-ai/nano-banana/", {
     input: {
@@ -61,14 +60,14 @@ export const POST = async (req: NextRequest) => {
   return NextResponse.json(
     new ApiResponse(
       200,
-      { 
+      {
         valid_prompt: finalPrompt.valid_prompt,
         success: true,
         requestId: result.requestId,
         data: result.data,
       },
-      "Image generated Successfully"
+      "Image generated Successfully",
     ),
-    { status: 200 }
+    { status: 200 },
   );
 };

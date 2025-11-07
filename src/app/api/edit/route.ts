@@ -6,7 +6,6 @@ import { generateChatPrompt } from "@/utils/userChatPrompt";
 import { db } from "@/db";
 import { env } from "@/config/env";
 
-
 export interface FinalPrompt {
   valid_prompt: boolean;
   response: string;
@@ -25,20 +24,19 @@ export const POST = async (req: NextRequest) => {
     userId,
   } = await req.json();
 
-
   const finalPrompt: FinalPrompt =
     mode === "normal"
       ? await generateThumbnailPrompt(
           prompt,
           choices,
           userChoices,
-          aspectRatio[0]
+          aspectRatio[0],
         )
       : await generateChatPrompt(prompt);
 
   if (!finalPrompt.valid_prompt) {
     return NextResponse.json(
-      new ApiResponse(200, finalPrompt, "valid prompt not provided")
+      new ApiResponse(200, finalPrompt, "valid prompt not provided"),
     );
   }
 
@@ -62,7 +60,7 @@ export const POST = async (req: NextRequest) => {
           image_urls: images_urls,
           num_images: numImages,
           output_format: outputFormat,
-          aspect_ratio: aspectRatio[0]
+          aspect_ratio: aspectRatio[0],
         },
         image_url: null,
         user_id: userId,
@@ -78,8 +76,8 @@ export const POST = async (req: NextRequest) => {
         success: true,
         requestId: request_id,
       },
-      "Request Submitted Successfully"
+      "Request Submitted Successfully",
     ),
-    { status: 200 }
+    { status: 200 },
   );
 };

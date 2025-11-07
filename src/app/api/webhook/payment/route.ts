@@ -32,10 +32,9 @@ export const POST = async (req: Request) => {
 
   if (razorpaySignature !== expectedSignature) {
     console.error("❌ Invalid Razorpay signature!");
-    return NextResponse.json(
-      new ApiResponse(400, null, "Invalid signature"),
-      { status: 400 }
-    );
+    return NextResponse.json(new ApiResponse(400, null, "Invalid signature"), {
+      status: 400,
+    });
   }
 
   // ✅ Extract event + payment
@@ -67,13 +66,13 @@ export const POST = async (req: Request) => {
 
       return NextResponse.json(
         new ApiResponse(200, updatedOrder, "Order updated successfully"),
-        { status: 200 }
+        { status: 200 },
       );
     } catch (err: any) {
       console.error("💥 DB update error:", err.message);
       return NextResponse.json(
         new ApiResponse(500, null, "Database update failed"),
-        { status: 500 }
+        { status: 500 },
       );
     }
   } else {

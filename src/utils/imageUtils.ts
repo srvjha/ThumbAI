@@ -1,4 +1,3 @@
-
 const sizeMap: Record<string, { width: number; height: number }> = {
   "youtube-horizontal": { width: 1280, height: 720 },
   "youtube-shorts": { width: 1080, height: 1920 },
@@ -10,16 +9,16 @@ const sizeMap: Record<string, { width: number; height: number }> = {
 };
 
 export function resizedImages(images: string[], sizes: string[]) {
- const results: string[] = [];
+  const results: string[] = [];
 
   const platformStrategy: Record<string, string> = {
-    "youtube-horizontal": "auto",      
-    "youtube-shorts": "smart-pad",     
-    "instagram-post": "smart-pad",       
-    "instagram-story": "smart-pad",   
-    "tiktok": "smart-pad",            
-    "twitter-post": "auto",           
-    "facebook-post": "auto",         
+    "youtube-horizontal": "auto",
+    "youtube-shorts": "smart-pad",
+    "instagram-post": "smart-pad",
+    "instagram-story": "smart-pad",
+    tiktok: "smart-pad",
+    "twitter-post": "auto",
+    "facebook-post": "auto",
   };
 
   for (const img of images) {
@@ -29,9 +28,9 @@ export function resizedImages(images: string[], sizes: string[]) {
 
       const strategy = platformStrategy[size] || "auto";
       const encodedUrl = encodeURIComponent(img);
-      
+
       results.push(
-        `/api/resize?url=${encodedUrl}&w=${dims.width}&h=${dims.height}&fit=${strategy}&bg=ffffff`
+        `/api/resize?url=${encodedUrl}&w=${dims.width}&h=${dims.height}&fit=${strategy}&bg=ffffff`,
       );
     }
   }

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Recursive:wght@300..1000&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Recursive:wght@300..1000&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -131,7 +131,7 @@
     --sidebar-border: oklch(0.922 0 0);
     --sidebar-ring: oklch(0.708 0 0);
   }
- 
+
   .dark {
     --sidebar: oklch(0.205 0 0);
     --sidebar-foreground: oklch(0.985 0 0);
@@ -163,9 +163,9 @@
   word-spacing: 0.3em; /* if you want more spacing */
 }
 
-
 @theme inline {
-  --animate-scroll: scroll var(--animation-duration, 40s) var(--animation-direction, forwards) linear infinite;
+  --animate-scroll: scroll var(--animation-duration, 40s)
+    var(--animation-direction, forwards) linear infinite;
 
   @keyframes scroll {
     to {
@@ -173,5 +173,3 @@
     }
   }
 }
-
-

@@ -1,6 +1,5 @@
 import axios from "axios";
 
-
 export const uploadFile = async (file: File): Promise<string | null> => {
   const formData = new FormData();
   formData.append("file", file);
@@ -13,9 +12,8 @@ export const uploadFile = async (file: File): Promise<string | null> => {
     });
 
     const { url } = res.data;
-    return url; 
+    return url;
   } catch (err) {
-    console.error("Upload failed:", err);
     return null;
   }
 };

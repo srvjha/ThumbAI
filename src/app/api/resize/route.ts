@@ -31,7 +31,6 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (err) {
-    console.error("Resize error:", err);
     return new Response("Image resize failed", { status: 500 });
   }
 }

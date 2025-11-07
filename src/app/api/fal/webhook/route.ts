@@ -3,7 +3,6 @@ import { ApiResponse } from "@/utils/ApiResponse";
 import { fal } from "@fal-ai/client";
 import { db } from "@/db";
 
-
 export const POST = async (req: NextRequest) => {
   const body = await req.json();
   const { request_id } = body;
@@ -17,8 +16,6 @@ export const POST = async (req: NextRequest) => {
     const result = await fal.queue.result("fal-ai/nano-banana/edit", {
       requestId: request_id,
     });
-
-    console.log({result})
 
     // save/update Thumbnail in DB
     await db.thumbnail.update({
@@ -37,7 +34,6 @@ export const POST = async (req: NextRequest) => {
 
   return NextResponse.json(
     new ApiResponse(200, { success: true }, "Webhook received"),
-    { status: 200 }
+    { status: 200 },
   );
 };
-

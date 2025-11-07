@@ -41,7 +41,6 @@ appealing specifically to young adults. The overall mood should evoke curiosity,
 with a sense of intrigue and discovery."
 `;
 
-
 export const userChoiceRewriting = async (userChoice: Record<string, any>) => {
   const userChoiceRewriteResponse = await client.chat.completions.create({
     model: "gpt-4.1-mini",

@@ -10,7 +10,7 @@ export async function POST(req: NextRequest, { params }: any) {
   if (!slug || slug.length === 0) {
     return NextResponse.json(
       { success: false, message: "No action provided" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest, { params }: any) {
     default:
       return NextResponse.json(
         { success: false, message: "Invalid action" },
-        { status: 404 }
+        { status: 404 },
       );
   }
 }

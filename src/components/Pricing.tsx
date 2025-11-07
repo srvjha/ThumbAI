@@ -14,7 +14,6 @@ interface PricingParams {
   ctaText?: string;
   badge?: string;
   onClick?: () => void | Promise<void>;
-
 }
 
 const Button = ({ children, className, ...props }: any) => (
@@ -39,7 +38,7 @@ export const PricingCard = ({
   checkTextColor = "text-white",
   ctaText = "Get Started",
   badge,
-  onClick
+  onClick,
 }: PricingParams) => {
   return (
     <div
@@ -65,7 +64,9 @@ export const PricingCard = ({
       )}
 
       <div className="text-center mb-6">
-        <h3 className="text-2xl font-bold mb-2 text-gray-800 dark:text-gray-100">{title}</h3>
+        <h3 className="text-2xl font-bold mb-2 text-gray-800 dark:text-gray-100">
+          {title}
+        </h3>
 
         <div className="flex items-center justify-center gap-2 mb-2">
           {originalPrice && (
@@ -114,7 +115,7 @@ export const PricingCard = ({
 
       <Button
         className="bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
-        onClick={onClick}   
+        onClick={onClick}
       >
         {ctaText}
       </Button>

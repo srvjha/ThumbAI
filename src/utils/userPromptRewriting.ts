@@ -39,7 +39,9 @@ export const userPromptRewriting = async (prompt: string) => {
 
     if (
       parsed.enhanced_prompt.length > 500 ||
-      /here('|’)s|step|follow|to become|you should/i.test(parsed.enhanced_prompt)
+      /here('|’)s|step|follow|to become|you should/i.test(
+        parsed.enhanced_prompt,
+      )
     ) {
       return { valid_prompt: true, enhanced_prompt: prompt }; // fallback
     }

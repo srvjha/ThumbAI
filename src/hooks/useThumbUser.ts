@@ -39,5 +39,5 @@ export const useThumbUser = () => {
     fetchUserInfo();
   }, []);
 
-  return { data,setData, isLoading, error, refetch: fetchUserInfo };
+  return { data, setData, isLoading, error, refetch: fetchUserInfo };
 };

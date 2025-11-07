@@ -4,7 +4,6 @@ import { ApiResponse } from "@/utils/ApiResponse";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server"; // ✅ server-side Clerk helper
 
-
 export const GET = async (req: NextRequest) => {
   try {
     const { userId } = await auth();
@@ -24,16 +23,16 @@ export const GET = async (req: NextRequest) => {
 
     return NextResponse.json(
       new ApiResponse(200, existingUser, "User fetched successfully"),
-      { status: 200 }
+      { status: 200 },
     );
   } catch (err: any) {
     return NextResponse.json(
       new ApiResponse(
         err.statusCode || 500,
         null,
-        err.message || "Server Error"
+        err.message || "Server Error",
       ),
-      { status: err.statusCode || 500 }
+      { status: err.statusCode || 500 },
     );
   }
 };
