@@ -113,6 +113,7 @@ export const TextToImageGenerator = () => {
           outputFormat: data.outputFormat,
           userChoices: data.questionnaire ?? '',
           aspectRatio,
+          userId: userInfo!.id,
         });
 
         if (!res.data.data.valid_prompt) {
