@@ -3,6 +3,7 @@ import './globals.css';
 import { Header } from '@/components/Header';
 import { Toaster } from 'react-hot-toast';
 import { ClerkProvider } from '@clerk/nextjs';
+import { QueryProvider } from '@/components/providers/query';
 
 export const metadata: Metadata = {
   title: 'AI Thumbnail Generator',
@@ -18,9 +19,11 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang='en'>
         <body className={` dark bg-neutral-950`}>
-          <Toaster />
-          <Header />
-          {children}
+          <QueryProvider>
+            <Toaster />
+            <Header />
+            {children}
+          </QueryProvider>
         </body>
       </html>
     </ClerkProvider>

@@ -42,24 +42,24 @@ export const POST = async (req: NextRequest) => {
       }
     },
   });
-  
-   if (result?.requestId) {
-      await db.thumbnail.create({
-        data: {
-          request_id:result.requestId,
-          status: 'PENDING',
-          user_original_prompt:prompt,
-          input: {
-            prompt: finalPrompt.response,
-            num_images: numImages,
-            output_format: outputFormat,
-            aspect_ratio: aspectRatio,
-          },
-          image_url: null,
-          user_id: userId,
+
+  if (result?.requestId) {
+    await db.thumbnail.create({
+      data: {
+        request_id: result.requestId,
+        status: 'PENDING',
+        user_original_prompt: prompt,
+        input: {
+          prompt: finalPrompt.response,
+          num_images: numImages,
+          output_format: outputFormat,
+          aspect_ratio: aspectRatio,
         },
-      });
-    }
+        image_url: null,
+        user_id: userId,
+      },
+    });
+  }
   return NextResponse.json(
     new ApiResponse(
       200,

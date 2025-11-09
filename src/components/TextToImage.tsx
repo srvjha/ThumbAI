@@ -35,10 +35,10 @@ import { useRouter } from 'next/navigation';
 import { ChatToggleButton, PopoutChat } from './ChatPopup';
 import { useChat } from '@ai-sdk/react';
 import { YouTubeThumbnailQuestionnaire } from './Questionarie';
-import { deductCredits } from '@/utils/credits';
-import { useThumbUser } from '@/hooks/useThumbUser';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Label } from './ui/label';
+import { useAuth } from '@/hooks/user/auth';
+import { useCredits } from '@/hooks/user/credits';
 
 type FormValues = {
   prompt: string;
@@ -84,7 +84,8 @@ export const TextToImageGenerator = () => {
   const aspectRatios = watch('aspectRatios');
   const defaultImage = watch('imagesUrl') || [];
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const { data: userInfo, setData, refetch } = useThumbUser();
+  const { data: userInfo, isLoading, isError } = useAuth();
+  const { mutate: deductCreditsMutation } = useCredits();
 
   const onSubmit = async (data: FormValues) => {
     if (userInfo?.credits === 0) {
@@ -122,21 +123,6 @@ export const TextToImageGenerator = () => {
           toast.error(res.data.data.response, { id: 'generation' });
           return;
         }
-        if (res.data.success) {
-          // decrease the credit by one
-          const updateCredits = await deductCredits(
-            userInfo!.id,
-            data.numImages,
-          );
-          if (updateCredits) {
-            setData((prev) =>
-              prev ? { ...prev, credits: prev.credits - data.numImages } : prev,
-            );
-            await refetch();
-          } else {
-            // console.log("credits not updated");
-          }
-        }
 
         const imgs =
           res.data?.data?.data?.images?.map((img: any) => ({
@@ -149,6 +135,7 @@ export const TextToImageGenerator = () => {
       setGeneratedImages(results);
       setStatus('completed');
       toast.success('Images edited successfully!', { id: 'generation' });
+      deductCreditsMutation({ userId: userInfo!.id, credits: data.numImages });
     } catch (err) {
       setStatus('idle');
       toast.error('Failed to edit images. Please try again.', {
@@ -369,17 +356,6 @@ export const TextToImageGenerator = () => {
         return;
       }
 
-      if (res.data.success) {
-        // decrease the credit by one
-        const updateCredits = await deductCredits(userInfo!.id, 1);
-        if (updateCredits) {
-          setData((prev) =>
-            prev ? { ...prev, credits: prev.credits - noOfImages } : prev,
-          );
-          await refetch();
-        }
-      }
-
       const { requestId } = res.data.data;
 
       // 3. Open SSE connection
@@ -411,6 +387,7 @@ export const TextToImageGenerator = () => {
           ]);
 
           setStatus('completed');
+          deductCreditsMutation({ userId: userInfo!.id, credits: noOfImages });
 
           evtSource.close();
         } else {

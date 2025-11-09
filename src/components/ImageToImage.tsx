@@ -33,11 +33,11 @@ import { fal } from '@fal-ai/client';
 import { YouTubeThumbnailQuestionnaire } from './Questionarie';
 import { useChat } from '@ai-sdk/react';
 import { ChatToggleButton, PopoutChat } from './ChatPopup';
-import { deductCredits } from '@/utils/credits';
-import { useThumbUser } from '@/hooks/useThumbUser';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Label } from './ui/label';
 import { env } from '@/config/env';
+import { useAuth } from '@/hooks/user/auth';
+import { useCredits } from '@/hooks/user/credits';
 
 type FormValues = {
   prompt: string;
@@ -94,8 +94,9 @@ export const ImageToImage = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [processedImageUrls, setProcessedImageUrls] = useState<string[]>([]); // Store processed URLs
 
-  const { data: userInfo, refetch, setData } = useThumbUser();
-
+  // const { data: userInfo, refetch, setData } = useThumbUser();
+  const { data: userInfo, isLoading, isError } = useAuth();
+  const { mutate: deductCreditsMutation } = useCredits();
   // Modified processImage function to accept aspect ratio
   const processImage = (file: File, aspectRatio: string): Promise<File> => {
     return new Promise((resolve, reject) => {
@@ -242,7 +243,6 @@ export const ImageToImage = () => {
 
     setIsGenerating(true);
     setStatus('generating');
-    toast.loading('Processing and uploading images...', { id: 'generation' });
 
     try {
       // Loop over aspect ratios
@@ -275,20 +275,6 @@ export const ImageToImage = () => {
           return toast.error(res.data.data.response, { id: 'generation' });
         }
 
-        if (res.data.success) {
-          // Deduct credits immediately (can move into COMPLETED if you want)
-          const updateCredits = await deductCredits(
-            userInfo!.id,
-            data.numImages,
-          );
-          if (updateCredits) {
-            setData((prev) =>
-              prev ? { ...prev, credits: prev.credits - data.numImages } : prev,
-            );
-            await refetch();
-          }
-        }
-
         const { requestId } = res.data.data;
 
         // 3. Open SSE connection
@@ -298,7 +284,6 @@ export const ImageToImage = () => {
 
         evtSource.onmessage = (event) => {
           const payload = JSON.parse(event.data);
-          console.log('payload status: ', payload.status);
 
           if (payload.status === 'COMPLETED') {
             setEditedImages([{ url: payload.image_url, aspectRatio }]);
@@ -307,11 +292,17 @@ export const ImageToImage = () => {
 
             setStatus('completed');
             toast.success('Images edited successfully!', { id: 'generation' });
+            deductCreditsMutation({
+              userId: userInfo!.id,
+              credits: data.numImages,
+            });
 
             evtSource.close();
-          } else {
-            console.log('Still processing:', payload.status);
           }
+          // } else {
+          //   console.log('Still processing:', payload.status);
+
+          // }
         };
       }
     } catch (err) {
@@ -533,17 +524,6 @@ export const ImageToImage = () => {
         return;
       }
 
-      if (res.data.success) {
-        // decrease the credit by one
-        const updateCredits = await deductCredits(userInfo!.id, 1);
-        if (updateCredits) {
-          setData((prev) =>
-            prev ? { ...prev, credits: prev.credits - noOfImages } : prev,
-          );
-          await refetch();
-        }
-      }
-
       const { requestId } = res.data.data;
 
       // 3. Open SSE connection
@@ -555,8 +535,6 @@ export const ImageToImage = () => {
         const payload = JSON.parse(event.data);
 
         if (payload.status === 'COMPLETED') {
-          console.log('Thumbnail ready:', payload.image_url);
-
           setEditedImages([
             { url: payload.image_url, aspectRatio: aspectRatios[0] },
           ]);
@@ -576,10 +554,9 @@ export const ImageToImage = () => {
           ]);
 
           setStatus('completed');
+          deductCreditsMutation({ userId: userInfo!.id, credits: 1 });
 
           evtSource.close();
-        } else {
-          console.log('Still processing:', payload.status);
         }
       };
     } catch (err) {

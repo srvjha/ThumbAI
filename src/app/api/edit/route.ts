@@ -50,7 +50,7 @@ export const POST = async (req: NextRequest) => {
       data: {
         request_id,
         status: 'PENDING',
-        user_original_prompt:prompt,
+        user_original_prompt: prompt,
         input: {
           prompt: finalPrompt.response,
           image_urls: images_urls,

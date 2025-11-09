@@ -46,7 +46,6 @@ export const userPromptRewriting = async (prompt: string) => {
     ) {
       return { valid_prompt: true, enhanced_prompt: prompt }; // fallback
     }
-    console.log({ parsed });
     return parsed;
   } catch {
     return { valid_prompt: true, enhanced_prompt: prompt }; // safe fallback

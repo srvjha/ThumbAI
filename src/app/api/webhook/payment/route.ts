@@ -31,7 +31,7 @@ export const POST = async (req: Request) => {
     .digest('hex');
 
   if (razorpaySignature !== expectedSignature) {
-    console.error('❌ Invalid Razorpay signature!');
+    // console.error('❌ Invalid Razorpay signature!');
     return NextResponse.json(new ApiResponse(400, null, 'Invalid signature'), {
       status: 400,
     });
@@ -69,7 +69,7 @@ export const POST = async (req: Request) => {
         { status: 200 },
       );
     } catch (err: any) {
-      console.error('💥 DB update error:', err.message);
+      // console.error('💥 DB update error:', err.message);
       return NextResponse.json(
         new ApiResponse(500, null, 'Database update failed'),
         { status: 500 },

@@ -2,7 +2,8 @@
 import { useEffect, useRef } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { useThumbUser } from '@/hooks/useThumbUser';
+import { useAuth } from '@/hooks/user/auth';
+import { Loader } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -74,15 +75,15 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
   // 🔥 Store user data in a ref to prevent stale closure
   const userRef = useRef<any>(null);
 
-  const { data: user, isLoading, error } = useThumbUser();
+  const { data: userInfo, isLoading, isError } = useAuth();
 
   // Update ref whenever user data changes
   useEffect(() => {
-    if (user) {
-      userRef.current = user;
+    if (userInfo) {
+      userRef.current = userInfo;
       // console.log("User data updated in ref:", user);
     }
-  }, [user]);
+  }, [userInfo]);
 
   // console.log({user});
 
@@ -105,9 +106,9 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
       description: planDetails.name,
       image: 'https://storage.uignite.in/saurav.png',
       prefill: {
-        name: 'Saurav',
-        email: 'jhasaurav0209001@gmail.com',
-        contact: '7043495527',
+        name: userRef.current?.name,
+        email: userRef.current?.email,
+        contact: userRef.current?.phone,
       },
       notes: {
         planId: planDetails.id,
@@ -214,7 +215,7 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
 
   // 🔥 Only initialize Razorpay when user data is available
   useEffect(() => {
-    if (user && !isLoading) {
+    if (userInfo && !isLoading) {
       displayRazorpay();
     }
 
@@ -228,15 +229,17 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
       }
       forceCloseRazorpay();
     };
-  }, [user, isLoading]); // Add user and isLoading as dependencies
+  }, [userInfo, isLoading]); // Add user and isLoading as dependencies
 
   // Show loading state while user data is being fetched
   if (isLoading) {
-    return <div>Loading payment...</div>;
+    return (
+      <Loader className='h-10 animate-spin text-center mx-auto w-full' />
+    );
   }
 
-  if (error || !user) {
-    return <div>Error loading user data</div>;
+  if (isError) {
+    return toast.error('Error while loading payment page!');
   }
 
   return null;

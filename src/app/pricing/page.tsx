@@ -1,11 +1,11 @@
 'use client';
 import React, { useState } from 'react';
 import axios from 'axios';
-
-import { Star, TrendingUp } from 'lucide-react';
 import { PricingCard } from '@/components/Pricing';
 import { RenderRazorpay } from '@/components/RenderRazorpay';
 import { env } from '@/config/env';
+import { useAuth } from '@/hooks/user/auth';
+import { useRouter } from 'next/navigation';
 
 export interface PricingDetails {
   id: string;
@@ -22,8 +22,12 @@ const PricingPage = () => {
   } | null>(null);
 
   const [planDetails, setPlanDetails] = useState<PricingDetails | null>(null);
-
+  const router = useRouter();
+  const { data: userInfo } = useAuth();
   const handleBuyNow = async (product: PricingDetails) => {
+    if (!userInfo) {
+      return router.push('/sign-in');
+    }
     try {
       const res = await axios.post(`/api/order/order`, {
         amount: product.amount * 100, // Razorpay expects paise

@@ -1,20 +1,18 @@
 import { createOrder, refundOrder, verifyPayment } from '@/utils/order';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(req: NextRequest, { params }: any) {
-  const slugParam = params.slug;
+export async function POST(req: NextRequest, context: any) {
+  const { slug } = await context.params;
+  const normalizedSlug = Array.isArray(slug) ? slug : [slug];
 
-  // Ensure it's always an array
-  const slug = Array.isArray(slugParam) ? slugParam : [slugParam];
-
-  if (!slug || slug.length === 0) {
+  if (!normalizedSlug || normalizedSlug.length === 0) {
     return NextResponse.json(
       { success: false, message: 'No action provided' },
       { status: 400 },
     );
   }
 
-  const action = slug[0]; // "order", "refund", "verify"
+  const action = normalizedSlug[0]; // "order", "refund", "verify"
 
   switch (action) {
     case 'order':

@@ -6,11 +6,12 @@ import { Menu, X } from 'lucide-react';
 import { SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
 import { Button } from './ui/button';
 import { Loader } from './ai-elements/loader';
-import { useThumbUser } from '@/hooks/useThumbUser';
+import { useAuth } from '@/hooks/user/auth';
+import toast from 'react-hot-toast';
 
 export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { data, isLoading } = useThumbUser();
+  const { data: authData, isLoading, isError } = useAuth();
 
   const navLinks = [
     { label: 'Products', href: '/products' },
@@ -20,6 +21,11 @@ export const Header = () => {
     { label: 'Blog', href: '/blog' },
     { label: 'Resources', href: '/resources' },
   ];
+
+  // if(isError){
+  //   toast.error('Something went wrong');
+  //   return;
+  // }
 
   return (
     <header className='fixed top-0 w-full  bg-transparent backdrop-blur-md border-none border-neutral-800 z-50'>
@@ -53,7 +59,7 @@ export const Header = () => {
                   <Loader />
                 </div>
               ) : (
-                <span className='ml-1'>{data?.credits || 0}</span>
+                <span className='ml-1'>{authData?.credits || 0}</span>
               )}
             </div>
 
@@ -105,7 +111,7 @@ export const Header = () => {
 
               {/* Mobile Credits & Auth */}
               <div className='flex items-center justify-between border rounded px-3 py-2 text-sm'>
-                Credits: {isLoading ? <Loader /> : data?.credits || 0}
+                Credits: {isLoading ? <Loader /> : authData?.credits || 0}
               </div>
 
               <SignedIn>
