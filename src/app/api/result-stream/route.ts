@@ -1,11 +1,11 @@
-import { NextRequest } from "next/server";
-import { db } from "@/db";
+import { NextRequest } from 'next/server';
+import { db } from '@/db';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const requestId = searchParams.get("requestId");
+  const requestId = searchParams.get('requestId');
   if (!requestId) {
-    return new Response("requestId required", { status: 400 });
+    return new Response('requestId required', { status: 400 });
   }
 
   const encoder = new TextEncoder();
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
           where: { request_id: requestId },
         });
 
-        if (thumbnail?.status === "COMPLETED") {
+        if (thumbnail?.status === 'COMPLETED') {
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify(thumbnail)}\n\n`),
           );
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
           let counter = 0;
           controller.enqueue(
             encoder.encode(
-              `data: ${JSON.stringify({ status: thumbnail?.status || "PENDING" })}\n\n`,
+              `data: ${JSON.stringify({ status: thumbnail?.status || 'PENDING' })}\n\n`,
             ),
           );
           await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -40,9 +40,9 @@ export async function GET(req: NextRequest) {
 
   return new Response(stream, {
     headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
     },
   });
 }

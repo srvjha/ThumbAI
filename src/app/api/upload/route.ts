@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { fal } from "@fal-ai/client";
-import { env } from "@/config/env";
+import { NextRequest, NextResponse } from 'next/server';
+import { fal } from '@fal-ai/client';
+import { env } from '@/config/env';
 
 fal.config({
   credentials: env.FAL_KEY,

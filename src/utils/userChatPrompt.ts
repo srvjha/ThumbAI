@@ -1,5 +1,5 @@
-import { OpenAI } from "openai";
-import { userPromptRewriting } from "./userPromptRewriting";
+import { OpenAI } from 'openai';
+import { userPromptRewriting } from './userPromptRewriting';
 
 const client = new OpenAI();
 
@@ -19,15 +19,15 @@ export const generateChatPrompt = async (chatPrompt: string) => {
   const { valid_prompt, enhanced_prompt } =
     await userPromptRewriting(chatPrompt);
   if (!valid_prompt) {
-    return { valid_prompt, response: "Please give a meaningful prompt." };
+    return { valid_prompt, response: 'Please give a meaningful prompt.' };
   }
 
   const finalResponse = await client.chat.completions.create({
-    model: "gpt-4.1-mini",
+    model: 'gpt-4.1-mini',
     messages: [
-      { role: "system", content: CHAT_SYSTEM_PROMPT },
+      { role: 'system', content: CHAT_SYSTEM_PROMPT },
       {
-        role: "user",
+        role: 'user',
         content: enhanced_prompt,
       },
     ],

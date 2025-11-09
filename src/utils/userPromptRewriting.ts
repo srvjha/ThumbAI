@@ -1,11 +1,12 @@
-import { OpenAI } from "openai";
+import { OpenAI } from 'openai';
 
 const client = new OpenAI();
 
 const USER_SYSTEM_PROMPT = `
 You are a helpful assistant that rewrites user queries into clearer, concise, 
 well-structured text without changing their intent. 
-If the user does not mention "thumbnail," add "generate thumbnail for".
+Only Specify the Topic Thumbnail.
+If Requirement Mentioned add that as well.
 If the prompt has no meaning, mark it invalid.
 
 Guidelines:
@@ -13,7 +14,7 @@ Guidelines:
 - Fix grammar, spelling, punctuation.
 - Remove filler/repetition.
 - Do NOT explain or answer the prompt.
-- Only rewrite the query.
+
 
 Output strictly in JSON:
 {
@@ -24,15 +25,15 @@ Output strictly in JSON:
 
 export const userPromptRewriting = async (prompt: string) => {
   const userRewriteResponse = await client.chat.completions.create({
-    model: "gpt-4.1-mini",
+    model: 'gpt-4.1-mini',
     messages: [
-      { role: "system", content: USER_SYSTEM_PROMPT },
-      { role: "user", content: prompt },
+      { role: 'system', content: USER_SYSTEM_PROMPT },
+      { role: 'user', content: prompt },
     ],
-    response_format: { type: "json_object" }, // <--- ensures valid JSON
+    response_format: { type: 'json_object' }, // <--- ensures valid JSON
   });
 
-  let raw = userRewriteResponse.choices[0].message.content ?? "";
+  let raw = userRewriteResponse.choices[0].message.content ?? '';
 
   try {
     const parsed = JSON.parse(raw);
@@ -45,7 +46,7 @@ export const userPromptRewriting = async (prompt: string) => {
     ) {
       return { valid_prompt: true, enhanced_prompt: prompt }; // fallback
     }
-
+    console.log({ parsed });
     return parsed;
   } catch {
     return { valid_prompt: true, enhanced_prompt: prompt }; // safe fallback

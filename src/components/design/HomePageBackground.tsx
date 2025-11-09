@@ -1,6 +1,6 @@
-"use client";
-import React from "react";
-import { motion, Variants } from "framer-motion";
+'use client';
+import React from 'react';
+import { motion, Variants } from 'framer-motion';
 
 type Beam = {
   start: [number, number];
@@ -17,14 +17,14 @@ const beamVariants: Variants = {
       duration: 1,
       repeat: Infinity,
       repeatDelay: 1,
-      ease: "easeInOut" as const,
+      ease: 'easeInOut' as const,
     },
   },
 };
 
 export const HomePageBackground = () => {
   return (
-    <div className="fixed top-0 left-0 w-full h-full bg-neutral-950 overflow-hidden -z-10">
+    <div className='fixed top-0 left-0 w-full h-full bg-neutral-950 overflow-hidden -z-10'>
       <GridBeams />
     </div>
   );
@@ -111,71 +111,71 @@ const GridBeams: React.FC = () => {
 
   return (
     <svg
-      width="100%"
-      height="100%"
+      width='100%'
+      height='100%'
       viewBox={`0 0 ${cols * gridSize} ${rows * gridSize}`}
-      preserveAspectRatio="xMidYMid slice"
-      className="absolute inset-0"
+      preserveAspectRatio='xMidYMid slice'
+      className='absolute inset-0'
     >
       {/* Grid lines */}
       <defs>
         <pattern
-          id="grid"
+          id='grid'
           width={gridSize}
           height={gridSize}
-          patternUnits="userSpaceOnUse"
+          patternUnits='userSpaceOnUse'
         >
           <path
             d={`M ${gridSize} 0 L 0 0 0 ${gridSize}`}
-            fill="none"
-            stroke="rgb(200 200 200)"
-            strokeWidth="0.3"
-            opacity="0.1"
+            fill='none'
+            stroke='rgb(200 200 200)'
+            strokeWidth='0.3'
+            opacity='0.1'
           />
         </pattern>
 
         {/* Enhanced gradient for corner beams */}
-        <linearGradient id="beamGradient" gradientUnits="objectBoundingBox">
-          <stop offset="0%" stopColor="rgb(59 130 246)" stopOpacity="0" />
-          <stop offset="15%" stopColor="rgb(79 70 229)" stopOpacity="0.4" />
-          <stop offset="50%" stopColor="rgb(139 92 246)" stopOpacity="1" />
-          <stop offset="85%" stopColor="rgb(79 70 229)" stopOpacity="0.4" />
-          <stop offset="100%" stopColor="rgb(59 130 246)" stopOpacity="0" />
+        <linearGradient id='beamGradient' gradientUnits='objectBoundingBox'>
+          <stop offset='0%' stopColor='rgb(59 130 246)' stopOpacity='0' />
+          <stop offset='15%' stopColor='rgb(79 70 229)' stopOpacity='0.4' />
+          <stop offset='50%' stopColor='rgb(139 92 246)' stopOpacity='1' />
+          <stop offset='85%' stopColor='rgb(79 70 229)' stopOpacity='0.4' />
+          <stop offset='100%' stopColor='rgb(59 130 246)' stopOpacity='0' />
         </linearGradient>
 
         {/* Corner highlight gradient */}
-        <radialGradient id="cornerGlow" gradientUnits="userSpaceOnUse" r="30">
-          <stop offset="0%" stopColor="rgb(139 92 246)" stopOpacity="0.8" />
-          <stop offset="50%" stopColor="rgb(79 70 229)" stopOpacity="0.3" />
-          <stop offset="100%" stopColor="rgb(59 130 246)" stopOpacity="0" />
+        <radialGradient id='cornerGlow' gradientUnits='userSpaceOnUse' r='30'>
+          <stop offset='0%' stopColor='rgb(139 92 246)' stopOpacity='0.8' />
+          <stop offset='50%' stopColor='rgb(79 70 229)' stopOpacity='0.3' />
+          <stop offset='100%' stopColor='rgb(59 130 246)' stopOpacity='0' />
         </radialGradient>
       </defs>
 
       {/* Grid background */}
-      <rect width="100%" height="100%" fill="url(#grid)" />
+      <rect width='100%' height='100%' fill='url(#grid)' />
 
       {/* Corner glow effects */}
-      <circle cx="0" cy="0" r="30" fill="url(#cornerGlow)" opacity="0.3" />
+      <circle cx='0' cy='0' r='30' fill='url(#cornerGlow)' opacity='0.3' />
       <circle
         cx={cols * gridSize}
-        cy="0"
-        r="30"
-        fill="url(#cornerGlow)"
-        opacity="0.3"
+        cy='0'
+        r='30'
+        fill='url(#cornerGlow)'
+        opacity='0.3'
       />
       <circle
-        cx="0"
+        cx='0'
         cy={rows * gridSize}
-        r="30"
-        fill="url(#cornerGlow)"
-        opacity="0.3"
+        r='30'
+        fill='url(#cornerGlow)'
+        opacity='0.3'
       />
       <circle
         cx={cols * gridSize}
         cy={rows * gridSize}
-        r="30"
-        fill="url(#cornerGlow)"
-        opacity="0.3"
+        r='30'
+        fill='url(#cornerGlow)'
+        opacity='0.3'
       />
 
       {/* Animated beams */}
@@ -183,15 +183,15 @@ const GridBeams: React.FC = () => {
         <motion.path
           key={index}
           d={createPath(beam)}
-          fill="none"
-          stroke="gray"
-          strokeWidth="0.2"
-          strokeLinecap="round"
+          fill='none'
+          stroke='gray'
+          strokeWidth='0.2'
+          strokeLinecap='round'
           variants={beamVariants}
-          initial="initial"
-          animate="animate"
+          initial='initial'
+          animate='animate'
           style={{
-            filter: "drop-shadow(0 0 6px rgba(139, 92, 246, 0.6))",
+            filter: 'drop-shadow(0 0 6px rgba(139, 92, 246, 0.6))',
           }}
         />
       ))}
@@ -203,35 +203,35 @@ const GridBeams: React.FC = () => {
             key={`${row}-${col}`}
             cx={col * gridSize}
             cy={row * gridSize}
-            r="1"
-            fill="rgb(113 113 122)"
-            opacity="0.4"
+            r='1'
+            fill='rgb(113 113 122)'
+            opacity='0.4'
           />
         )),
       )}
 
       {/* Corner indicator dots */}
-      <circle cx="0" cy="0" r="2" fill="rgb(139 92 246)" opacity="0.8" />
+      <circle cx='0' cy='0' r='2' fill='rgb(139 92 246)' opacity='0.8' />
       <circle
         cx={cols * gridSize}
-        cy="0"
-        r="2"
-        fill="rgb(139 92 246)"
-        opacity="0.8"
+        cy='0'
+        r='2'
+        fill='rgb(139 92 246)'
+        opacity='0.8'
       />
       <circle
-        cx="0"
+        cx='0'
         cy={rows * gridSize}
-        r="2"
-        fill="rgb(139 92 246)"
-        opacity="0.8"
+        r='2'
+        fill='rgb(139 92 246)'
+        opacity='0.8'
       />
       <circle
         cx={cols * gridSize}
         cy={rows * gridSize}
-        r="2"
-        fill="rgb(139 92 246)"
-        opacity="0.8"
+        r='2'
+        fill='rgb(139 92 246)'
+        opacity='0.8'
       />
     </svg>
   );

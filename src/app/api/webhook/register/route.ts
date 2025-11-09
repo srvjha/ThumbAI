@@ -1,29 +1,28 @@
-import { Webhook } from "svix";
-import { headers } from "next/headers";
-import { WebhookEvent, UserJSON } from "@clerk/nextjs/server";
-import { ApiError } from "@/utils/ApiError";
-import { db } from "@/db";
-import { NextResponse } from "next/server";
-import { ApiResponse } from "@/utils/ApiResponse";
-import { env } from "@/config/env";
+import { Webhook } from 'svix';
+import { headers } from 'next/headers';
+import { WebhookEvent, UserJSON } from '@clerk/nextjs/server';
+import { db } from '@/db';
+import { NextResponse } from 'next/server';
+import { ApiResponse } from '@/utils/ApiResponse';
+import { env } from '@/config/env';
 
 export const POST = async (req: Request): Promise<NextResponse> => {
   const WEBHOOK_SECRET = env.NEXT_CLERK_WEBHOOK_SECRET;
   if (!WEBHOOK_SECRET) {
     return NextResponse.json(
-      new ApiResponse(404, null, "webhook secret required"),
+      new ApiResponse(404, null, 'webhook secret required'),
       { status: 404 },
     );
   }
 
   const headerPayload = await headers();
-  const svixId = headerPayload.get("svix-id");
-  const svixTimestamp = headerPayload.get("svix-timestamp");
-  const svixSignature = headerPayload.get("svix-signature");
+  const svixId = headerPayload.get('svix-id');
+  const svixTimestamp = headerPayload.get('svix-timestamp');
+  const svixSignature = headerPayload.get('svix-signature');
 
   if (!svixId || !svixTimestamp || !svixSignature) {
     return NextResponse.json(
-      new ApiResponse(400, null, "Error Occured - No Svix Details Found"),
+      new ApiResponse(400, null, 'Error Occured - No Svix Details Found'),
       { status: 400 },
     );
   }
@@ -36,9 +35,9 @@ export const POST = async (req: Request): Promise<NextResponse> => {
   let evt: WebhookEvent;
   try {
     evt = wh.verify(body, {
-      "svix-id": svixId,
-      "svix-timestamp": svixTimestamp,
-      "svix-signature": svixSignature,
+      'svix-id': svixId,
+      'svix-timestamp': svixTimestamp,
+      'svix-signature': svixSignature,
     }) as WebhookEvent;
   } catch (error: any) {
     return NextResponse.json(
@@ -49,7 +48,7 @@ export const POST = async (req: Request): Promise<NextResponse> => {
 
   const eventType = evt.type;
 
-  if (eventType === "user.created") {
+  if (eventType === 'user.created') {
     const data = evt.data as UserJSON;
     const { id, email_addresses, primary_email_address_id } = data;
 
@@ -59,7 +58,7 @@ export const POST = async (req: Request): Promise<NextResponse> => {
 
     if (!primaryEmail || !id) {
       return NextResponse.json(
-        new ApiResponse(400, null, "Email and Clerk ID are required"),
+        new ApiResponse(400, null, 'Email and Clerk ID are required'),
         { status: 400 },
       );
     }
@@ -70,12 +69,12 @@ export const POST = async (req: Request): Promise<NextResponse> => {
           email: primaryEmail,
           clerk_id: id,
           credits: 3,
-          plan: "FREE",
+          plan: 'FREE',
         },
       });
 
       return NextResponse.json(
-        new ApiResponse(201, newUser, "User created successfully"),
+        new ApiResponse(201, newUser, 'User created successfully'),
         { status: 201 },
       );
     } catch (err: any) {
@@ -83,7 +82,7 @@ export const POST = async (req: Request): Promise<NextResponse> => {
         new ApiResponse(
           err.statusCode || 500,
           null,
-          err.message || "Server Error",
+          err.message || 'Server Error',
         ),
         { status: err.statusCode || 500 },
       );

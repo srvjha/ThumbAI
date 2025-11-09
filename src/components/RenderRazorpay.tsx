@@ -1,8 +1,8 @@
-"use client";
-import { useEffect, useRef } from "react";
-import axios from "axios";
-import toast from "react-hot-toast";
-import { useThumbUser } from "@/hooks/useThumbUser";
+'use client';
+import { useEffect, useRef } from 'react';
+import axios from 'axios';
+import toast from 'react-hot-toast';
+import { useThumbUser } from '@/hooks/useThumbUser';
 
 declare global {
   interface Window {
@@ -26,7 +26,7 @@ interface RenderRazorpayProps {
 // Utility function for loading external script
 const loadScript = (src: string): Promise<boolean> =>
   new Promise((resolve) => {
-    const script = document.createElement("script");
+    const script = document.createElement('script');
     script.src = src;
     script.onload = () => resolve(true);
     script.onerror = () => resolve(false);
@@ -36,12 +36,12 @@ const loadScript = (src: string): Promise<boolean> =>
 // 🔥 Force close Razorpay modal by removing DOM elements
 const forceCloseRazorpay = () => {
   const selectors = [
-    ".razorpay-backdrop",
-    ".razorpay-container",
-    ".razorpay-checkout",
-    "[data-razorpay]",
-    ".razorpay-overlay",
-    ".razorpay-modal",
+    '.razorpay-backdrop',
+    '.razorpay-container',
+    '.razorpay-checkout',
+    '[data-razorpay]',
+    '.razorpay-overlay',
+    '.razorpay-modal',
   ];
 
   selectors.forEach((selector) => {
@@ -49,14 +49,14 @@ const forceCloseRazorpay = () => {
     elements.forEach((element) => element.remove());
   });
 
-  document.body.style.overflow = "";
+  document.body.style.overflow = '';
 
   const body = document.body;
-  if (body.style.position === "fixed") {
-    body.style.position = "";
-    body.style.top = "";
-    body.style.left = "";
-    body.style.width = "";
+  if (body.style.position === 'fixed') {
+    body.style.position = '';
+    body.style.top = '';
+    body.style.left = '';
+    body.style.width = '';
   }
 };
 
@@ -88,10 +88,10 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
 
   const displayRazorpay = async () => {
     const res = await loadScript(
-      "https://checkout.razorpay.com/v1/checkout.js",
+      'https://checkout.razorpay.com/v1/checkout.js',
     );
     if (!res) {
-      toast.error("Payment system failed to load ❌");
+      toast.error('Payment system failed to load ❌');
       return;
     }
 
@@ -99,22 +99,22 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
       key: keyId,
       amount,
       currency,
-      name: "ThumbAI Youtube Thumbnail Generator",
+      name: 'ThumbAI Youtube Thumbnail Generator',
       order_id: orderId,
-      methods: ["card", "netbanking", "upi"],
+      methods: ['card', 'netbanking', 'upi'],
       description: planDetails.name,
-      image: "https://storage.uignite.in/saurav.png",
+      image: 'https://storage.uignite.in/saurav.png',
       prefill: {
-        name: "Saurav",
-        email: "jhasaurav0209001@gmail.com",
-        contact: "7043495527",
+        name: 'Saurav',
+        email: 'jhasaurav0209001@gmail.com',
+        contact: '7043495527',
       },
       notes: {
         planId: planDetails.id,
         planName: planDetails.name,
       },
       theme: {
-        color: "#3399cc",
+        color: '#3399cc',
       },
 
       // ✅ Success handler
@@ -125,7 +125,7 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
             razorpayInstance.current.close();
           }
         } catch (e) {
-          console.warn("Standard close failed:", e);
+          console.warn('Standard close failed:', e);
         }
 
         forceCloseRazorpay();
@@ -137,7 +137,7 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
         // Handle verification
         setTimeout(async () => {
           try {
-            const verifyRes = await axios.post("/api/order/verify", {
+            const verifyRes = await axios.post('/api/order/verify', {
               orderId: response.razorpay_order_id,
               paymentId: response.razorpay_payment_id,
               signature: response.razorpay_signature,
@@ -151,7 +151,7 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
 
             if (currentUser?.id) {
               // ✅ Update user credits
-              const updateRes = await axios.put("/api/user/update", {
+              const updateRes = await axios.put('/api/user/update', {
                 userId: currentUser.id,
                 credits: planDetails.credit,
               });
@@ -161,10 +161,10 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
                 `Payment Successful ✅ ${planDetails.credit} credits added`,
               );
             } else {
-              toast.error("Payment successful but credit update failed");
+              toast.error('Payment successful but credit update failed');
             }
           } catch (error: any) {
-            toast.error("Payment verification failed ❌");
+            toast.error('Payment verification failed ❌');
           }
         }, 200);
       },
@@ -184,12 +184,12 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
 
     razorpayInstance.current = rzp;
 
-    rzp.on("payment.submit", (response: any) => {
+    rzp.on('payment.submit', (response: any) => {
       // console.log("✅ Payment Submitted:", response);
       paymentMethod.current = response.method;
     });
 
-    rzp.on("payment.failed", (response: any) => {
+    rzp.on('payment.failed', (response: any) => {
       // console.error("❌ Payment Failed", response);
       paymentId.current = response.error.metadata.payment_id;
 
@@ -198,13 +198,13 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
           razorpayInstance.current.close();
         }
       } catch (e) {
-        console.warn("Close on failure failed:", e);
+        console.warn('Close on failure failed:', e);
       }
 
       forceCloseRazorpay();
     });
 
-    rzp.on("payment.success", () => {
+    rzp.on('payment.success', () => {
       // console.log("✅ Payment Success Event Triggered");
       forceCloseRazorpay();
     });
@@ -223,7 +223,7 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
         try {
           razorpayInstance.current.close();
         } catch (e) {
-          console.warn("Cleanup close failed:", e);
+          console.warn('Cleanup close failed:', e);
         }
       }
       forceCloseRazorpay();

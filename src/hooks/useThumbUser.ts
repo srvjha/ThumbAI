@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
-import axios from "axios";
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 
 enum Plan {
-  FREE = "FREE",
-  PAID = "PAID",
+  FREE = 'FREE',
+  PAID = 'PAID',
 }
 
 interface User {
@@ -21,15 +21,15 @@ export const useThumbUser = () => {
   const fetchUserInfo = async () => {
     setIsLoading(true);
     try {
-      const response = await axios.get("/api/user");
+      const response = await axios.get('/api/user');
       if (response.data.success) {
         setData(response.data.data);
         setError(null);
       } else {
-        setError("Failed to fetch user info");
+        setError('Failed to fetch user info');
       }
     } catch (err: any) {
-      setError(err.message || "Something went wrong");
+      setError(err.message || 'Something went wrong');
     } finally {
       setIsLoading(false);
     }

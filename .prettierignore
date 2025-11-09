@@ -1,0 +1,22 @@
+# Ignore build artifacts and generated files
+build/
+coverage/
+dist/
+.next/
+.cache/
+
+# Ignore node_modules
+node_modules/
+
+# Ignore specific file types
+*.min.js
+*.map
+*.snap
+*.log
+
+# Ignore configuration files that might be managed by other tools
+package-lock.json
+yarn.lock
+
+# Ignore specific directories within a larger project
+src/legacy/

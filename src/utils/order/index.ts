@@ -1,15 +1,15 @@
-import { db } from "@/db";
-import { razorpay } from "@/config/razorpay";
-import crypto from "crypto";
-import { NextRequest, NextResponse } from "next/server";
-import { env } from "@/config/env";
+import { db } from '@/db';
+import { razorpay } from '@/config/razorpay';
+import crypto from 'crypto';
+import { NextRequest, NextResponse } from 'next/server';
+import { env } from '@/config/env';
 
 export const createOrder = async (req: NextRequest) => {
   try {
     const { productId, productName, amount } = await req.json();
     if (!productId || !amount) {
       return NextResponse.json(
-        { success: false, message: "Product ID and amount are required" },
+        { success: false, message: 'Product ID and amount are required' },
         { status: 400 },
       );
     }
@@ -19,7 +19,7 @@ export const createOrder = async (req: NextRequest) => {
     // Create Razorpay order
     const razorpayOrder = await razorpay.orders.create({
       amount,
-      currency: "INR",
+      currency: 'INR',
       receipt: receiptNo,
       payment_capture: true,
     });
@@ -30,7 +30,7 @@ export const createOrder = async (req: NextRequest) => {
         productId,
         productName,
         amount,
-        currency: "INR",
+        currency: 'INR',
         razorpayOrderId: razorpayOrder.id,
       },
     });
@@ -39,7 +39,7 @@ export const createOrder = async (req: NextRequest) => {
       {
         success: true,
         order,
-        message: "Order created successfully",
+        message: 'Order created successfully',
       },
       { status: 200 },
     );
@@ -47,7 +47,7 @@ export const createOrder = async (req: NextRequest) => {
     return NextResponse.json(
       {
         success: false,
-        message: "Failed to create order",
+        message: 'Failed to create order',
         error: error.message,
       },
       { status: 500 },
@@ -61,7 +61,7 @@ export const refundOrder = async (req: NextRequest) => {
 
     if (!paymentId || !amount) {
       return NextResponse.json(
-        { success: false, message: "Payment ID and amount are required" },
+        { success: false, message: 'Payment ID and amount are required' },
         { status: 400 },
       );
     }
@@ -72,7 +72,7 @@ export const refundOrder = async (req: NextRequest) => {
     return NextResponse.json(
       {
         success: true,
-        message: "Successfully refunded",
+        message: 'Successfully refunded',
         data: razorpayResponse,
       },
       { status: 200 },
@@ -81,7 +81,7 @@ export const refundOrder = async (req: NextRequest) => {
     return NextResponse.json(
       {
         success: false,
-        message: "Unable to issue refund",
+        message: 'Unable to issue refund',
         error: error?.error?.description || error.message,
       },
       { status: 500 },
@@ -94,9 +94,9 @@ export const verifyPayment = async (req: NextRequest) => {
     const { orderId, paymentId, signature } = await req.json();
 
     const expectedSignature = crypto
-      .createHmac("sha256", env.RAZORPAY_KEY_SECRET as string)
+      .createHmac('sha256', env.RAZORPAY_KEY_SECRET as string)
       .update(`${orderId}|${paymentId}`)
-      .digest("hex");
+      .digest('hex');
 
     if (expectedSignature === signature) {
       // console.log("✅ Payment verified");
@@ -107,17 +107,17 @@ export const verifyPayment = async (req: NextRequest) => {
         data: {
           razorpayPaymentId: paymentId,
           razorpaySignature: signature,
-          status: "paid",
+          status: 'paid',
         },
       });
 
-      return NextResponse.json({ status: "success" }, { status: 200 });
+      return NextResponse.json({ status: 'success' }, { status: 200 });
     } else {
-      return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
     }
   } catch (error: any) {
     return NextResponse.json(
-      { error: error.message || "Something went wrong" },
+      { error: error.message || 'Something went wrong' },
       { status: 500 },
     );
   }

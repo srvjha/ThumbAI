@@ -1,13 +1,13 @@
-import axios from "axios";
+import axios from 'axios';
 
 export const uploadFile = async (file: File): Promise<string | null> => {
   const formData = new FormData();
-  formData.append("file", file);
+  formData.append('file', file);
 
   try {
-    const res = await axios.post("/api/upload", formData, {
+    const res = await axios.post('/api/upload', formData, {
       headers: {
-        "Content-Type": "multipart/form-data",
+        'Content-Type': 'multipart/form-data',
       },
     });
 

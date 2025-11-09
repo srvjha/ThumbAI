@@ -1,13 +1,17 @@
 # ThumbAI Youtube Thumbnail Generator
 
-A powerful, AI-driven image editing tool designed specifically for content creators who need to quickly generate professional thumbnails and social media content. Built with React, Next.js, and integrated with FAL AI for intelligent image processing.
+A powerful, AI-driven image editing tool designed specifically for content
+creators who need to quickly generate professional thumbnails and social media
+content. Built with React, Next.js, and integrated with FAL AI for intelligent
+image processing.
 
 ## Features
 
 ### Core Functionality
 
 - **AI-Powered Image Editing** - Transform images using natural language prompts
-- **Multiple Format Support** - Generate images in YouTube (16:9) and Shorts/Reels (9:16) aspect ratios
+- **Multiple Format Support** - Generate images in YouTube (16:9) and
+  Shorts/Reels (9:16) aspect ratios
 - **Batch Processing** - Edit multiple images simultaneously
 - **Format Flexibility** - Output in JPEG, PNG, or WEBP formats
 
@@ -92,7 +96,8 @@ pnpm dev
 
 ### Content Creators
 
-- **YouTube Thumbnails**: Create eye-catching thumbnails with consistent branding
+- **YouTube Thumbnails**: Create eye-catching thumbnails with consistent
+  branding
 - **Social Media Posts**: Generate content for Instagram, Twitter, Facebook
 - **Video Covers**: Design covers for Shorts, Reels, and TikTok videos
 
@@ -129,7 +134,7 @@ const uploadFileToFal = async (file: File): Promise<string> => {
 
 ```typescript
 // Process images with custom prompts and settings
-const response = await axios.post("/api/edit", {
+const response = await axios.post('/api/edit', {
   prompt: data.prompt,
   numImages: data.numImages,
   outputFormat: data.outputFormat,
@@ -156,7 +161,8 @@ The component uses Tailwind CSS with a dark theme. Key design tokens:
 - **File Upload Validation**: Only image files are accepted
 - **URL Validation**: URL inputs are validated before processing
 - **API Key Protection**: FAL AI keys are stored as environment variables
-- **File Size Limits**: Consider implementing file size restrictions for production
+- **File Size Limits**: Consider implementing file size restrictions for
+  production
 
 ## Deployment
 
@@ -228,7 +234,8 @@ CMD ["npm", "start"]
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
+for details.
 
 ## Acknowledgments
 

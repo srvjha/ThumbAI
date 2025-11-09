@@ -1,16 +1,16 @@
-import { HomePageBackground } from "@/components/design/HomePageBackground";
-import { Footer } from "@/components/ui/Footer";
-import { HeroSection } from "@/components/home/HeroSection";
-import { ShowcaseSection } from "@/components/home/ShowcaseSection";
-import { FeaturesSection } from "@/components/home/FeaturesSection";
-import { HowItWorkSection } from "@/components/home/HowItWorkSection";
-import { DemoSection } from "@/components/home/DemoSection";
+import { HomePageBackground } from '@/components/design/HomePageBackground';
+import { Footer } from '@/components/ui/Footer';
+import { HeroSection } from '@/components/home/HeroSection';
+import { ShowcaseSection } from '@/components/home/ShowcaseSection';
+import { FeaturesSection } from '@/components/home/FeaturesSection';
+import { HowItWorkSection } from '@/components/home/HowItWorkSection';
+import { DemoSection } from '@/components/home/DemoSection';
 
 const Home = () => {
   return (
     <>
       <HomePageBackground />
-      <div className="min-h-screen  text-white z-10">
+      <div className='min-h-screen  text-white z-10'>
         {/* Hero Section */}
         <HeroSection />
 

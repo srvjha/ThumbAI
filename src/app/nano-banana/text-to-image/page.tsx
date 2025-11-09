@@ -1,4 +1,4 @@
-import { TextToImageGenerator } from "@/components/TextToImage";
+import { TextToImageGenerator } from '@/components/TextToImage';
 
 export default function TextToImagePage() {
   return <TextToImageGenerator />;

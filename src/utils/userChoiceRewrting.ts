@@ -1,4 +1,4 @@
-import { OpenAI } from "openai";
+import { OpenAI } from 'openai';
 
 const client = new OpenAI();
 
@@ -43,18 +43,18 @@ with a sense of intrigue and discovery."
 
 export const userChoiceRewriting = async (userChoice: Record<string, any>) => {
   const userChoiceRewriteResponse = await client.chat.completions.create({
-    model: "gpt-4.1-mini",
+    model: 'gpt-4.1-mini',
     messages: [
-      { role: "system", content: USER_CHOICE_PROMPT },
+      { role: 'system', content: USER_CHOICE_PROMPT },
       {
-        role: "user",
+        role: 'user',
         content: JSON.stringify(userChoice, null, 2),
       },
     ],
   });
 
   const rewriteUserChoice =
-    userChoiceRewriteResponse.choices[0].message?.content?.trim() ?? "";
+    userChoiceRewriteResponse.choices[0].message?.content?.trim() ?? '';
 
   return rewriteUserChoice;
 };

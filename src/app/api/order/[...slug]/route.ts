@@ -1,5 +1,5 @@
-import { createOrder, refundOrder, verifyPayment } from "@/utils/order";
-import { NextRequest, NextResponse } from "next/server";
+import { createOrder, refundOrder, verifyPayment } from '@/utils/order';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest, { params }: any) {
   const slugParam = params.slug;
@@ -9,7 +9,7 @@ export async function POST(req: NextRequest, { params }: any) {
 
   if (!slug || slug.length === 0) {
     return NextResponse.json(
-      { success: false, message: "No action provided" },
+      { success: false, message: 'No action provided' },
       { status: 400 },
     );
   }
@@ -17,15 +17,15 @@ export async function POST(req: NextRequest, { params }: any) {
   const action = slug[0]; // "order", "refund", "verify"
 
   switch (action) {
-    case "order":
+    case 'order':
       return createOrder(req);
-    case "refund":
+    case 'refund':
       return refundOrder(req);
-    case "verify":
+    case 'verify':
       return verifyPayment(req);
     default:
       return NextResponse.json(
-        { success: false, message: "Invalid action" },
+        { success: false, message: 'Invalid action' },
         { status: 404 },
       );
   }
