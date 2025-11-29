@@ -20,8 +20,11 @@ enum PLAN {
 
 enum OrderStatus {
   created
+  pending
   paid
   failed
+  cancelled
+  refunded
 }
 
 model User {

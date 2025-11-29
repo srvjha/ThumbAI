@@ -3,15 +3,18 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
-import { SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
+import { SignedIn, SignedOut, UserButton, useUser } from '@clerk/nextjs';
 import { Button } from './ui/button';
 import { Loader } from './ai-elements/loader';
 import { useAuth } from '@/hooks/user/auth';
-import toast from 'react-hot-toast';
+
 
 export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { data: authData, isLoading, isError } = useAuth();
+  const { isSignedIn } = useUser();
+  const { data: authData, isLoading } = useAuth({ enabled: isSignedIn });
+  // if not logged in, then dont fetch the credits simply put 0
+  const credits = authData?.credits || 0;
 
   const navLinks = [
     { label: 'Products', href: '/products' },
@@ -59,7 +62,7 @@ export const Header = () => {
                   <Loader />
                 </div>
               ) : (
-                <span className='ml-1'>{authData?.credits || 0}</span>
+                <span className='ml-1'>{credits}</span>
               )}
             </div>
 
@@ -111,7 +114,7 @@ export const Header = () => {
 
               {/* Mobile Credits & Auth */}
               <div className='flex items-center justify-between border rounded px-3 py-2 text-sm'>
-                Credits: {isLoading ? <Loader /> : authData?.credits || 0}
+                Credits: {isLoading ? <Loader /> : credits}
               </div>
 
               <SignedIn>

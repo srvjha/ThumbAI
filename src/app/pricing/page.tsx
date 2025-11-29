@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 import { PricingCard } from '@/components/Pricing';
 import { RenderRazorpay } from '@/components/RenderRazorpay';
 import { env } from '@/config/env';
@@ -22,6 +23,7 @@ const PricingPage = () => {
   } | null>(null);
 
   const [planDetails, setPlanDetails] = useState<PricingDetails | null>(null);
+  const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
   const router = useRouter();
   const { data: userInfo } = useAuth();
   const handleBuyNow = async (product: PricingDetails) => {
@@ -29,6 +31,7 @@ const PricingPage = () => {
       return router.push('/sign-in');
     }
     try {
+      setLoadingPlanId(product.id);
       const res = await axios.post(`/api/order/order`, {
         amount: product.amount * 100, // Razorpay expects paise
         currency: 'INR',
@@ -50,6 +53,9 @@ const PricingPage = () => {
       }
     } catch (err) {
       console.error('Failed to create Razorpay order', err);
+      toast.error('Failed to start checkout. Please try again.');
+    } finally {
+      setLoadingPlanId(null);
     }
   };
 
@@ -99,6 +105,7 @@ const PricingPage = () => {
             popular={true}
             badge='60% OFF'
             ctaText='Get Pro Now - Save ₹150!'
+            loading={loadingPlanId === '2'}
             onClick={() =>
               handleBuyNow({
                 id: '2',
@@ -122,6 +129,7 @@ const PricingPage = () => {
             ]}
             badge='50% OFF'
             ctaText='Go Elite - Save ₹200!'
+            loading={loadingPlanId === '3'}
             onClick={() =>
               handleBuyNow({
                 id: '3',

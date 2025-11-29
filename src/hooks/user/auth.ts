@@ -2,7 +2,11 @@ import { ApiError } from '@/utils/ApiError';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 
-export const useAuth = () => {
+type UseAuthOptions = {
+  enabled?: boolean;
+};
+
+export const useAuth = (options?: UseAuthOptions) => {
   return useQuery({
     queryKey: ['user'],
     queryFn: async () => {
@@ -12,5 +16,6 @@ export const useAuth = () => {
       }
       throw new ApiError(response.data.message, response.data.statusCode);
     },
+    enabled: options?.enabled ?? true,
   });
 };

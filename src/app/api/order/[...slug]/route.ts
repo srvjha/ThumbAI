@@ -1,4 +1,9 @@
-import { createOrder, refundOrder, verifyPayment } from '@/utils/order';
+import {
+  cancelOrder,
+  createOrder,
+  refundOrder,
+  verifyPayment,
+} from '@/utils/order';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest, context: any) {
@@ -21,6 +26,8 @@ export async function POST(req: NextRequest, context: any) {
       return refundOrder(req);
     case 'verify':
       return verifyPayment(req);
+    case 'cancel':
+      return cancelOrder(req);
     default:
       return NextResponse.json(
         { success: false, message: 'Invalid action' },

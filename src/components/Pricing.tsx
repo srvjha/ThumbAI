@@ -1,4 +1,4 @@
-import { Check, TrendingUp } from 'lucide-react';
+import { Check, TrendingUp, Loader2 } from 'lucide-react';
 
 interface PricingParams {
   title: string;
@@ -14,6 +14,7 @@ interface PricingParams {
   ctaText?: string;
   badge?: string;
   onClick?: () => void | Promise<void>;
+  loading?: boolean;
 }
 
 const Button = ({ children, className, ...props }: any) => (
@@ -39,6 +40,7 @@ export const PricingCard = ({
   ctaText = 'Get Started',
   badge,
   onClick,
+  loading = false,
 }: PricingParams) => {
   return (
     <div
@@ -114,10 +116,20 @@ export const PricingCard = ({
       </div>
 
       <Button
-        className='bg-blue-600 hover:bg-blue-700 text-white cursor-pointer'
+        className={`bg-blue-600 text-white cursor-pointer ${
+          loading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-700'
+        }`}
         onClick={onClick}
+        disabled={loading}
       >
-        {ctaText}
+        {loading ? (
+          <span className='flex items-center justify-center gap-2'>
+            <Loader2 className='w-4 h-4 animate-spin' />
+            Processing...
+          </span>
+        ) : (
+          ctaText
+        )}
       </Button>
     </div>
   );

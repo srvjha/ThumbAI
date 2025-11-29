@@ -175,6 +175,13 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
         ondismiss: () => {
           // console.log("❌ Payment modal closed/cancelled.");
           forceCloseRazorpay();
+
+          // Best-effort: mark order as cancelled in backend
+          axios
+            .post('/api/order/cancel', { orderId })
+            .catch(() => {
+              // silently ignore; this is non-critical for the user
+            });
         },
       },
       retry: {

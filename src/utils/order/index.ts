@@ -69,6 +69,12 @@ export const refundOrder = async (req: NextRequest) => {
       amount: parseInt(amount), // amount in paise
     });
 
+    // Mark order as refunded in DB (best-effort)
+    await db.order.updateMany({
+      where: { razorpayPaymentId: paymentId },
+      data: { status: 'refunded' },
+    });
+
     return NextResponse.json(
       {
         success: true,
@@ -113,11 +119,49 @@ export const verifyPayment = async (req: NextRequest) => {
 
       return NextResponse.json({ status: 'success' }, { status: 200 });
     } else {
+      // Mark order as failed if signature is invalid
+      await db.order.updateMany({
+        where: { razorpayOrderId: orderId },
+        data: { status: 'failed' },
+      });
+
       return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
     }
   } catch (error: any) {
     return NextResponse.json(
       { error: error.message || 'Something went wrong' },
+      { status: 500 },
+    );
+  }
+};
+
+export const cancelOrder = async (req: NextRequest) => {
+  try {
+    const { orderId } = await req.json();
+
+    if (!orderId) {
+      return NextResponse.json(
+        { success: false, message: 'Order ID is required' },
+        { status: 400 },
+      );
+    }
+
+    await db.order.updateMany({
+      where: { razorpayOrderId: orderId },
+      data: { status: 'cancelled' },
+    });
+
+    return NextResponse.json(
+      { success: true, message: 'Order marked as cancelled' },
+      { status: 200 },
+    );
+  } catch (error: any) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'Unable to cancel order',
+        error: error?.message,
+      },
       { status: 500 },
     );
   }
