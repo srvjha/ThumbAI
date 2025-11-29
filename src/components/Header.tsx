@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
 import { SignedIn, SignedOut, UserButton, useUser } from '@clerk/nextjs';
 import { Button } from './ui/button';
 import { Loader } from './ai-elements/loader';
+import { Badge } from './ui/badge';
 import { useAuth } from '@/hooks/user/auth';
-
 
 export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -15,6 +15,11 @@ export const Header = () => {
   const { data: authData, isLoading } = useAuth({ enabled: isSignedIn });
   // if not logged in, then dont fetch the credits simply put 0
   const credits = authData?.credits || 0;
+
+  // Check if user is admin
+  const isAdmin = useMemo(() => {
+    return authData?.role === 'ADMIN';
+  }, [authData]);
 
   const navLinks = [
     { label: 'Products', href: '/products' },
@@ -73,6 +78,14 @@ export const Header = () => {
               Pricing
             </Link>
 
+            {isAdmin && (
+              <Link href='/admin'>
+                <Badge variant='secondary' className='bg-blue-600 text-white cursor-pointer hover:bg-blue-700'>
+                  Admin
+                </Badge>
+              </Link>
+            )}
+
             <SignedIn>
               <UserButton afterSignOutUrl='/' />
             </SignedIn>
@@ -116,6 +129,14 @@ export const Header = () => {
               <div className='flex items-center justify-between border rounded px-3 py-2 text-sm'>
                 Credits: {isLoading ? <Loader /> : credits}
               </div>
+
+              {isAdmin && (
+                <Link href='/admin'>
+                  <Badge variant='secondary' className='bg-blue-600 text-white cursor-pointer hover:bg-blue-700 w-full justify-center'>
+                    Admin
+                  </Badge>
+                </Link>
+              )}
 
               <SignedIn>
                 <UserButton afterSignOutUrl='/' />

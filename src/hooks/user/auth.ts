@@ -1,3 +1,4 @@
+import { UserData } from '@/types/admin';
 import { ApiError } from '@/utils/ApiError';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
@@ -7,7 +8,7 @@ type UseAuthOptions = {
 };
 
 export const useAuth = (options?: UseAuthOptions) => {
-  return useQuery({
+  return useQuery<UserData>({
     queryKey: ['user'],
     queryFn: async () => {
       const response = await axios.get('/api/user');

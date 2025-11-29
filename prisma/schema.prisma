@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,26 +7,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum PLAN {
-  FREE
-  PAID
-}
-
-enum OrderStatus {
-  created
-  pending
-  paid
-  failed
-  cancelled
-  refunded
-}
-
 model User {
   id        String      @id @default(uuid())
   email     String
-  clerk_id  String
+  clerk_id  String      @unique
   credits   Int         @default(7)
   plan      PLAN        @default(FREE)
+  role      Role        @default(USER)
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
   Thumbnail Thumbnail[]
@@ -42,21 +23,20 @@ model Thumbnail {
   id                   String   @id @default(uuid())
   user_id              String
   input                Json
-  user_original_prompt String   @default("")
   status               String
   image_url            String?
   request_id           String   @unique
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
-
-  user User @relation(fields: [user_id], references: [id])
+  user_original_prompt String   @default("")
+  user                 User     @relation(fields: [user_id], references: [id])
 }
 
 model Order {
   id                String      @id @default(uuid())
   productId         String
   productName       String?
-  amount            Int? // in rupees
+  amount            Int?
   currency          String      @default("INR")
   razorpayOrderId   String?     @unique
   razorpayPaymentId String?
@@ -64,4 +44,23 @@ model Order {
   status            OrderStatus @default(created)
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
+}
+
+enum PLAN {
+  FREE
+  PAID
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum OrderStatus {
+  created
+  pending
+  paid
+  failed
+  cancelled
+  refunded
 }

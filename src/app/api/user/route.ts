@@ -2,7 +2,7 @@ import { db } from '@/db';
 import { ApiError } from '@/utils/ApiError';
 import { ApiResponse } from '@/utils/ApiResponse';
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server'; // ✅ server-side Clerk helper
+import { auth } from '@clerk/nextjs/server';
 
 export const GET = async (req: NextRequest) => {
   try {
@@ -11,7 +11,7 @@ export const GET = async (req: NextRequest) => {
     if (!userId) {
       throw new ApiError('Unauthorized - Clerk ID is missing', 401);
     }
-    const existingUser = await db.user.findFirst({
+    const existingUser = await db.user.findUnique({
       where: {
         clerk_id: userId,
       },

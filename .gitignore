@@ -10,6 +10,9 @@
 !.yarn/releases
 !.yarn/versions
 
+# hide the migrations file
+/prisma/migrations
+
 # testing
 /coverage
 
