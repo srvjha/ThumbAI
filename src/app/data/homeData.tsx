@@ -24,21 +24,39 @@ export const features = [
 export const steps = [
   {
     step: '01',
-    title: 'Upload Your Image',
+    title: 'Choose Your Workflow',
     description:
-      'Start by uploading your base image or let our AI create one from scratch.',
+      'Start by choosing your workflow: Text to Image or Image to Image.',
   },
   {
     step: '02',
-    title: 'Chat Your Vision',
+    title: 'Describe Your Vision',
     description:
-      "Tell our AI what you want: 'Make it more vibrant', 'Add bold text', 'Gaming style thumbnail'.",
+      "Write a prompt to describe your thumbnail, fill questionnaire if required.",
   },
   {
     step: '03',
-    title: 'Get Perfect Results',
+    title: 'Generate Thumbnail',
     description:
-      'Receive multiple thumbnail variations in seconds. Download and use immediately.',
+      'Based on your prompt, thumbnail will be generated within seconds. You can download the thumbnail and use it immediately.',
+  },
+  {
+    step: '04',
+    title: 'Chat with AI',
+    description:
+      'Not happy with the first draft? Continue chatting with ThumbAI to refine, tweak colors, or explore new styles—just like a designer on demand.',
+  },
+  {
+    step: '05',
+    title: 'Download Thumbnail',
+    description:
+      'Download the thumbnail and use it immediately. You can also share the thumbnail with your friends or use it on your social media platforms.',
+  },
+  {
+    step: '06',
+    title: 'Share Thumbnail',
+    description:
+      'Share the thumbnail with your friends or use it on your social media platforms.',
   },
 ];
 

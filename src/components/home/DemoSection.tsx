@@ -35,7 +35,7 @@ export const DemoSection = () => {
                     </li>
                   </ul>
                   <Link href='/'>
-                    <Button className='cursor-pointer bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-neutral-100 text-lg px-6 py-6'>
+                    <Button className='cursor-pointer bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-600 text-neutral-100 text-lg px-6 py-6'>
                       Try It Now
                       <ArrowRight className='ml-1 w-5 h-5' />
                     </Button>

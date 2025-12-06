@@ -4,6 +4,7 @@ import { ArrowRight, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import React from 'react';
 import FeatureCard from '../Feature';
+import { Badge } from '../ui/badge';
 
 export const HeroSection = () => {
   return (
@@ -25,29 +26,43 @@ export const HeroSection = () => {
             word-spacing-tight /* custom class for word spacing */
           '
         >
-          From Idea to{' '}
+          Create High-Quality{' '}
           <span className='bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent'>
-            Thumbnail
+            Thumbnails
           </span>
           <br />
-          in One Click
+          Within Seconds
         </h1>
 
         <p className='text-sm text-neutral-400 mb-8 max-w-2xl mx-auto leading-relaxed'>
-          Upload your image and chat with our AI to create eye-catching
+          Just express your thoughts and let our AI create eye-catching
           thumbnails that boost engagement. No design skills needed – just
           describe what you want in plain English.
         </p>
 
-        <Link
-          href='/nano-banana/edit-image'
-          className='flex flex-col sm:flex-row gap-4 justify-center mb-16'
-        >
-          <button className='bg-gradient-to-r cursor-pointer from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white px-5 py-3  rounded-xl font-semibold text-lg shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all flex items-center justify-center'>
-            Start Creating Free
-            <ArrowRight className='w-5 h-5 ml-2' />
-          </button>
-        </Link>
+        <div className='flex flex-col sm:flex-row gap-4 justify-center mb-16'>
+          <Link
+            href='/nano-banana/edit-image'
+            className='flex flex-col sm:flex-row gap-4 justify-center mb-16'
+          >
+            <button className='bg-gradient-to-r cursor-pointer border border-black/10 bg-blue-600 text-white px-5 py-3  rounded-xl font-semibold text-lg shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all flex items-center justify-center'>
+              Create Thumbnails
+              <ArrowRight className='w-5 h-5 ml-2' />
+            </button>
+          </Link>
+
+          <div className='relative inline-block'>
+            <Link href='/blog/thumbnail'>
+              <button className='bg-gradient-to-r cursor-pointer border border-blue-500/30 text-white px-5 py-3  rounded-xl font-semibold text-lg shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all flex items-center justify-center'>
+                Create for Blog
+              </button>
+            </Link>
+
+            <Badge className='absolute -top-2 -right-3 bg-blue-500 text-white'>
+              NEW
+            </Badge>
+          </div>
+        </div>
 
         <div className='max-w-5xl mx-auto mb-20 bg-transparent rounded-2xl '>
           <div className='relative rounded-2xl overflow-hidden border border-neutral-900 shadow-sm shadow-neutral-800'>
@@ -68,11 +83,12 @@ export const HeroSection = () => {
           <div className='container mx-auto'>
             <div className='text-center mb-16'>
               <h2 className='text-3xl sm:text-4xl font-bold mb-4'>
-                Choose Your <span className='text-blue-400'>AI Model</span>
+                Choose Your{' '}
+                <span className='text-blue-400'>Thumbnail Workflow</span>
               </h2>
               <p className='text-xl text-gray-400 max-w-2xl mx-auto'>
-                Two specialized AI models designed for different thumbnail
-                creation workflows
+                Two specialized workflows designed for different thumbnail
+                creation needs.
               </p>
             </div>
 
