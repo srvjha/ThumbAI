@@ -34,7 +34,7 @@ import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { ChatToggleButton, PopoutChat } from './ChatPopup';
 import { useChat } from '@ai-sdk/react';
-import { YouTubeThumbnailQuestionnaire } from './Questionarie';
+import { Questionnaire } from './Questionarie';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Label } from './ui/label';
 import { useAuth } from '@/hooks/user/auth';
@@ -115,6 +115,7 @@ export const TextToImageGenerator = () => {
           userChoices: data.questionnaire ?? '',
           aspectRatio,
           userId: userInfo!.id,
+          type: 'youtube',
         });
 
         if (!res.data.data.valid_prompt) {
@@ -231,9 +232,8 @@ export const TextToImageGenerator = () => {
           const extension = watch('outputFormat') || 'jpg';
           const aspectRatio =
             typeof img === 'string' ? '16:9' : img.aspectRatio;
-          const filename = `${
-            isShowingDefault ? 'default' : 'generated'
-          }-image-${aspectRatio.replace(':', 'x')}-${i + 1}.${extension}`;
+          const filename = `${isShowingDefault ? 'default' : 'generated'
+            }-image-${aspectRatio.replace(':', 'x')}-${i + 1}.${extension}`;
 
           zip.file(filename, blob);
         } catch (error) {
@@ -247,9 +247,8 @@ export const TextToImageGenerator = () => {
 
       const link = document.createElement('a');
       link.href = zipUrl;
-      link.download = `${
-        isShowingDefault ? 'default' : 'generated'
-      }-thumbnails.zip`;
+      link.download = `${isShowingDefault ? 'default' : 'generated'
+        }-thumbnails.zip`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -305,8 +304,7 @@ export const TextToImageGenerator = () => {
     if (!img) return;
 
     router.push(
-      `/nano-banana/edit-image?url=${encodeURIComponent(img.url)}&aspectRatio=${
-        img.aspectRatio
+      `/nano-banana/edit-image?url=${encodeURIComponent(img.url)}&aspectRatio=${img.aspectRatio
       }&prompt=${encodeURIComponent(prompt)}&outputFormat=${watch(
         'outputFormat',
       )}`,
@@ -347,6 +345,7 @@ export const TextToImageGenerator = () => {
         images_urls: imagesToSend,
         aspectRatio: aspectRatios[0] || '16:9',
         userId: userInfo!.id,
+        type: 'youtube',
       });
 
       if (!res.data.data.valid_prompt) {
@@ -391,7 +390,7 @@ export const TextToImageGenerator = () => {
 
           evtSource.close();
         } else {
-          console.log('Still processing:', payload.status);
+          // console.log('Still processing:', payload.status);
         }
       };
     } catch (err) {
@@ -444,11 +443,10 @@ export const TextToImageGenerator = () => {
                     <textarea
                       {...field}
                       placeholder='Describe the thumbnail you want to create...'
-                      className={`w-full h-32 bg-neutral-800 border rounded-lg p-4 text-neutral-300 placeholder-neutral-500 focus:outline-none resize-none ${
-                        errors.prompt
-                          ? 'border-red-500 focus:border-red-500'
-                          : 'border-neutral-700 focus:border-blue-500'
-                      }`}
+                      className={`w-full h-32 bg-neutral-800 border rounded-lg p-4 text-neutral-300 placeholder-neutral-500 focus:outline-none resize-none ${errors.prompt
+                        ? 'border-red-500 focus:border-red-500'
+                        : 'border-neutral-700 focus:border-blue-500'
+                        }`}
                     />
                     {errors.prompt && (
                       <p className='text-red-400 text-xs mt-1'>
@@ -473,11 +471,10 @@ export const TextToImageGenerator = () => {
                     <RadioGroup
                       onValueChange={field.onChange}
                       value={field.value}
-                      className={`flex gap-6 p-3 rounded-lg ${
-                        errors.choices
-                          ? 'border border-red-500'
-                          : 'border border-neutral-700'
-                      }`}
+                      className={`flex gap-6 p-3 rounded-lg ${errors.choices
+                        ? 'border border-red-500'
+                        : 'border border-neutral-700'
+                        }`}
                     >
                       <div className='flex items-center gap-3'>
                         <RadioGroupItem value='random' id='r2' />
@@ -504,7 +501,7 @@ export const TextToImageGenerator = () => {
                             required: 'Please complete the questionnaire',
                           }}
                           render={({ field }) => (
-                            <YouTubeThumbnailQuestionnaire
+                            <Questionnaire
                               onComplete={(data) => field.onChange(data)} // saves data into react-hook-form
                             />
                           )}
@@ -634,11 +631,10 @@ export const TextToImageGenerator = () => {
                               onValueChange={field.onChange}
                             >
                               <SelectTrigger
-                                className={`w-[180px] bg-neutral-800 text-neutral-300 ${
-                                  errors.outputFormat
-                                    ? 'border-red-500'
-                                    : 'border-neutral-700'
-                                }`}
+                                className={`w-[180px] bg-neutral-800 text-neutral-300 ${errors.outputFormat
+                                  ? 'border-red-500'
+                                  : 'border-neutral-700'
+                                  }`}
                               >
                                 <SelectValue placeholder='Select format' />
                               </SelectTrigger>
@@ -707,15 +703,14 @@ export const TextToImageGenerator = () => {
               {status !== 'idle' && (
                 <div className='flex items-center gap-2 px-3 py-1.5 rounded-lg border border-neutral-700 bg-transparent text-white text-sm'>
                   <span
-                    className={`w-2.5 h-2.5 rounded-full ${
-                      status === 'completed'
-                        ? 'bg-green-500'
-                        : status === 'generating'
-                          ? 'bg-amber-400'
-                          : status === 'in-progress'
-                            ? 'bg-blue-400'
-                            : 'bg-neutral-500'
-                    }`}
+                    className={`w-2.5 h-2.5 rounded-full ${status === 'completed'
+                      ? 'bg-green-500'
+                      : status === 'generating'
+                        ? 'bg-amber-400'
+                        : status === 'in-progress'
+                          ? 'bg-blue-400'
+                          : 'bg-neutral-500'
+                      }`}
                   />
                   <span>
                     {status === 'completed'
@@ -782,8 +777,7 @@ export const TextToImageGenerator = () => {
                               onClick={() =>
                                 handleDownload(
                                   displayImages[0].url,
-                                  `${
-                                    isShowingDefault ? 'default' : 'generated'
+                                  `${isShowingDefault ? 'default' : 'generated'
                                   }-image.jpg`,
                                 )
                               }
@@ -813,9 +807,8 @@ export const TextToImageGenerator = () => {
                             >
                               <img
                                 src={img.url}
-                                alt={`${
-                                  isShowingDefault ? 'Default' : 'Generated'
-                                } ${idx + 1}`}
+                                alt={`${isShowingDefault ? 'Default' : 'Generated'
+                                  } ${idx + 1}`}
                                 className='w-full h-full object-cover hover:scale-105 transition-transform duration-300'
                               />
                               {isShowingDefault && (
@@ -842,10 +835,9 @@ export const TextToImageGenerator = () => {
                                   onClick={() =>
                                     handleDownload(
                                       img.url,
-                                      `${
-                                        isShowingDefault
-                                          ? 'default'
-                                          : 'generated'
+                                      `${isShowingDefault
+                                        ? 'default'
+                                        : 'generated'
                                       }-image-${img.aspectRatio.replace(
                                         ':',
                                         'x',

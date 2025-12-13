@@ -22,9 +22,7 @@ export const POST = async (req: Request) => {
   const payload = await req.json();
   const body = JSON.stringify(payload);
 
-  // console.log("🔔 Razorpay webhook received!");
-
-  // ✅ Verify signature
+  // Verify signature
   const expectedSignature = crypto
     .createHmac('sha256', WEBHOOK_SECRET)
     .update(body)
@@ -37,11 +35,9 @@ export const POST = async (req: Request) => {
     });
   }
 
-  // ✅ Extract event + payment
+  // Extract event + payment
   const event = payload.event;
   const payment = payload.payload?.payment?.entity;
-
-  // console.log("📦 Event type:", event);
 
   let statusToUpdate: 'paid' | 'failed' | null = null;
 
@@ -62,14 +58,11 @@ export const POST = async (req: Request) => {
         },
       });
 
-      // console.log(`✅ Order updated with status: ${statusToUpdate}`, updatedOrder);
-
       return NextResponse.json(
         new ApiResponse(200, updatedOrder, 'Order updated successfully'),
         { status: 200 },
       );
     } catch (err: any) {
-      // console.error('💥 DB update error:', err.message);
       return NextResponse.json(
         new ApiResponse(500, null, 'Database update failed'),
         { status: 500 },

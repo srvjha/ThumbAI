@@ -105,8 +105,6 @@ export const verifyPayment = async (req: NextRequest) => {
       .digest('hex');
 
     if (expectedSignature === signature) {
-      // console.log("✅ Payment verified");
-
       // Update order in DB
       await db.order.update({
         where: { razorpayOrderId: orderId },

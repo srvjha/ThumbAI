@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ChevronDown, Wand2, Settings } from 'lucide-react';
+import { ChevronDown, Wand2, Settings, Link2 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -20,6 +20,13 @@ const modes = [
     description: 'Edit existing images with AI',
     icon: <Settings className='w-4 h-4' />,
     path: '/nano-banana/edit-image',
+  },
+  {
+    id: 'url-to-image',
+    label: 'URL to Image',
+    description: 'Generate thumbnails from url',
+    icon: <Link2 className='w-4 h-4' />,
+    path: '/nano-banana/url-to-image',
   },
 ];
 

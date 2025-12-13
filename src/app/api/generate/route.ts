@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fal } from '@fal-ai/client';
 import { ApiResponse } from '@/utils/ApiResponse';
-import { generateThumbnailPrompt } from '@/utils/userFinalPrompt';
+import { generateThumbnailPrompt } from '@/agent/generateThumbnailPrompt';
 import { FinalPrompt } from '../edit/route';
 import { db } from '@/db';
 
@@ -14,12 +14,14 @@ export const POST = async (req: NextRequest) => {
     aspectRatio = '16:9',
     userChoices = '',
     userId,
+    type = 'youtube',
   } = await req.json();
 
   const finalPrompt: FinalPrompt = await generateThumbnailPrompt(
     prompt,
     choices,
     userChoices,
+    type as 'youtube' | 'blog',
   );
 
   if (!finalPrompt.valid_prompt) {

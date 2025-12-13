@@ -9,200 +9,39 @@ import {
 } from './ui/dialog';
 import { Card, CardContent } from './ui/card';
 import { FileText, ChevronRight, ChevronLeft, Check } from 'lucide-react';
+import { blogQuestionarie, youtubeQuestionarie } from '@/utils/questionarie';
 
 type QuestionnaireData = {
-  category: string[];
-  appearance: string[];
-  colorScheme: string[];
-  thumbnailStyle: string[];
+  blogType: string[];
   audience: string[];
-  emotion: string[];
+  colorScheme: string[];
+  tone: string[];
 };
 
 type QuestionnaireProps = {
+  type?: string,
   onComplete: (data: QuestionnaireData) => void;
 };
 
-const questions = [
-  {
-    id: 'category',
-    title: 'For which category of video content are you creating?',
-    options: [
-      {
-        value: 'tutorial',
-        label: 'Tutorial/Educational',
-        description: 'How-to guides, lessons, and explanations',
-      },
-      {
-        value: 'gaming',
-        label: 'Gaming Content',
-        description: 'Gameplay, reviews, and gaming news',
-      },
-      {
-        value: 'vlog',
-        label: 'Vlog/Lifestyle',
-        description: 'Personal vlogs, daily life, and lifestyle tips',
-      },
-      {
-        value: 'business',
-        label: 'Business/Finance',
-        description: 'Entrepreneurship, investing, and business tips',
-      },
-      {
-        value: 'review',
-        label: 'Review/Reaction',
-        description: 'Reactions or reviews on a specific topic',
-      },
-      {
-        value: 'entertainment',
-        label: 'Entertainment/Fun',
-        description: 'Comedy, challenges, memes, and fun content',
-      },
-    ],
-  },
-  {
-    id: 'appearance',
-    title: 'On which side do you want your face to appear?',
-    options: [
-      {
-        value: 'left',
-        label: 'Left Side',
-        description:
-          'Your face will be positioned on the left side of the thumbnail',
-      },
-      {
-        value: 'right',
-        label: 'Right Side',
-        description:
-          'Your face will be positioned on the right side of the thumbnail',
-      },
-      {
-        value: 'center',
-        label: 'Center',
-        description:
-          'Your face will be positioned in the center of the thumbnail',
-      },
-    ],
-  },
-  {
-    id: 'colorScheme',
-    title: 'What color scheme do you prefer?',
-    options: [
-      {
-        value: 'vibrant',
-        label: 'Vibrant & Bold',
-        description: 'Bright reds, yellows, and electric blues',
-      },
-      {
-        value: 'dark',
-        label: 'Dark & Moody',
-        description: 'Black, dark grays, and deep purples',
-      },
-      {
-        value: 'minimal',
-        label: 'Clean & Minimal',
-        description: 'White, light grays, and pastel tones',
-      },
-      {
-        value: 'gradient',
-        label: 'Gradients & Neon',
-        description: 'Colorful gradients and neon accents',
-      },
-    ],
-  },
-  {
-    id: 'thumbnailStyle',
-    title: 'What thumbnail style do you prefer?',
-    options: [
-      {
-        value: 'face',
-        label: 'Face-Focused',
-        description: 'Large face with expressive emotions',
-      },
-      {
-        value: 'text',
-        label: 'Text-Heavy',
-        description: 'Bold titles and text overlays',
-      },
-      {
-        value: 'product',
-        label: 'Product/Object Focus',
-        description: 'Highlighting items, gadgets, or tools',
-      },
-      {
-        value: 'scene',
-        label: 'Cinematic Scene',
-        description: 'Full scenes or dramatic environments',
-      },
-    ],
-  },
-  {
-    id: 'audience',
-    title: 'Who is your target audience?',
-    options: [
-      {
-        value: 'teens',
-        label: 'Teens (13-17)',
-        description: 'Young, energetic, and trend-focused',
-      },
-      {
-        value: 'young-adults',
-        label: 'Young Adults (18-25)',
-        description: 'College-aged, lifestyle-oriented viewers',
-      },
-      {
-        value: 'adults',
-        label: 'Adults (26-40)',
-        description: 'Professionals, families, and working adults',
-      },
-      {
-        value: 'mature',
-        label: 'Mature (40+)',
-        description: 'Experienced, quality-focused audience',
-      },
-    ],
-  },
-  {
-    id: 'emotion',
-    title: 'What emotion should your thumbnail convey?',
-    options: [
-      {
-        value: 'excitement',
-        label: 'Excitement',
-        description: 'High energy, enthusiasm, and wow factor',
-      },
-      {
-        value: 'curiosity',
-        label: 'Curiosity',
-        description: 'Mystery, intrigue, and thought-provoking visuals',
-      },
-      {
-        value: 'trust',
-        label: 'Trust & Authority',
-        description: 'Professional, credible, and reliable impression',
-      },
-      {
-        value: 'fun',
-        label: 'Fun & Playful',
-        description: 'Lighthearted, entertaining, and humorous vibe',
-      },
-    ],
-  },
-];
 
-export const YouTubeThumbnailQuestionnaire = ({
+
+export const Questionnaire = ({
+  type,
   onComplete,
 }: QuestionnaireProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
+  const [questions, setQuestions] = useState(youtubeQuestionarie)
   const [answers, setAnswers] = useState<QuestionnaireData>({
-    category: [],
-    appearance: [],
-    colorScheme: [],
-    thumbnailStyle: [],
+    blogType: [],
+    tone: [],
     audience: [],
-    emotion: [],
+    colorScheme: [],
+
   });
+  if (type === "blog") {
+    setQuestions(blogQuestionarie)
+  }
 
   const handleOptionToggle = (
     questionId: keyof QuestionnaireData,
@@ -239,12 +78,10 @@ export const YouTubeThumbnailQuestionnaire = ({
     setIsOpen(false);
     setCurrentStep(0);
     setAnswers({
-      category: [],
-      appearance: [],
-      colorScheme: [],
-      thumbnailStyle: [],
+      blogType: [],
+      tone: [],
       audience: [],
-      emotion: [],
+      colorScheme: [],
     });
   };
 
@@ -299,11 +136,10 @@ export const YouTubeThumbnailQuestionnaire = ({
                       onClick={() =>
                         handleOptionToggle(currentQuestionId, option.value)
                       }
-                      className={`relative w-full sm:w-[280px] md:w-[300px] lg:w-[320px] h-[120px]  p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
-                        isSelected
+                      className={`relative w-full sm:w-[280px] md:w-[300px] lg:w-[320px] h-[120px]  p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${isSelected
                           ? 'border-blue-500 bg-blue-500/10'
                           : 'border-neutral-600 hover:border-neutral-500 bg-neutral-750'
-                      }`}
+                        }`}
                     >
                       <div className='flex items-start justify-between'>
                         <div className='flex-1'>
@@ -315,11 +151,10 @@ export const YouTubeThumbnailQuestionnaire = ({
                           </p>
                         </div>
                         <div
-                          className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ml-3 ${
-                            isSelected
+                          className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ml-3 ${isSelected
                               ? 'border-blue-500 bg-blue-500'
                               : 'border-neutral-500'
-                          }`}
+                            }`}
                         >
                           {isSelected && (
                             <Check className='w-4 h-4 text-white' />

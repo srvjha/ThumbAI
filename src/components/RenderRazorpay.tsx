@@ -81,11 +81,8 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
   useEffect(() => {
     if (userInfo) {
       userRef.current = userInfo;
-      // console.log("User data updated in ref:", user);
     }
   }, [userInfo]);
-
-  // console.log({user});
 
   const displayRazorpay = async () => {
     const res = await loadScript(
@@ -118,9 +115,8 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
         color: '#3399cc',
       },
 
-      // ✅ Success handler
+      // Success handler
       handler: (response: any) => {
-        // console.log("✅ Payment Success:", response);
         try {
           if (razorpayInstance.current) {
             razorpayInstance.current.close();
@@ -144,20 +140,16 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
               signature: response.razorpay_signature,
             });
 
-            // console.log("🎉 Payment verified:", verifyRes.data);
-
-            // 🔥 Use ref to get current user data
+            // Use ref to get current user data
             const currentUser = userRef.current;
-            // console.log("Current user from ref:", { user: currentUser });
 
             if (currentUser?.id) {
-              // ✅ Update user credits
+              // Update user credits
               const updateRes = await axios.put('/api/user/update', {
                 userId: currentUser.id,
                 credits: planDetails.credit,
               });
 
-              // console.log("💳 Credits updated:", updateRes.data);
               toast.success(
                 `Payment Successful ✅ ${planDetails.credit} credits added`,
               );
@@ -173,7 +165,6 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
       modal: {
         confirm_close: true,
         ondismiss: () => {
-          // console.log("❌ Payment modal closed/cancelled.");
           forceCloseRazorpay();
 
           // Best-effort: mark order as cancelled in backend
@@ -193,12 +184,10 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
     razorpayInstance.current = rzp;
 
     rzp.on('payment.submit', (response: any) => {
-      // console.log("✅ Payment Submitted:", response);
       paymentMethod.current = response.method;
     });
 
     rzp.on('payment.failed', (response: any) => {
-      // console.error("❌ Payment Failed", response);
       paymentId.current = response.error.metadata.payment_id;
 
       try {
@@ -213,14 +202,13 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
     });
 
     rzp.on('payment.success', () => {
-      // console.log("✅ Payment Success Event Triggered");
       forceCloseRazorpay();
     });
 
     rzp.open();
   };
 
-  // 🔥 Only initialize Razorpay when user data is available
+  // Only initialize Razorpay when user data is available
   useEffect(() => {
     if (userInfo && !isLoading) {
       displayRazorpay();

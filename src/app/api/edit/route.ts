@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fal } from '@fal-ai/client';
 import { ApiResponse } from '@/utils/ApiResponse';
-import { generateThumbnailPrompt } from '@/utils/userFinalPrompt';
+import { generateThumbnailPrompt } from '@/agent/generateThumbnailPrompt';
 import { generateChatPrompt } from '@/utils/userChatPrompt';
 import { db } from '@/db';
 import { env } from '@/config/env';
@@ -22,11 +22,12 @@ export const POST = async (req: NextRequest) => {
     choices,
     userChoices,
     userId,
+    type = 'youtube',
   } = await req.json();
 
   const finalPrompt: FinalPrompt =
     mode === 'normal'
-      ? await generateThumbnailPrompt(prompt, choices, userChoices)
+      ? await generateThumbnailPrompt(prompt, choices, userChoices, type)
       : await generateChatPrompt(prompt);
 
   if (!finalPrompt.valid_prompt) {

@@ -52,7 +52,7 @@ export const HeroSection = () => {
           </Link>
 
           <div className='relative inline-block'>
-            <Link href='/blog/thumbnail'>
+            <Link href='/nano-banana/url-to-image'>
               <button className='bg-gradient-to-r cursor-pointer border border-blue-500/30 text-white px-5 py-3  rounded-xl font-semibold text-lg shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all flex items-center justify-center'>
                 Create for Blog
               </button>
