@@ -9,7 +9,7 @@ export const GET = async (req: NextRequest) => {
     const { userId } = await auth();
 
     if (!userId) {
-      throw new ApiError('Unauthorized - Clerk ID is missing', 401);
+      throw new ApiError('Unauthorized Request', 401);
     }
     const existingUser = await db.user.findUnique({
       where: {
@@ -18,7 +18,7 @@ export const GET = async (req: NextRequest) => {
     });
 
     if (!existingUser) {
-      throw new ApiError('User not found', 404);
+      throw new ApiError('Unauthorized Request', 401);
     }
 
     return NextResponse.json(

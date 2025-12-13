@@ -8,12 +8,13 @@ import { Button } from './ui/button';
 import { Loader } from './ai-elements/loader';
 import { Badge } from './ui/badge';
 import { useAuth } from '@/hooks/user/auth';
+import { Skeleton } from './ui/skeleton';
 
 export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { isSignedIn } = useUser();
-  const { data: authData, isLoading } = useAuth({ enabled: isSignedIn });
-  // if not logged in, then dont fetch the credits simply put 0
+  const { isSignedIn, isLoaded } = useUser();
+  const authEnabled = isLoaded && isSignedIn;
+  const { data: authData, isLoading } = useAuth({ enabled: authEnabled });
   const credits = authData?.credits || 0;
 
   // Check if user is admin
@@ -38,7 +39,7 @@ export const Header = () => {
           {/* Right Side: Credits + Auth */}
           <div className='hidden md:flex items-center space-x-4'>
             {/* Credits */}
-            <div className='flex items-center rounded-lg border border-gray-300 px-3 py-1 text-sm mt-1'>
+            <div className='flex items-center rounded-lg border border-dotted border-gray-500 px-3 py-1 text-sm mt-1'>
               Credits:{' '}
               {isLoading ? (
                 <div className='ml-1'>
@@ -64,16 +65,24 @@ export const Header = () => {
               </Link>
             )}
 
-            <SignedIn>
-              <UserButton afterSignOutUrl='/' />
-            </SignedIn>
-            <SignedOut>
-              <Link href='/sign-in'>
-                <Button variant='outline' className='cursor-pointer'>
-                  Sign In
-                </Button>
-              </Link>
-            </SignedOut>
+            <div className='px-4 py-4 space-y-4'>
+              {!isLoaded && (
+                <div className="flex justify-center">
+                  <Skeleton className="h-8 w-8 rounded-full" />
+                </div>
+              )}
+
+              {isLoaded && isSignedIn && (
+                <UserButton afterSignOutUrl='/' />
+              )}
+
+              {isLoaded && !isSignedIn && (
+                <Link href='/sign-in'>
+                  <Button className='w-full cursor-pointer'>Sign In</Button>
+                </Link>
+              )}
+            </div>
+
           </div>
 
           {/* Mobile Menu Button */}
@@ -92,15 +101,25 @@ export const Header = () => {
         {/* Mobile Nav */}
         {isMenuOpen && (
           <div className='md:hidden border-t border-neutral-900 bg-transparent max-w-md mx-auto backdrop-blur-md'>
-            <div className='px-4 py-4 space-y-4'> 
-            <SignedIn>
-                <UserButton afterSignOutUrl='/' />
-              </SignedIn>
-              <SignedOut>
-                <Link href='/sign-in'>
-                  <Button className='w-full'>Sign In</Button>
-                </Link>
-              </SignedOut>           
+            <div className='px-4 py-4 space-y-4'>
+              <div className='px-4 py-4 space-y-4'>
+                {!isLoaded && (
+                  <div className="flex justify-center">
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                  </div>
+                )}
+
+                {isLoaded && isSignedIn && (
+                  <UserButton afterSignOutUrl='/' />
+                )}
+
+                {isLoaded && !isSignedIn && (
+                  <Link href='/sign-in'>
+                    <Button className='w-full cursor-pointer'>Sign In</Button>
+                  </Link>
+                )}
+              </div>
+
               {navLinks.map((link) => (
                 <Link
                   key={link.label}
