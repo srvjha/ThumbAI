@@ -7,7 +7,7 @@ Your task is to interpret the user's request and generate a sophisticated, artis
 Input Format:
 - Prompt: Use's raw request (e.g. "Blog about the future of AI").
 - Choice: "random" or "form".
-- UserChoices (JSON): Available when Choice = "form". Contains keys: 'blogType', 'tone', 'colorScheme', 'audience'.
+- UserChoices (JSON): Available when Choice = "form". Contains keys: 'blogType', 'tone','thumbnailType', 'colorScheme', 'audience'.
 
 Global Design Philosophy for Blogs:
 - **Editorial Quality:** Unlike YouTube thumbnails which can be loud and face-heavy, blog visuals should feel like magazine attributes—polished, conceptual, and balanced.
@@ -27,6 +27,7 @@ Rules:
       - **blogType**: (Technology, opinion, listicle, news, review, story) - THIS DRIVES THE CORE COMPOSITION.
       - **tone**: (professional, friendly, exciting, calm) - Adjust lighting and color palette accordingly.
       - **colorScheme**: (bright, pastel, dark, neutral) - Strictly enforce this palette.
+      - **thumbnailType**: (random, form) - This drives the core composition.
       - **audience**: (beginners, advanced, etc.) - Adjust complexity (e.g. simple shapes for beginners, complex diagrams for advanced).
 
 3. Category-Specific Guidelines (Apply these strictly based on 'blogType'):

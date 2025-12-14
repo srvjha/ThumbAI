@@ -17,22 +17,37 @@ export const POST = async (req: NextRequest) => {
     type = 'youtube',
   } = await req.json();
 
-  const finalPrompt: FinalPrompt = await generateThumbnailPrompt(
+  let userPayload = {
     prompt,
-    choices,
-    userChoices,
-    type as 'youtube' | 'blog',
-  );
+    isValidPrompt: false,
+  };
 
-  if (!finalPrompt.valid_prompt) {
-    return NextResponse.json(
-      new ApiResponse(200, finalPrompt, 'valid prompt not provided'),
+  if (type === "blog" && choices === "random") {
+    userPayload.isValidPrompt = true;
+    userPayload.prompt = prompt;
+  } else {
+    const finalPrompt: FinalPrompt = await generateThumbnailPrompt(
+      prompt,
+      choices,
+      userChoices,
+      type as 'youtube' | 'blog',
     );
+
+    if (!finalPrompt.valid_prompt) {
+      return NextResponse.json(
+        new ApiResponse(200, finalPrompt, 'valid prompt not provided'),
+      );
+    }
+
+    userPayload.isValidPrompt = true;
+    userPayload.prompt = finalPrompt.response;
   }
+
+
 
   const result = await fal.subscribe('fal-ai/nano-banana/', {
     input: {
-      prompt: finalPrompt.response,
+      prompt: userPayload.prompt,
       num_images: numImages,
       output_format: outputFormat,
       aspect_ratio: aspectRatio,
@@ -52,7 +67,7 @@ export const POST = async (req: NextRequest) => {
         status: 'PENDING',
         user_original_prompt: prompt,
         input: {
-          prompt: finalPrompt.response,
+          prompt: userPayload.prompt,
           num_images: numImages,
           output_format: outputFormat,
           aspect_ratio: aspectRatio,
@@ -66,7 +81,7 @@ export const POST = async (req: NextRequest) => {
     new ApiResponse(
       200,
       {
-        valid_prompt: finalPrompt.valid_prompt,
+        valid_prompt: userPayload.isValidPrompt,
         success: true,
         requestId: result.requestId,
         data: result.data,

@@ -1,16 +1,19 @@
 export const blogCategoryWiseData = {
     Technology: `
     Subject & Composition
-    Focus on a modern, sleek tech aesthetic. Use abstract representations of code, circuits, or digital networks. If a person is included, show them working (e.g., hands on a keyboard, back view looking at screens) rather than a "YouTuber face".
+    Focus on a modern, sleek tech aesthetic. Use abstract representations of code, circuits, or digital networks.
     
     Visual Elements
     Include recognized tech logos or icons (React, AI, Cloud) but stylized to fit a coherent theme (e.g., glassmorphism, neon outlines). Use screenshots or code snippets if relevant, ensuring they are simplified for small sizes.
     
     Color & Mood
-    Dark mode aesthetic is preferred: deep blues, purples, and blacks with bright neon accents (cyan, magenta, electric green). maintain a "clean" and "futuristic" vibe.
+    Dark theme aesthetic is preferred: deep blues, purples, and blacks with bright neon accents (cyan, magenta, electric green). maintain a "clean" and "futuristic" vibe.
     
     Typography
     Use monospace or modern sans-serif fonts. Keep text minimal—just the main concept or a catchy title (e.g., "NextJS 14", "AI Revolution").
+
+    Positioning
+    Title should be bold large and at the top of the thumbnail
     `,
 
     opinion: `
@@ -25,6 +28,9 @@ export const blogCategoryWiseData = {
     
     Typography
     Bold, serif fonts for a serious, editorial look (like a newspaper or magazine headliner). Use quotes if applicable near the title.
+
+    Positioning
+    Title should be bold large and at the top of the thumbnail
     `,
 
     listicle: `
@@ -39,6 +45,9 @@ export const blogCategoryWiseData = {
     
     Typography
     The number should be the biggest element. Use clean, bold sans-serif fonts. "Top X", "Best of", "Guide" should be clearly readable.
+
+    Positioning
+    Title should be bold large and at the top of the thumbnail
     `,
 
     news: `
@@ -53,6 +62,9 @@ export const blogCategoryWiseData = {
     
     Typography
     Heavy, impact-style fonts. All caps for the main headline. Keep it short: "UPDATE", "RELEASED", "ALERT".
+
+    Positioning
+    Title should be bold large and at the top of the thumbnail
     `,
 
     review: `
@@ -67,6 +79,9 @@ export const blogCategoryWiseData = {
     
     Typography
     Clear, readable title of the product. Optional: A short verdict word like "Worth it?", "Best Buy", "Avoid".
+
+    Positioning
+    Title should be bold large and at the top of the thumbnail
     `,
 
     story: `
@@ -81,5 +96,8 @@ export const blogCategoryWiseData = {
     
     Typography
     Handwritten or serif fonts to evoke a human touch. Keep text minimal to let the image tell the story.
+
+    Positioning
+    Title should be bold large and at the top of the thumbnail
     `,
 };
