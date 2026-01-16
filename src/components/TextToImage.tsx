@@ -5,12 +5,9 @@ import { useForm, Controller } from 'react-hook-form';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import {
-  CheckCircle,
-  Clock,
   Copy,
   Download,
   Edit,
-  Eye,
   ImageIcon,
   Loader2,
   Share2,
@@ -70,6 +67,7 @@ export const TextToImageGenerator = () => {
   } = useForm<FormValues>({
     defaultValues: {
       prompt: '',
+      choices:'',
       numImages: 1,
       outputFormat: 'jpeg',
       aspectRatios: ['16:9'],
@@ -84,7 +82,7 @@ export const TextToImageGenerator = () => {
   const aspectRatios = watch('aspectRatios');
   const defaultImage = watch('imagesUrl') || [];
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const { data: userInfo, isLoading, isError } = useAuth();
+  const { data: userInfo} = useAuth();
   const { mutate: deductCreditsMutation } = useCredits();
 
   const onSubmit = async (data: FormValues) => {
@@ -114,6 +112,7 @@ export const TextToImageGenerator = () => {
           outputFormat: data.outputFormat,
           userChoices: data.questionnaire ?? '',
           aspectRatio,
+          choices: data.choices,
           userId: userInfo!.id,
           type: 'youtube',
         });

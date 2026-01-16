@@ -46,7 +46,7 @@ type FormValues = {
   outputFormat: string;
   aspectRatios: string[];
   questionnaire?: string[];
-  uploadedFiles: File[]; // Changed from uploadedImages to uploadedFiles
+  uploadedFiles: File[];
 };
 
 type ImageData = {
@@ -69,14 +69,14 @@ export const ImageToImage = () => {
       numImages: 1,
       outputFormat: 'jpeg',
       aspectRatios: [],
-      uploadedFiles: [], // Changed from uploadedImages
+      uploadedFiles: [],
     },
     mode: 'onChange',
   });
 
   const prompt = watch('prompt');
   const aspectRatios = watch('aspectRatios');
-  const uploadedFiles = watch('uploadedFiles') || []; // Changed from uploadedImages
+  const uploadedFiles = watch('uploadedFiles') || [];
 
   const [editedImages, setEditedImages] = useState<ImageData[]>([
     {
@@ -90,12 +90,9 @@ export const ImageToImage = () => {
   const [urlInput, setUrlInput] = useState('');
   const [localPreviews, setLocalPreviews] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [questionnaireData, setQuestionnaireData] = useState<any>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [processedImageUrls, setProcessedImageUrls] = useState<string[]>([]); // Store processed URLs
-
-  // const { data: userInfo, refetch, setData } = useThumbUser();
-  const { data: userInfo, isLoading, isError } = useAuth();
+  const { data: userInfo } = useAuth();
   const { mutate: deductCreditsMutation } = useCredits();
   // Modified processImage function to accept aspect ratio
   const processImage = (file: File, aspectRatio: string): Promise<File> => {
@@ -496,6 +493,7 @@ export const ImageToImage = () => {
         : editedImages.filter((img) => img.url.length > 0).map((e) => e.url);
 
     const noOfImages = watch('numImages');
+    console.log("images:",noOfImages)
 
     try {
       const res = await axios.post('/api/edit', {
@@ -527,6 +525,7 @@ export const ImageToImage = () => {
         const payload = JSON.parse(event.data);
 
         if (payload.status === 'COMPLETED') {
+          console.log("imageUrl: ",payload.image_url)
           setEditedImages([
             { url: payload.image_url, aspectRatio: aspectRatios[0] },
           ]);

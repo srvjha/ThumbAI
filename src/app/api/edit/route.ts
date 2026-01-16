@@ -19,15 +19,24 @@ export const POST = async (req: NextRequest) => {
     outputFormat = 'jpeg',
     images_urls = [],
     aspectRatio,
-    choices,
+    choices="random",
     userChoices,
     userId,
     type = 'youtube',
   } = await req.json();
 
-  const finalPrompt: FinalPrompt =
+   let userPayload = {
+    prompt,
+    isValidPrompt: false,
+  };
+
+  if(choices === "random" && mode === "normal"){
+    userPayload.isValidPrompt = true;
+    userPayload.prompt = prompt;
+  } else{
+    const finalPrompt: FinalPrompt =
     mode === 'normal'
-      ? await generateThumbnailPrompt(prompt, choices, userChoices, type)
+      ? await generateThumbnailPrompt(prompt,"Image-to-Image", userChoices, type)
       : await generateChatPrompt(prompt);
 
   if (!finalPrompt.valid_prompt) {
@@ -35,10 +44,13 @@ export const POST = async (req: NextRequest) => {
       new ApiResponse(200, finalPrompt, 'valid prompt not provided'),
     );
   }
-
+  userPayload.isValidPrompt = true;
+  userPayload.prompt = finalPrompt.response;
+  }
+  
   const { request_id } = await fal.queue.submit('fal-ai/nano-banana/edit', {
     input: {
-      prompt: finalPrompt.response,
+      prompt: userPayload.prompt,
       image_urls: images_urls,
       num_images: numImages,
       output_format: outputFormat,
@@ -53,9 +65,9 @@ export const POST = async (req: NextRequest) => {
         status: 'PENDING',
         user_original_prompt: prompt,
         input: {
-          prompt: finalPrompt.response,
+          prompt: userPayload.prompt,
           image_urls: images_urls,
-          num_images: numImages,
+          num_images: mode === "chat" ? numImages[numImages.length-1] : numImages,
           output_format: outputFormat,
           aspect_ratio: aspectRatio,
         },
@@ -69,9 +81,9 @@ export const POST = async (req: NextRequest) => {
     new ApiResponse(
       200,
       {
-        valid_prompt: finalPrompt.valid_prompt,
+        valid_prompt: userPayload.isValidPrompt,
         success: true,
-        requestId: request_id,
+        requestId: request_id
       },
       'Request Submitted Successfully',
     ),

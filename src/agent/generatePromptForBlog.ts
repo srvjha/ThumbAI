@@ -11,7 +11,7 @@ const generatePromptForBlogAgent = new Agent({
     instructions: `You are expert at writing prompts for blogs. 
     Given a url of a blog, go through the blog and wrtie a prompt to generate thumbnail for the blog.
     Follow these instructions while writing the prompt:
-    - Always use dark color theme for backgroung in thumbnail
+    - Always use dark color theme for background in thumbnail
     - Have icons related to topics/Keywords in thumbnail
     - Want bold text for title of the blog and the main title should be big compare to other
     - Always place title at the top of the thumbnail
