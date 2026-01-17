@@ -4,15 +4,7 @@ import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
-import {
-  Copy,
-  Download,
-  Edit,
-  ImageIcon,
-  Loader2,
-  Share2,
-  Wand2,
-} from 'lucide-react';
+import { Edit, Wand2 } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -31,11 +23,11 @@ import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { ChatToggleButton, PopoutChat } from './ChatPopup';
 import { useChat } from '@ai-sdk/react';
-import { Questionnaire } from './Questionarie';
-import { RadioGroup, RadioGroupItem } from './ui/radio-group';
-import { Label } from './ui/label';
 import { useAuth } from '@/hooks/user/auth';
 import { useCredits } from '@/hooks/user/credits';
+import { ResultPanel } from './shared/ResultPanel';
+import { FormQuestionnaire } from './shared/FormQuestionnaire';
+import { ImageData } from './shared/imageUtils';
 
 type FormValues = {
   prompt: string;
@@ -45,11 +37,6 @@ type FormValues = {
   aspectRatios: string[];
   imagesUrl?: string[];
   questionnaire?: string[];
-};
-
-type ImageData = {
-  url: string;
-  aspectRatio: string;
 };
 
 export const TextToImageGenerator = () => {
@@ -153,148 +140,7 @@ export const TextToImageGenerator = () => {
     toast.success('Form reset successfully!');
   };
 
-  const handleDownload = async (url: string, filename = 'image.jpg') => {
-    try {
-      const response = await fetch(url);
-      if (!response.ok) throw new Error('Failed to fetch image');
-
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
-
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-
-      URL.revokeObjectURL(blobUrl);
-
-      toast.success('Image downloaded successfully!', { id: 'download' });
-    } catch (error) {
-      toast.error('Failed to download image. Please try again.', {
-        id: 'download',
-      });
-    }
-  };
-
-  const handleCopy = async (url: string) => {
-    try {
-      await navigator.clipboard.writeText(url);
-      toast.success('Image URL copied to clipboard!');
-    } catch (error) {
-      toast.error('Failed to copy URL. Please try again.');
-    }
-  };
-
-  const handleShare = async (url: string) => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Generated Image',
-          text: 'Check out this generated image!',
-          url,
-        });
-        toast.success('Image shared successfully!');
-      } catch (err) {
-        if ((err as Error).name !== 'AbortError') {
-          toast.error('Failed to share image.');
-        }
-      }
-    } else {
-      try {
-        await navigator.clipboard.writeText(url);
-        toast.success('Image URL copied to clipboard (sharing not supported)!');
-      } catch (error) {
-        toast.error('Sharing not supported in this browser.');
-      }
-    }
-  };
-
-  const handleDownloadAll = async () => {
-    if (displayImages.length === 0) return;
-
-    try {
-      toast.loading('Preparing zip file...', { id: 'zip-download' });
-      const JSZip = (await import('jszip')).default;
-      const zip = new JSZip();
-
-      // Add each image to zip
-      for (let i = 0; i < displayImages.length; i++) {
-        const img = displayImages[i];
-        try {
-          const imageUrl = typeof img === 'string' ? img : img.url;
-          const response = await fetch(imageUrl);
-          if (!response.ok) throw new Error(`Failed to fetch image ${i + 1}`);
-
-          const blob = await response.blob();
-          const extension = watch('outputFormat') || 'jpg';
-          const aspectRatio =
-            typeof img === 'string' ? '16:9' : img.aspectRatio;
-          const filename = `${isShowingDefault ? 'default' : 'generated'
-            }-image-${aspectRatio.replace(':', 'x')}-${i + 1}.${extension}`;
-
-          zip.file(filename, blob);
-        } catch (error) {
-          toast.error(`Failed to add image ${i + 1} to zip`);
-        }
-      }
-
-      // Generate and download zip
-      const content = await zip.generateAsync({ type: 'blob' });
-      const zipUrl = URL.createObjectURL(content);
-
-      const link = document.createElement('a');
-      link.href = zipUrl;
-      link.download = `${isShowingDefault ? 'default' : 'generated'
-        }-thumbnails.zip`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-
-      URL.revokeObjectURL(zipUrl);
-      toast.success('All images downloaded as zip!', { id: 'zip-download' });
-    } catch (error) {
-      toast.error('Failed to create zip file. Please try again.', {
-        id: 'zip-download',
-      });
-    }
-  };
-
   const displayImages = generatedImages.length > 0 ? generatedImages : [];
-  const isShowingDefault =
-    generatedImages.length === 0 && defaultImage.length > 0;
-
-  const getImageContainerStyle = (aspectRatio: string) => {
-    if (aspectRatio === '9:16') {
-      return 'aspect-[9/16] max-h-[300px] w-auto mx-auto';
-    }
-    return 'aspect-[16/9] w-full';
-  };
-
-  const getGridLayout = () => {
-    if (displayImages.length === 1) return 'grid-cols-1';
-
-    // Check if we have mixed aspect ratios
-    const hasLandscape = displayImages.some(
-      (img) => img.aspectRatio === '16:9',
-    );
-    const hasPortrait = displayImages.some((img) => img.aspectRatio === '9:16');
-
-    if (hasLandscape && hasPortrait) {
-      // Mixed ratios - use flexible grid
-      return 'grid-cols-1 sm:grid-cols-2 gap-4';
-    }
-
-    // Same aspect ratios
-    if (displayImages[0].aspectRatio === '9:16') {
-      return displayImages.length <= 2
-        ? 'grid-cols-2 gap-3'
-        : 'grid-cols-3 gap-2';
-    }
-
-    return 'grid-cols-1 gap-3';
-  };
 
   const router = useRouter();
 
@@ -455,65 +301,11 @@ export const TextToImageGenerator = () => {
                   </div>
                 )}
               />
-              <Controller
-                name='choices'
+              <FormQuestionnaire
                 control={control}
-                rules={{
-                  required: 'Please select a choice',
-                }}
-                render={({ field }) => (
-                  <div>
-                    <label className='block text-sm font-medium text-neutral-300 mb-2'>
-                      Choose Thumbnail Generation *
-                    </label>
-
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      className={`flex gap-6 p-3 rounded-lg ${errors.choices
-                        ? 'border border-red-500'
-                        : 'border border-neutral-700'
-                        }`}
-                    >
-                      <div className='flex items-center gap-3'>
-                        <RadioGroupItem value='random' id='r2' />
-                        <Label htmlFor='r2'>Random Generation</Label>
-                      </div>
-                      <div className='flex items-center gap-3'>
-                        <RadioGroupItem value='form' id='r3' />
-                        <Label htmlFor='r3'>Fill Form to Customize</Label>
-                      </div>
-                    </RadioGroup>
-
-                    {errors.choices && (
-                      <p className='text-red-400 text-xs mt-1'>
-                        {errors.choices.message}
-                      </p>
-                    )}
-
-                    {field.value === 'form' && (
-                      <div className='mt-4'>
-                        <Controller
-                          name='questionnaire'
-                          control={control}
-                          rules={{
-                            required: 'Please complete the questionnaire',
-                          }}
-                          render={({ field }) => (
-                            <Questionnaire
-                              onComplete={(data) => field.onChange(data)} // saves data into react-hook-form
-                            />
-                          )}
-                        />
-                        {errors.questionnaire && (
-                          <p className='text-red-400 text-xs mt-1'>
-                            {errors.questionnaire.message}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
+                choicesFieldName='choices'
+                questionnaireFieldName='questionnaire'
+                errors={errors}
               />
               <Controller
                 name='numImages'
@@ -694,215 +486,13 @@ export const TextToImageGenerator = () => {
 
       {/* Right Panel - Result */}
       <div>
-        <Card className='bg-transparent border-neutral-800 h-[600px] overflow-y-auto p-1'>
-          <CardContent className='p-6'>
-            <div className='flex items-center justify-between mb-4'>
-              <h3 className='text-lg font-semibold text-neutral-100'>Result</h3>
-
-              {status !== 'idle' && (
-                <div className='flex items-center gap-2 px-3 py-1.5 rounded-lg border border-neutral-700 bg-transparent text-white text-sm'>
-                  <span
-                    className={`w-2.5 h-2.5 rounded-full ${status === 'completed'
-                      ? 'bg-green-500'
-                      : status === 'generating'
-                        ? 'bg-amber-400'
-                        : status === 'in-progress'
-                          ? 'bg-blue-400'
-                          : 'bg-neutral-500'
-                      }`}
-                  />
-                  <span>
-                    {status === 'completed'
-                      ? 'Completed'
-                      : status === 'generating'
-                        ? 'Generating'
-                        : status === 'in-progress'
-                          ? 'In Progress'
-                          : ''}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <div className='min-h-[400px] bg-neutral-950 rounded-lg border-none p-4'>
-              {status === 'generating' || status === 'in-progress' ? (
-                <div className='flex flex-col items-center justify-center gap-3 h-full min-h-[400px]'>
-                  <Loader2 className='w-16 h-16 animate-spin text-neutral-400' />
-                  <p className='text-neutral-400'>
-                    {status === 'generating'
-                      ? 'Generating...'
-                      : 'Processing your image...'}
-                  </p>
-                </div>
-              ) : displayImages.length > 0 ? (
-                <div className='flex flex-col h-full'>
-                  <div className='flex-1'>
-                    {displayImages.length === 1 ? (
-                      <div className='flex justify-center items-start h-full'>
-                        <div
-                          className={`relative rounded-lg overflow-hidden border-none group ${getImageContainerStyle(
-                            displayImages[0].aspectRatio,
-                          )}`}
-                        >
-                          <img
-                            src={displayImages[0].url}
-                            alt={
-                              isShowingDefault ? 'Default Preview' : 'Generated'
-                            }
-                            className='w-full h-full object-cover'
-                          />
-
-                          {isShowingDefault && (
-                            <div className='absolute top-2 left-2 bg-neutral-900/80 text-neutral-300 px-2 py-1 rounded-md text-sm'>
-                              Preview
-                            </div>
-                          )}
-
-                          <div className='absolute bottom-2 left-2 bg-neutral-900/80 text-neutral-300 px-2 py-1 rounded-md text-xs'>
-                            {displayImages[0].aspectRatio}
-                          </div>
-                          <div className='absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition bg-neutral-900/80 p-1 rounded-lg'>
-                            <Button
-                              variant='ghost'
-                              size='sm'
-                              onClick={() => handleCopy(displayImages[0].url)}
-                              className='text-neutral-300 hover:text-white'
-                            >
-                              <Copy className='w-4 h-4' />
-                            </Button>
-                            <Button
-                              variant='ghost'
-                              size='sm'
-                              onClick={() =>
-                                handleDownload(
-                                  displayImages[0].url,
-                                  `${isShowingDefault ? 'default' : 'generated'
-                                  }-image.jpg`,
-                                )
-                              }
-                              className='text-neutral-300 hover:text-white'
-                            >
-                              <Download className='w-4 h-4' />
-                            </Button>
-                            <Button
-                              variant='ghost'
-                              size='sm'
-                              onClick={() => handleShare(displayImages[0].url)}
-                              className='text-neutral-300 hover:text-white'
-                            >
-                              <Share2 className='w-4 h-4' />
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className={`grid ${getGridLayout()}`}>
-                        {displayImages.map((img, idx) => (
-                          <div key={idx} className='flex justify-center'>
-                            <div
-                              className={`relative rounded-lg overflow-hidden border border-neutral-700 group ${getImageContainerStyle(
-                                img.aspectRatio,
-                              )}`}
-                            >
-                              <img
-                                src={img.url}
-                                alt={`${isShowingDefault ? 'Default' : 'Generated'
-                                  } ${idx + 1}`}
-                                className='w-full h-full object-cover hover:scale-105 transition-transform duration-300'
-                              />
-                              {isShowingDefault && (
-                                <div className='absolute top-2 left-2 bg-neutral-900/80 text-neutral-300 px-2 py-1 rounded-md text-xs'>
-                                  Preview {idx + 1}
-                                </div>
-                              )}
-                              {/* Aspect ratio badge */}
-                              <div className='absolute bottom-2 left-2 bg-neutral-900/80 text-neutral-300 px-2 py-1 rounded-md text-xs'>
-                                {img.aspectRatio}
-                              </div>
-                              <div className='absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition bg-neutral-900/80 p-1 rounded-lg'>
-                                <Button
-                                  variant='ghost'
-                                  size='sm'
-                                  onClick={() => handleCopy(img.url)}
-                                  className='text-neutral-300 hover:text-white p-1'
-                                >
-                                  <Copy className='w-3 h-3' />
-                                </Button>
-                                <Button
-                                  variant='ghost'
-                                  size='sm'
-                                  onClick={() =>
-                                    handleDownload(
-                                      img.url,
-                                      `${isShowingDefault
-                                        ? 'default'
-                                        : 'generated'
-                                      }-image-${img.aspectRatio.replace(
-                                        ':',
-                                        'x',
-                                      )}-${idx + 1}.jpg`,
-                                    )
-                                  }
-                                  className='text-neutral-300 hover:text-white p-1'
-                                >
-                                  <Download className='w-3 h-3' />
-                                </Button>
-                                <Button
-                                  variant='ghost'
-                                  size='sm'
-                                  onClick={() => handleShare(img.url)}
-                                  className='text-neutral-300 hover:text-white p-1'
-                                >
-                                  <Share2 className='w-3 h-3' />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className='flex items-center justify-center gap-4 mt-6 pt-4 border-t border-neutral-800'>
-                    <Select
-                      onValueChange={(value) => handleEdit(parseInt(value))}
-                    >
-                      <SelectTrigger className='w-[200px] cursor-pointer border-neutral-600 text-neutral-300'>
-                        <Edit className='w-4 h-4 mr-2' />
-                        <SelectValue placeholder='Edit Image' />
-                      </SelectTrigger>
-                      <SelectContent className='bg-neutral-900 border-neutral-700'>
-                        {displayImages.map((_, idx) => (
-                          <SelectItem key={idx} value={String(idx)}>
-                            Edit Image {idx + 1}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    <Button
-                      variant='outline'
-                      size='lg'
-                      onClick={handleDownloadAll}
-                      className='border-neutral-600 cursor-pointer text-neutral-300 hover:bg-neutral-800'
-                    >
-                      <Download className='w-4 h-4 mr-2' />
-                      Download All as ZIP
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className='flex flex-col items-center justify-center gap-3 text-neutral-400 h-full min-h-[400px]'>
-                  <ImageIcon className='w-16 h-16' />
-                  <p className='text-lg mb-1'>No images generated yet</p>
-                  <p className='text-sm text-center'>
-                    Enter a prompt to start generating
-                  </p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <ResultPanel
+          status={status}
+          displayImages={displayImages}
+          isGenerating={isGenerating}
+          outputFormat={watch('outputFormat')}
+          onEdit={handleEdit}
+        />
       </div>
       {displayImages.length > 0 && (
         <ChatToggleButton

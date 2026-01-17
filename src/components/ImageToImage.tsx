@@ -4,16 +4,7 @@ import { useState, DragEvent, ChangeEvent } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
-import {
-  Copy,
-  Download,
-  Loader2,
-  Share2,
-  Wand2,
-  Upload,
-  X,
-  ImageIcon,
-} from 'lucide-react';
+import { Wand2, Upload, X } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -30,14 +21,14 @@ import {
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { fal } from '@fal-ai/client';
-import { Questionnaire } from './Questionarie';
 import { useChat } from '@ai-sdk/react';
 import { ChatToggleButton, PopoutChat } from './ChatPopup';
-import { RadioGroup, RadioGroupItem } from './ui/radio-group';
-import { Label } from './ui/label';
 import { env } from '@/config/env';
 import { useAuth } from '@/hooks/user/auth';
 import { useCredits } from '@/hooks/user/credits';
+import { ResultPanel } from './shared/ResultPanel';
+import { FormQuestionnaire } from './shared/FormQuestionnaire';
+import { ImageData } from './shared/imageUtils';
 
 type FormValues = {
   prompt: string;
@@ -47,11 +38,6 @@ type FormValues = {
   aspectRatios: string[];
   questionnaire?: string[];
   uploadedFiles: File[];
-};
-
-type ImageData = {
-  url: string;
-  aspectRatio: string;
 };
 
 export const ImageToImage = () => {
@@ -131,12 +117,10 @@ export const ImageToImage = () => {
         ctx!.fillRect(0, 0, targetWidth, targetHeight);
 
         if (img.width < targetWidth || img.height < targetHeight) {
-          // Place smaller image centered on white background
           const offsetX = (targetWidth - img.width) / 2;
           const offsetY = (targetHeight - img.height) / 2;
           ctx!.drawImage(img, offsetX, offsetY, img.width, img.height);
         } else {
-          // Crop/fit larger image to target dimensions
           ctx!.drawImage(img, 0, 0, targetWidth, targetHeight);
         }
 
@@ -163,12 +147,8 @@ export const ImageToImage = () => {
   const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
-
-      // Create previews for UI
       const previews = files.map((file) => URL.createObjectURL(file));
       setLocalPreviews((prev) => [...prev, ...previews]);
-
-      // Store files for later processing
       setValue('uploadedFiles', [...uploadedFiles, ...files]);
     }
   };
@@ -178,12 +158,8 @@ export const ImageToImage = () => {
     const files = Array.from(e.dataTransfer.files);
 
     if (files.length === 0) return;
-
-    // Create previews for UI
     const previews = files.map((file) => URL.createObjectURL(file));
     setLocalPreviews((prev) => [...prev, ...previews]);
-
-    // Store files for later processing
     setValue('uploadedFiles', [...uploadedFiles, ...files]);
 
     toast.success('Files added successfully!');
@@ -320,149 +296,10 @@ export const ImageToImage = () => {
     toast.success('Form reset successfully!');
   };
 
-  const handleDownload = async (url: string, filename = 'image.jpg') => {
-    try {
-      toast.loading('Downloading image...', { id: 'download' });
-
-      const response = await fetch(url);
-      if (!response.ok) throw new Error('Failed to fetch image');
-
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
-
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-
-      URL.revokeObjectURL(blobUrl);
-
-      toast.success('Image downloaded successfully!', { id: 'download' });
-    } catch (error) {
-      console.error('Download failed:', error);
-      toast.error('Failed to download image. Please try again.', {
-        id: 'download',
-      });
-    }
-  };
-
-  const handleCopy = async (url: string) => {
-    try {
-      await navigator.clipboard.writeText(url);
-      toast.success('Image URL copied to clipboard!');
-    } catch (error) {
-      console.error('Copy failed:', error);
-      toast.error('Failed to copy URL. Please try again.');
-    }
-  };
-
-  const handleShare = async (url: string) => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Edited Image',
-          text: 'Check out this edited image!',
-          url,
-        });
-        toast.success('Image shared successfully!');
-      } catch (err) {
-        if ((err as Error).name !== 'AbortError') {
-          console.error('Share failed:', err);
-          toast.error('Failed to share image.');
-        }
-      }
-    } else {
-      try {
-        await navigator.clipboard.writeText(url);
-        toast.success('Image URL copied to clipboard (sharing not supported)!');
-      } catch (error) {
-        toast.error('Sharing not supported in this browser.');
-      }
-    }
-  };
-
-  const handleDownloadAll = async () => {
-    if (displayImages.length === 0) return;
-
-    try {
-      toast.loading('Preparing zip file...', { id: 'zip-download' });
-      const JSZip = (await import('jszip')).default;
-      const zip = new JSZip();
-
-      for (let i = 0; i < displayImages.length; i++) {
-        const img = displayImages[i];
-        try {
-          const response = await fetch(img.url);
-          if (!response.ok) throw new Error(`Failed to fetch image ${i + 1}`);
-
-          const blob = await response.blob();
-          const extension = watch('outputFormat') || 'jpg';
-          const filename = `${isShowingEdited ? 'edited' : 'uploaded'
-            }-image-${img.aspectRatio.replace(':', 'x')}-${i + 1}.${extension}`;
-
-          zip.file(filename, blob);
-        } catch (error) {
-          console.error(`Failed to add image ${i + 1} to zip:`, error);
-          toast.error(`Failed to add image ${i + 1} to zip`);
-        }
-      }
-
-      // Generate and download zip
-      const content = await zip.generateAsync({ type: 'blob' });
-      const zipUrl = URL.createObjectURL(content);
-
-      const link = document.createElement('a');
-      link.href = zipUrl;
-      link.download = `${isShowingEdited ? 'edited' : 'uploaded'}-images.zip`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-
-      URL.revokeObjectURL(zipUrl);
-      toast.success('All images downloaded as zip!', { id: 'zip-download' });
-    } catch (error) {
-      console.error('Zip download failed:', error);
-      toast.error('Failed to create zip file. Please try again.', {
-        id: 'zip-download',
-      });
-    }
-  };
-
   let displayImages: ImageData[] = [];
   displayImages = editedImages.filter(
     (img) => img.url && img.url.trim() !== '',
   );
-
-  const isShowingEdited = editedImages.length > 0;
-
-  const getImageContainerStyle = (aspectRatio: string) => {
-    if (aspectRatio === '9:16') {
-      return 'aspect-[9/16] max-h-[300px] w-auto mx-auto';
-    }
-    return 'aspect-[16/9] w-full';
-  };
-
-  const getGridLayout = () => {
-    if (displayImages.length === 1) return 'grid-cols-1';
-    const hasLandscape = displayImages.some(
-      (img) => img.aspectRatio === '16:9',
-    );
-    const hasPortrait = displayImages.some((img) => img.aspectRatio === '9:16');
-
-    if (hasLandscape && hasPortrait) {
-      return 'grid-cols-1 sm:grid-cols-2 gap-4';
-    }
-
-    if (displayImages[0].aspectRatio === '9:16') {
-      return displayImages.length <= 2
-        ? 'grid-cols-2 gap-3'
-        : 'grid-cols-3 gap-2';
-    }
-
-    return 'grid-cols-1 gap-3';
-  };
 
   const [_, setInput] = useState('');
   const {
@@ -618,66 +455,12 @@ export const ImageToImage = () => {
                   </div>
                 )}
               />
-              {/* had to give choice for either random generate or fill questionare */}
-              <Controller
-                name='choices'
+              {/* Questionnaire with choices */}
+              <FormQuestionnaire
                 control={control}
-                rules={{
-                  required: 'Please select a choice',
-                }}
-                render={({ field }) => (
-                  <div>
-                    <label className='block text-sm font-medium text-neutral-300 mb-2'>
-                      Choose Thumbnail Generation *
-                    </label>
-
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      className={`flex gap-6 p-3 rounded-lg ${errors.choices
-                        ? 'border border-red-500'
-                        : 'border border-neutral-700'
-                        }`}
-                    >
-                      <div className='flex items-center gap-3'>
-                        <RadioGroupItem value='random' id='r2' />
-                        <Label htmlFor='r2'>Random Generation</Label>
-                      </div>
-                      <div className='flex items-center gap-3'>
-                        <RadioGroupItem value='form' id='r3' />
-                        <Label htmlFor='r3'>Fill Form to Customize</Label>
-                      </div>
-                    </RadioGroup>
-
-                    {errors.choices && (
-                      <p className='text-red-400 text-xs mt-1'>
-                        {errors.choices.message}
-                      </p>
-                    )}
-
-                    {field.value === 'form' && (
-                      <div className='mt-4'>
-                        <Controller
-                          name='questionnaire'
-                          control={control}
-                          rules={{
-                            required: 'Please complete the questionnaire',
-                          }}
-                          render={({ field }) => (
-                            <Questionnaire
-                              onComplete={(data) => field.onChange(data)} // saves data into react-hook-form
-                            />
-                          )}
-                        />
-                        {errors.questionnaire && (
-                          <p className='text-red-400 text-xs mt-1'>
-                            {errors.questionnaire.message}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
+                choicesFieldName='choices'
+                questionnaireFieldName='questionnaire'
+                errors={errors}
               />
 
               {/* Image Upload Section */}
@@ -937,201 +720,12 @@ export const ImageToImage = () => {
 
       {/* Right Panel - Result */}
       <div>
-        <Card className='bg-transparent border-neutral-800 h-auto overflow-y-auto p-1'>
-          <CardContent className='p-6'>
-            <div className='flex items-center justify-between mb-4'>
-              <h3 className='text-lg font-semibold text-neutral-100'>Result</h3>
-
-              {status !== 'idle' && (
-                <div className='flex items-center gap-2 px-3 py-1.5 rounded-lg border border-neutral-700 bg-transparent text-white text-sm'>
-                  <span
-                    className={`w-2.5 h-2.5 rounded-full ${status === 'completed'
-                      ? 'bg-green-500'
-                      : status === 'generating'
-                        ? 'bg-amber-400'
-                        : status === 'in-progress'
-                          ? 'bg-blue-400'
-                          : 'bg-neutral-500'
-                      }`}
-                  />
-                  <span>
-                    {status === 'completed'
-                      ? 'Completed'
-                      : status === 'generating'
-                        ? 'Generating'
-                        : status === 'in-progress'
-                          ? 'In Progress'
-                          : ''}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <div className='min-h-auto bg-neutral-950 rounded-lg border-none p-4 flex flex-col'>
-              {status === 'generating' || status === 'in-progress' ? (
-                <div className='flex flex-col items-center justify-center gap-3 h-full min-h-[400px]'>
-                  <Loader2 className='w-16 h-16 animate-spin text-neutral-400' />
-                  <p className='text-neutral-400'>
-                    {status === 'generating'
-                      ? 'Processing images...'
-                      : 'Editing your images...'}
-                  </p>
-                </div>
-              ) : displayImages.length > 0 ? (
-                <div className='flex flex-col h-full'>
-                  {/* Images Section */}
-                  <div className='flex-shrink-0 mb-4'>
-                    {displayImages.length === 1 ? (
-                      <div className='flex justify-center items-start'>
-                        <div
-                          className={`relative rounded-lg overflow-hidden border-none group ${getImageContainerStyle(
-                            displayImages[0].aspectRatio,
-                          )}`}
-                        >
-                          <img
-                            src={displayImages[0].url}
-                            alt={
-                              isShowingEdited
-                                ? 'Edited Image'
-                                : 'Uploaded Image'
-                            }
-                            className='w-full h-full object-cover'
-                          />
-                          {/* Show status label */}
-                          {!isShowingEdited && (
-                            <div className='absolute top-2 left-2 bg-neutral-900/80 text-neutral-300 px-2 py-1 rounded-md text-sm'>
-                              Original
-                            </div>
-                          )}
-                          {/* Aspect ratio badge */}
-                          <div className='absolute bottom-2 left-2 bg-neutral-900/80 text-neutral-300 px-2 py-1 rounded-md text-xs'>
-                            {displayImages[0].aspectRatio}
-                          </div>
-                          <div className='absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition bg-neutral-900/80 p-1 rounded-lg'>
-                            <Button
-                              variant='ghost'
-                              size='sm'
-                              onClick={() => handleCopy(displayImages[0].url)}
-                              className='text-neutral-300 hover:text-white'
-                            >
-                              <Copy className='w-4 h-4' />
-                            </Button>
-                            <Button
-                              variant='ghost'
-                              size='sm'
-                              onClick={() =>
-                                handleDownload(
-                                  displayImages[0].url,
-                                  `${isShowingEdited ? 'edited' : 'uploaded'
-                                  }-image.jpg`,
-                                )
-                              }
-                              className='text-neutral-300 hover:text-white'
-                            >
-                              <Download className='w-4 h-4' />
-                            </Button>
-                            <Button
-                              variant='ghost'
-                              size='sm'
-                              onClick={() => handleShare(displayImages[0].url)}
-                              className='text-neutral-300 hover:text-white'
-                            >
-                              <Share2 className='w-4 h-4' />
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className={`grid ${getGridLayout()}`}>
-                        {displayImages.map((img, idx) => (
-                          <div key={idx} className='flex justify-center'>
-                            <div
-                              className={`relative rounded-lg overflow-hidden border border-neutral-700 group ${getImageContainerStyle(
-                                img.aspectRatio,
-                              )}`}
-                            >
-                              <img
-                                src={img.url}
-                                alt={`${isShowingEdited ? 'Edited' : 'Uploaded'
-                                  } ${idx + 1}`}
-                                className='w-full h-full object-cover hover:scale-105 transition-transform duration-300'
-                              />
-                              {!isShowingEdited && (
-                                <div className='absolute top-2 left-2 bg-neutral-900/80 text-neutral-300 px-2 py-1 rounded-md text-xs'>
-                                  Original {idx + 1}
-                                </div>
-                              )}
-                              {/* Aspect ratio badge */}
-                              <div className='absolute bottom-2 left-2 bg-neutral-900/80 text-neutral-300 px-2 py-1 rounded-md text-xs'>
-                                {img.aspectRatio}
-                              </div>
-                              <div className='absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition bg-neutral-900/80 p-1 rounded-lg'>
-                                <Button
-                                  variant='ghost'
-                                  size='sm'
-                                  onClick={() => handleCopy(img.url)}
-                                  className='text-neutral-300 hover:text-white p-1'
-                                >
-                                  <Copy className='w-3 h-3' />
-                                </Button>
-                                <Button
-                                  variant='ghost'
-                                  size='sm'
-                                  onClick={() =>
-                                    handleDownload(
-                                      img.url,
-                                      `${isShowingEdited ? 'edited' : 'uploaded'
-                                      }-image-${img.aspectRatio.replace(
-                                        ':',
-                                        'x',
-                                      )}-${idx + 1}.jpg`,
-                                    )
-                                  }
-                                  className='text-neutral-300 hover:text-white p-1'
-                                >
-                                  <Download className='w-3 h-3' />
-                                </Button>
-                                <Button
-                                  variant='ghost'
-                                  size='sm'
-                                  onClick={() => handleShare(img.url)}
-                                  className='text-neutral-300 hover:text-white p-1'
-                                >
-                                  <Share2 className='w-3 h-3' />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Download All Button */}
-                  <div className='flex items-center justify-center mb-4 pt-2 border-t border-neutral-800'>
-                    <Button
-                      variant='outline'
-                      onClick={handleDownloadAll}
-                      className='cursor-pointer border-neutral-600 text-neutral-300 hover:bg-neutral-800'
-                      disabled={displayImages.length === 0}
-                    >
-                      <Download className='w-4 h-4 mr-2' />
-                      Download All as ZIP
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className='flex flex-col items-center justify-center gap-3 text-neutral-400 h-full min-h-[400px]'>
-                  <ImageIcon className='w-16 h-16' />
-                  <p className='text-lg mb-2'>No images uploaded yet</p>
-                  <p className='text-sm text-center'>
-                    Upload images and enter a prompt to start editing
-                  </p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <ResultPanel
+          status={status}
+          displayImages={displayImages}
+          isGenerating={isGenerating}
+          outputFormat={watch('outputFormat')}
+        />
       </div>
 
       {displayImages.length > 0 && (
