@@ -10,10 +10,13 @@ datasource db {
 model User {
   id        String      @id @default(uuid())
   email     String
+  fullName  String
+  profile_img String?
   clerk_id  String      @unique
   credits   Int         @default(7)
   plan      PLAN        @default(FREE)
   role      Role        @default(USER)
+  last_active_at DateTime
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
   Thumbnail Thumbnail[]

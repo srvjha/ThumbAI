@@ -19,35 +19,40 @@ export const POST = async (req: NextRequest) => {
     outputFormat = 'jpeg',
     images_urls = [],
     aspectRatio,
-    choices="random",
+    choices = 'random',
     userChoices,
     userId,
     type = 'youtube',
   } = await req.json();
 
-   let userPayload = {
+  let userPayload = {
     prompt,
     isValidPrompt: false,
   };
 
-  if(choices === "random" && mode === "normal"){
+  if (choices === 'random' && mode === 'normal') {
     userPayload.isValidPrompt = true;
     userPayload.prompt = prompt;
-  } else{
+  } else {
     const finalPrompt: FinalPrompt =
-    mode === 'normal'
-      ? await generateThumbnailPrompt(prompt,"Image-to-Image", userChoices, type)
-      : await generateChatPrompt(prompt);
+      mode === 'normal'
+        ? await generateThumbnailPrompt(
+            prompt,
+            'Image-to-Image',
+            userChoices,
+            type,
+          )
+        : await generateChatPrompt(prompt);
 
-  if (!finalPrompt.valid_prompt) {
-    return NextResponse.json(
-      new ApiResponse(200, finalPrompt, 'valid prompt not provided'),
-    );
+    if (!finalPrompt.valid_prompt) {
+      return NextResponse.json(
+        new ApiResponse(200, finalPrompt, 'valid prompt not provided'),
+      );
+    }
+    userPayload.isValidPrompt = true;
+    userPayload.prompt = finalPrompt.response;
   }
-  userPayload.isValidPrompt = true;
-  userPayload.prompt = finalPrompt.response;
-  }
-  
+
   const { request_id } = await fal.queue.submit('fal-ai/nano-banana/edit', {
     input: {
       prompt: userPayload.prompt,
@@ -67,7 +72,8 @@ export const POST = async (req: NextRequest) => {
         input: {
           prompt: userPayload.prompt,
           image_urls: images_urls,
-          num_images: mode === "chat" ? numImages[numImages.length-1] : numImages,
+          num_images:
+            mode === 'chat' ? numImages[numImages.length - 1] : numImages,
           output_format: outputFormat,
           aspect_ratio: aspectRatio,
         },
@@ -83,7 +89,7 @@ export const POST = async (req: NextRequest) => {
       {
         valid_prompt: userPayload.isValidPrompt,
         success: true,
-        requestId: request_id
+        requestId: request_id,
       },
       'Request Submitted Successfully',
     ),

@@ -1,5 +1,5 @@
-import { UrlToImageGenerator } from "@/components/UrlToImage";
+import { UrlToImageGenerator } from '@/components/UrlToImage';
 
 export default function UrlToImagePage() {
-  return <UrlToImageGenerator />
+  return <UrlToImageGenerator />;
 }

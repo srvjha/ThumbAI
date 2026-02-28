@@ -88,7 +88,6 @@ export const UrlToImageGenerator = () => {
     setIsGenerating(true);
     setStatus('generating');
 
-
     // check for the url if its valid or not
     const validBlog = await detectBlog(data.url);
     if (!validBlog?.isBlog) {
@@ -106,7 +105,7 @@ export const UrlToImageGenerator = () => {
         return;
       }
     }
-   
+
     try {
       let results: ImageData[] = [];
 
@@ -162,10 +161,11 @@ export const UrlToImageGenerator = () => {
   const handleEdit = (selectedIdx: number) => {
     const img = displayImages[selectedIdx];
     if (!img) return;
-    const urlTitleKeywords = url.split("/").pop() as string;
+    const urlTitleKeywords = url.split('/').pop() as string;
 
     router.push(
-      `/nano-banana/edit-image?url=${encodeURIComponent(img.url)}&aspectRatio=${img.aspectRatio
+      `/nano-banana/edit-image?url=${encodeURIComponent(img.url)}&aspectRatio=${
+        img.aspectRatio
       }&blog=${encodeURIComponent(urlTitleKeywords)}&outputFormat=${watch(
         'outputFormat',
       )}`,
@@ -190,7 +190,8 @@ export const UrlToImageGenerator = () => {
                   required: 'URL is required',
                   pattern: {
                     value: /^(https?:\/\/[^\s$.?#].[^\s]*)$/i,
-                    message: 'Please enter a valid URL (must start with https://)',
+                    message:
+                      'Please enter a valid URL (must start with https://)',
                   },
                 }}
                 render={({ field }) => (
@@ -201,10 +202,11 @@ export const UrlToImageGenerator = () => {
                     <Input
                       {...field}
                       placeholder='Enter your blog url...'
-                      className={`w-full bg-neutral-800 border rounded-lg p-4 text-neutral-300 placeholder-neutral-500 focus:outline-none resize-none ${errors.url
-                        ? 'border-red-500 focus:border-red-500'
-                        : 'border-neutral-700 focus:border-blue-500'
-                        }`}
+                      className={`w-full bg-neutral-800 border rounded-lg p-4 text-neutral-300 placeholder-neutral-500 focus:outline-none resize-none ${
+                        errors.url
+                          ? 'border-red-500 focus:border-red-500'
+                          : 'border-neutral-700 focus:border-blue-500'
+                      }`}
                     />
                     {errors.url && (
                       <p className='text-red-400 text-xs mt-1'>
@@ -283,10 +285,11 @@ export const UrlToImageGenerator = () => {
                               onValueChange={field.onChange}
                             >
                               <SelectTrigger
-                                className={`w-[180px] bg-neutral-800 text-neutral-300 ${errors.outputFormat
-                                  ? 'border-red-500'
-                                  : 'border-neutral-700'
-                                  }`}
+                                className={`w-[180px] bg-neutral-800 text-neutral-300 ${
+                                  errors.outputFormat
+                                    ? 'border-red-500'
+                                    : 'border-neutral-700'
+                                }`}
                               >
                                 <SelectValue placeholder='Select format' />
                               </SelectTrigger>
@@ -355,7 +358,6 @@ export const UrlToImageGenerator = () => {
           onEdit={handleEdit}
         />
       </div>
-
     </div>
   );
 };

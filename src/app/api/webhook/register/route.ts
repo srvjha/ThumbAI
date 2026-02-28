@@ -51,7 +51,16 @@ export const POST = async (req: Request): Promise<NextResponse> => {
 
   if (eventType === 'user.created') {
     const data = evt.data as UserJSON;
-    const { id, email_addresses, primary_email_address_id } = data;
+    const {
+      id,
+      email_addresses,
+      primary_email_address_id,
+      first_name,
+      last_name,
+      last_active_at,
+      image_url,
+      created_at,
+    } = data;
 
     const primaryEmail = email_addresses.find(
       (email) => email.id === primary_email_address_id,
@@ -64,14 +73,24 @@ export const POST = async (req: Request): Promise<NextResponse> => {
       );
     }
 
+    const fullName =
+      `${first_name ?? ''} ${last_name ?? ''}`.trim() || 'No FullName';
+    const profile_img = image_url;
+    const lastActiveAt = last_active_at
+      ? new Date(last_active_at)
+      : new Date(created_at);
+
     try {
       const newUser = await db.user.create({
         data: {
           email: primaryEmail,
+          fullName,
+          profile_img,
           clerk_id: id,
           credits: 3,
           plan: 'FREE',
           role: Role.USER,
+          last_active_at: lastActiveAt,
         },
       });
 

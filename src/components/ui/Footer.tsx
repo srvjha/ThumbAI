@@ -1,7 +1,7 @@
 import { Twitter, Linkedin, Mail } from 'lucide-react';
 
 export const Footer = () => {
- const currentYear = new Date().getFullYear();
+  const currentYear = new Date().getFullYear();
   return (
     <div className='border-t border-neutral-700 pt-8 text-center text-gray-400 mb-6'>
       <p className='mb-4'>&copy; {currentYear} ThumbAI. All rights reserved.</p>

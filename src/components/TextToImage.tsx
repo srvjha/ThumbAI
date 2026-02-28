@@ -54,7 +54,7 @@ export const TextToImageGenerator = () => {
   } = useForm<FormValues>({
     defaultValues: {
       prompt: '',
-      choices:'',
+      choices: '',
       numImages: 1,
       outputFormat: 'jpeg',
       aspectRatios: ['16:9'],
@@ -69,7 +69,7 @@ export const TextToImageGenerator = () => {
   const aspectRatios = watch('aspectRatios');
   const defaultImage = watch('imagesUrl') || [];
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const { data: userInfo} = useAuth();
+  const { data: userInfo } = useAuth();
   const { mutate: deductCreditsMutation } = useCredits();
 
   const onSubmit = async (data: FormValues) => {
@@ -149,7 +149,8 @@ export const TextToImageGenerator = () => {
     if (!img) return;
 
     router.push(
-      `/nano-banana/edit-image?url=${encodeURIComponent(img.url)}&aspectRatio=${img.aspectRatio
+      `/nano-banana/edit-image?url=${encodeURIComponent(img.url)}&aspectRatio=${
+        img.aspectRatio
       }&prompt=${encodeURIComponent(prompt)}&outputFormat=${watch(
         'outputFormat',
       )}`,
@@ -288,10 +289,11 @@ export const TextToImageGenerator = () => {
                     <textarea
                       {...field}
                       placeholder='Describe the thumbnail you want to create...'
-                      className={`w-full h-32 bg-neutral-800 border rounded-lg p-4 text-neutral-300 placeholder-neutral-500 focus:outline-none resize-none ${errors.prompt
-                        ? 'border-red-500 focus:border-red-500'
-                        : 'border-neutral-700 focus:border-blue-500'
-                        }`}
+                      className={`w-full h-32 bg-neutral-800 border rounded-lg p-4 text-neutral-300 placeholder-neutral-500 focus:outline-none resize-none ${
+                        errors.prompt
+                          ? 'border-red-500 focus:border-red-500'
+                          : 'border-neutral-700 focus:border-blue-500'
+                      }`}
                     />
                     {errors.prompt && (
                       <p className='text-red-400 text-xs mt-1'>
@@ -422,10 +424,11 @@ export const TextToImageGenerator = () => {
                               onValueChange={field.onChange}
                             >
                               <SelectTrigger
-                                className={`w-[180px] bg-neutral-800 text-neutral-300 ${errors.outputFormat
-                                  ? 'border-red-500'
-                                  : 'border-neutral-700'
-                                  }`}
+                                className={`w-[180px] bg-neutral-800 text-neutral-300 ${
+                                  errors.outputFormat
+                                    ? 'border-red-500'
+                                    : 'border-neutral-700'
+                                }`}
                               >
                                 <SelectValue placeholder='Select format' />
                               </SelectTrigger>

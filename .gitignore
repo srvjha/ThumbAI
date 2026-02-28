@@ -47,3 +47,6 @@ next-env.d.ts
 /.clerk/
 
 /generated/prisma
+
+# Fillup production changes
+/scripts

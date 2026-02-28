@@ -42,7 +42,11 @@ export default function UserDetailPage() {
   const userId = params.id as string;
   const { data: userData } = useAuth();
 
-  const { data: user, isLoading, error } = useQuery<UserDetail>({
+  const {
+    data: user,
+    isLoading,
+    error,
+  } = useQuery<UserDetail>({
     queryKey: ['admin-user', userId],
     queryFn: async () => {
       const response = await axios.get(`/api/admin/users/${userId}`);
@@ -118,7 +122,10 @@ export default function UserDetailPage() {
                     </CardTitle>
                     <div className='flex items-center gap-2'>
                       {user.role === 'ADMIN' && (
-                        <Badge variant='secondary' className='bg-blue-600 text-white'>
+                        <Badge
+                          variant='secondary'
+                          className='bg-blue-600 text-white'
+                        >
                           <Shield className='w-3 h-3 mr-1' />
                           Admin
                         </Badge>
@@ -148,7 +155,9 @@ export default function UserDetailPage() {
                 </div>
                 <div>
                   <p className='text-sm text-neutral-400'>Credits</p>
-                  <p className='text-2xl font-bold text-neutral-50'>{user.credits}</p>
+                  <p className='text-2xl font-bold text-neutral-50'>
+                    {user.credits}
+                  </p>
                 </div>
               </div>
 
@@ -223,14 +232,18 @@ export default function UserDetailPage() {
                     <CardContent className='pt-4'>
                       <div className='space-y-2'>
                         <div>
-                          <p className='text-xs text-neutral-400 mb-1'>Created</p>
+                          <p className='text-xs text-neutral-400 mb-1'>
+                            Created
+                          </p>
                           <p className='text-sm text-neutral-300'>
                             {new Date(thumb.createdAt).toLocaleString()}
                           </p>
                         </div>
                         {thumb.user_original_prompt && (
                           <div>
-                            <p className='text-xs text-neutral-400 mb-1'>Prompt</p>
+                            <p className='text-xs text-neutral-400 mb-1'>
+                              Prompt
+                            </p>
                             <p className='text-sm text-neutral-300 line-clamp-2'>
                               {thumb.user_original_prompt}
                             </p>
@@ -256,4 +269,3 @@ export default function UserDetailPage() {
     </div>
   );
 }
-

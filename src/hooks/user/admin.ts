@@ -2,8 +2,7 @@ import { UserData } from '@/types/admin';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 
-
-export const useAdmin = (isAdmin:boolean) => {
+export const useAdmin = (isAdmin: boolean) => {
   return useQuery<UserData[]>({
     queryKey: ['admin-users'],
     queryFn: async () => {

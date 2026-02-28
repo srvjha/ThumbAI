@@ -32,7 +32,7 @@ export const steps = [
     step: '02',
     title: 'Describe Your Vision',
     description:
-      "Write a prompt to describe your thumbnail, fill questionnaire if required.",
+      'Write a prompt to describe your thumbnail, fill questionnaire if required.',
   },
   {
     step: '03',

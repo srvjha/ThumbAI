@@ -1,9 +1,7 @@
-
 export type ImageData = {
   url: string;
   aspectRatio: string;
 };
-
 
 export const getImageContainerStyle = (aspectRatio: string): string => {
   if (aspectRatio === '9:16') {
@@ -11,7 +9,6 @@ export const getImageContainerStyle = (aspectRatio: string): string => {
   }
   return 'aspect-[16/9] w-full';
 };
-
 
 export const getGridLayout = (images: ImageData[]): string => {
   if (images.length === 1) return 'grid-cols-1';
