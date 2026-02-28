@@ -57,7 +57,7 @@ export const GET = async (
         status: thumb.status,
         imageUrl: thumb.image_url,
         createdAt: thumb.createdAt,
-        user_original_prompt: thumb.user_original_prompt,
+        user_prompt: thumb.user_prompt,
       })),
     };
 
