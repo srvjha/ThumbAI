@@ -21,14 +21,14 @@ export const POST = async (req: NextRequest) => {
     await db.thumbnail.update({
       where: { request_id },
       data: {
-        status: 'COMPLETED',
+        status: ['COMPLETED'],
         image_url: result.data.images[0].url,
       },
     });
   } else {
     await db.thumbnail.update({
       where: { request_id },
-      data: { status: requestStatus.status },
+      data: { status: [requestStatus.status] },
     });
   }
 

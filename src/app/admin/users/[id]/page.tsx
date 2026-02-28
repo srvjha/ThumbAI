@@ -29,10 +29,10 @@ interface UserDetail {
   thumbnailCount: number;
   thumbnails: Array<{
     id: string;
-    status: string;
-    imageUrl: string | null;
+    status: string[];
+    imageUrl: string[];
     createdAt: string;
-    user_original_prompt?: string;
+    user_prompt?: string;
   }>;
 }
 
@@ -209,9 +209,9 @@ export default function UserDetailPage() {
                     className='bg-neutral-800 border-neutral-700 overflow-hidden hover:border-neutral-600 transition-colors'
                   >
                     <div className='aspect-video bg-neutral-900 relative'>
-                      {thumb.imageUrl ? (
+                      {thumb.imageUrl && thumb.imageUrl.length > 0 ? (
                         <img
-                          src={thumb.imageUrl}
+                          src={thumb.imageUrl[0]}
                           alt='Thumbnail'
                           className='w-full h-full object-cover'
                         />
@@ -220,13 +220,17 @@ export default function UserDetailPage() {
                           <FileText className='w-8 h-8' />
                         </div>
                       )}
-                      <div className='absolute top-2 right-2'>
-                        <Badge
-                          variant='outline'
-                          className='bg-neutral-900/80 border-neutral-700 text-neutral-300 text-xs'
-                        >
-                          {thumb.status}
-                        </Badge>
+                      <div className='absolute top-2 right-2 flex flex-col gap-1'>
+                        {thumb.status &&
+                          thumb.status.map((st, i) => (
+                            <Badge
+                              key={i}
+                              variant='outline'
+                              className='bg-neutral-900/80 border-neutral-700 text-neutral-300 text-xs'
+                            >
+                              {st}
+                            </Badge>
+                          ))}
                       </div>
                     </div>
                     <CardContent className='pt-4'>
@@ -239,13 +243,13 @@ export default function UserDetailPage() {
                             {new Date(thumb.createdAt).toLocaleString()}
                           </p>
                         </div>
-                        {thumb.user_original_prompt && (
+                        {thumb.user_prompt && (
                           <div>
                             <p className='text-xs text-neutral-400 mb-1'>
                               Prompt
                             </p>
                             <p className='text-sm text-neutral-300 line-clamp-2'>
-                              {thumb.user_original_prompt}
+                              {thumb.user_prompt}
                             </p>
                           </div>
                         )}

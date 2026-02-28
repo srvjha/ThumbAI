@@ -28,6 +28,7 @@ import { useCredits } from '@/hooks/user/credits';
 import { ResultPanel } from './shared/ResultPanel';
 import { FormQuestionnaire } from './shared/FormQuestionnaire';
 import { ImageData } from './shared/imageUtils';
+import { updateThumbnailStatus } from '@/actions/thumbnail';
 
 type FormValues = {
   prompt: string;
@@ -117,6 +118,11 @@ export const TextToImageGenerator = () => {
             aspectRatio: aspectRatio,
           })) || [];
         results = [...results, ...imgs];
+
+        const urls = imgs.map((img: any) => img.url);
+        if (urls.length > 0) {
+          await updateThumbnailStatus(res.data.data.requestId, urls);
+        }
       }
 
       setGeneratedImages(results);
@@ -233,6 +239,8 @@ export const TextToImageGenerator = () => {
 
           setStatus('completed');
           deductCreditsMutation({ userId: userInfo!.id, credits: noOfImages });
+
+          updateThumbnailStatus(requestId, [payload.image_url]);
 
           evtSource.close();
         } else {

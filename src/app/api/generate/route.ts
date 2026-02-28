@@ -63,16 +63,15 @@ export const POST = async (req: NextRequest) => {
       await db.thumbnail.create({
         data: {
           request_id: result.requestId,
-          status: 'PENDING',
-          user_original_prompt: prompt,
-          input: {
-            prompt: userPayload.prompt,
-            num_images: numImages,
-            output_format: outputFormat,
-            aspect_ratio: aspectRatio,
-          },
-          image_url: null,
           user_id: userId,
+          user_prompt: prompt,
+          enhanced_ai_prompt: userPayload.prompt,
+          num_of_images: numImages,
+          status: ['PENDING'],
+          image_url: [],
+          content_type: outputFormat,
+          aspect_ratio: aspectRatio,
+          model_used: type === 'blog' ? 'URL_TO_IMAGE' : 'TEXT_TO_IMAGE',
         },
       });
     }

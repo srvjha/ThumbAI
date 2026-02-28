@@ -19,14 +19,13 @@ export async function GET(req: NextRequest) {
           where: { request_id: requestId },
         });
 
-        if (thumbnail?.status === 'COMPLETED') {
+        if (thumbnail?.status?.includes('COMPLETED')) {
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify(thumbnail)}\n\n`),
           );
           done = true;
           controller.close();
         } else {
-          let counter = 0;
           controller.enqueue(
             encoder.encode(
               `data: ${JSON.stringify({ status: thumbnail?.status || 'PENDING' })}\n\n`,

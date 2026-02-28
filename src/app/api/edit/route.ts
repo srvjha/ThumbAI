@@ -67,18 +67,18 @@ export const POST = async (req: NextRequest) => {
     await db.thumbnail.create({
       data: {
         request_id,
-        status: 'PENDING',
-        user_original_prompt: prompt,
-        input: {
-          prompt: userPayload.prompt,
-          image_urls: images_urls,
-          num_images:
-            mode === 'chat' ? numImages[numImages.length - 1] : numImages,
-          output_format: outputFormat,
-          aspect_ratio: aspectRatio,
-        },
-        image_url: null,
         user_id: userId,
+        user_prompt: prompt,
+        enhanced_ai_prompt: userPayload.prompt,
+        num_of_images:
+          mode === 'chat' && Array.isArray(numImages)
+            ? numImages[numImages.length - 1]
+            : numImages,
+        status: ['PENDING'],
+        image_url: [],
+        content_type: outputFormat,
+        aspect_ratio: aspectRatio ?? '16:9',
+        model_used: mode === 'chat' ? 'TEXT_TO_IMAGE' : 'IMAGE_TO_IMAGE',
       },
     });
   }
