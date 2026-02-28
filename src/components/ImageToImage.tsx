@@ -29,6 +29,7 @@ import { useCredits } from '@/hooks/user/credits';
 import { ResultPanel } from './shared/ResultPanel';
 import { FormQuestionnaire } from './shared/FormQuestionnaire';
 import { ImageData } from './shared/imageUtils';
+import { updateThumbnailStatus } from '@/actions/thumbnail';
 
 type FormValues = {
   prompt: string;
@@ -271,6 +272,8 @@ export const ImageToImage = () => {
               credits: data.numImages,
             });
 
+            updateThumbnailStatus(requestId, [payload.image_url]);
+
             evtSource.close();
           }
         };
@@ -383,6 +386,8 @@ export const ImageToImage = () => {
 
           setStatus('completed');
           deductCreditsMutation({ userId: userInfo!.id, credits: 1 });
+
+          updateThumbnailStatus(requestId, [payload.image_url]);
 
           evtSource.close();
         }

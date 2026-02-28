@@ -29,6 +29,7 @@ import { generatePromptForBlog } from '@/agent/generatePromptForBlog';
 import { ResultPanel } from './shared/ResultPanel';
 import { FormQuestionnaire } from './shared/FormQuestionnaire';
 import { ImageData } from './shared/imageUtils';
+import { updateThumbnailStatus } from '@/actions/thumbnail';
 
 type FormValues = {
   url: string;
@@ -132,6 +133,11 @@ export const UrlToImageGenerator = () => {
           aspectRatio: data.aspectRatios,
         })) || [];
       results = [...results, ...imgs];
+
+      const urls = imgs.map((img: any) => img.url);
+      if (urls.length > 0) {
+        await updateThumbnailStatus(res.data.data.requestId, urls);
+      }
 
       setGeneratedImages(results);
       setStatus('completed');

@@ -25,14 +25,25 @@ model User {
 model Thumbnail {
   id                   String   @id @default(uuid())
   user_id              String
-  input                Json
-  status               String
-  image_url            String?
   request_id           String   @unique
+  user_prompt          String   @default("")
+  enhanced_ai_prompt   String   @default("")
+  num_of_images        Int?
+  status               String[]
+  image_url            String[]
+  content_type         String?
+  aspect_ratio         String?
+  model_used           MODEL?
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
-  user_original_prompt String   @default("")
+
   user                 User     @relation(fields: [user_id], references: [id])
+}
+
+enum MODEL {
+  TEXT_TO_IMAGE
+  IMAGE_TO_IMAGE
+  URL_TO_IMAGE
 }
 
 model Order {
