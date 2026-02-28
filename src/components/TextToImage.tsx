@@ -239,7 +239,7 @@ export const TextToImageGenerator = () => {
 
           setStatus('completed');
           deductCreditsMutation({ userId: userInfo!.id, credits: noOfImages });
-          
+
           updateThumbnailStatus(requestId, [payload.image_url]);
 
           evtSource.close();

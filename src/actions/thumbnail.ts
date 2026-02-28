@@ -4,7 +4,7 @@ import { db } from '@/db';
 
 export async function updateThumbnailStatus(
   requestId: string,
-  imageUrls: string[]
+  imageUrls: string[],
 ) {
   try {
     const thumbnail = await db.thumbnail.findUnique({

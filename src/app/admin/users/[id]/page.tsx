@@ -221,15 +221,16 @@ export default function UserDetailPage() {
                         </div>
                       )}
                       <div className='absolute top-2 right-2 flex flex-col gap-1'>
-                        {thumb.status && thumb.status.map((st, i) => (
-                          <Badge
-                            key={i}
-                            variant='outline'
-                            className='bg-neutral-900/80 border-neutral-700 text-neutral-300 text-xs'
-                          >
-                            {st}
-                          </Badge>
-                        ))}
+                        {thumb.status &&
+                          thumb.status.map((st, i) => (
+                            <Badge
+                              key={i}
+                              variant='outline'
+                              className='bg-neutral-900/80 border-neutral-700 text-neutral-300 text-xs'
+                            >
+                              {st}
+                            </Badge>
+                          ))}
                       </div>
                     </div>
                     <CardContent className='pt-4'>

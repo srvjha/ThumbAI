@@ -70,7 +70,10 @@ export const POST = async (req: NextRequest) => {
         user_id: userId,
         user_prompt: prompt,
         enhanced_ai_prompt: userPayload.prompt,
-        num_of_images: mode === 'chat' && Array.isArray(numImages) ? numImages[numImages.length - 1] : numImages,
+        num_of_images:
+          mode === 'chat' && Array.isArray(numImages)
+            ? numImages[numImages.length - 1]
+            : numImages,
         status: ['PENDING'],
         image_url: [],
         content_type: outputFormat,
