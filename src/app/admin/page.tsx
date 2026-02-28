@@ -30,8 +30,6 @@ import { useAuth } from '@/hooks/user/auth';
 import { useRouter } from 'next/navigation';
 import { useAdmin } from '@/hooks/user/admin';
 
-
-
 type SortField = 'email' | 'credits' | 'thumbnails' | 'createdAt';
 type SortOrder = 'asc' | 'desc';
 
@@ -49,7 +47,7 @@ export default function AdminDashboard() {
     return userData?.role === 'ADMIN';
   }, [userData]);
 
-  const { data: users, isLoading } = useAdmin(isAdmin)
+  const { data: users, isLoading } = useAdmin(isAdmin);
 
   // Redirect if not admin
   if (userData && !isAdmin) {
@@ -153,10 +151,10 @@ export default function AdminDashboard() {
         {/* Header */}
         <div className='mb-8'>
           <div className='flex items-center gap-2 mb-2'>
-           
-            <h1 className='text-4xl font-bold text-neutral-50'>Admin Dashboard</h1>
+            <h1 className='text-4xl font-bold text-neutral-50'>
+              Admin Dashboard
+            </h1>
           </div>
-          
         </div>
 
         {/* Stats Cards */}
@@ -176,7 +174,7 @@ export default function AdminDashboard() {
           </Card>
 
           <Card className='bg-transparent border-neutral-800 border-dotted border-2'>
-              <CardHeader className='flex flex-row items-center justify-between pb-1'>
+            <CardHeader className='flex flex-row items-center justify-between pb-1'>
               <CardTitle className='text-xl font-medium text-neutral-400'>
                 Total Thumbnails
               </CardTitle>
@@ -184,13 +182,14 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className='text-3xl font-bold text-neutral-50'>
-                {users?.reduce((acc, user) => acc + user.thumbnailCount, 0) || 0}
+                {users?.reduce((acc, user) => acc + user.thumbnailCount, 0) ||
+                  0}
               </div>
             </CardContent>
           </Card>
 
           <Card className='bg-transparent border-neutral-800 border-dotted border-2'>
-              <CardHeader className='flex flex-row items-center justify-between pb-1'>
+            <CardHeader className='flex flex-row items-center justify-between pb-1'>
               <CardTitle className='text-xl font-medium text-neutral-400'>
                 Total Credits
               </CardTitle>
@@ -206,7 +205,7 @@ export default function AdminDashboard() {
 
         {/* Filters and Search */}
         <Card className='bg-transparent border-neutral-800 mb-6 border-dotted border-2'>
-          <CardContent >
+          <CardContent>
             <div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
               {/* Search */}
               <div className='relative md:col-span-2'>
@@ -315,16 +314,26 @@ export default function AdminDashboard() {
                       onClick={() => router.push(`/admin/users/${user.id}`)}
                     >
                       <td className='py-3 px-4'>
-                        <div className='text-neutral-50 font-medium'>{user.email}</div>
-                        <div className='text-xs text-neutral-500 mt-1'>{user.id}</div>
+                        <div className='text-neutral-50 font-medium'>
+                          {user.email}
+                        </div>
+                        <div className='text-xs text-neutral-500 mt-1'>
+                          {user.id}
+                        </div>
                       </td>
                       <td className='py-3 px-4'>
                         {user.role === 'ADMIN' ? (
-                          <Badge variant='secondary' className='bg-blue-600 text-white'>
+                          <Badge
+                            variant='secondary'
+                            className='bg-blue-600 text-white'
+                          >
                             Admin
                           </Badge>
                         ) : (
-                          <Badge variant='outline' className='border-neutral-600 text-neutral-400'>
+                          <Badge
+                            variant='outline'
+                            className='border-neutral-600 text-neutral-400'
+                          >
                             User
                           </Badge>
                         )}

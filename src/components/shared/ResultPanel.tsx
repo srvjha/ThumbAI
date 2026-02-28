@@ -11,7 +11,12 @@ import {
   SelectValue,
 } from '../ui/select';
 import toast from 'react-hot-toast';
-import { ImageData, getImageContainerStyle, getGridLayout, downloadImagesAsZip } from './imageUtils';
+import {
+  ImageData,
+  getImageContainerStyle,
+  getGridLayout,
+  downloadImagesAsZip,
+} from './imageUtils';
 import { ImageActionButtons } from './ImageActionButtons';
 import { ReactNode } from 'react';
 
@@ -145,9 +150,7 @@ export const ResultPanel: React.FC<ResultPanelProps> = ({
 
               <div className='flex items-center justify-center gap-4 mt-6 pt-4 border-t border-neutral-800'>
                 {onEdit && (
-                  <Select
-                    onValueChange={(value) => onEdit(parseInt(value))}
-                  >
+                  <Select onValueChange={(value) => onEdit(parseInt(value))}>
                     <SelectTrigger className='w-[200px] border-neutral-600 text-neutral-300'>
                       <SelectValue placeholder='Edit Image' />
                     </SelectTrigger>

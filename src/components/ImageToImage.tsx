@@ -330,7 +330,7 @@ export const ImageToImage = () => {
         : editedImages.filter((img) => img.url.length > 0).map((e) => e.url);
 
     const noOfImages = watch('numImages');
-    console.log("images:",noOfImages)
+    console.log('images:', noOfImages);
 
     try {
       const res = await axios.post('/api/edit', {
@@ -362,7 +362,7 @@ export const ImageToImage = () => {
         const payload = JSON.parse(event.data);
 
         if (payload.status === 'COMPLETED') {
-          console.log("imageUrl: ",payload.image_url)
+          console.log('imageUrl: ', payload.image_url);
           setEditedImages([
             { url: payload.image_url, aspectRatio: aspectRatios[0] },
           ]);
@@ -442,10 +442,11 @@ export const ImageToImage = () => {
                     <textarea
                       {...field}
                       placeholder='Describe how you want to edit the uploaded images...'
-                      className={`w-full h-32 bg-neutral-800 border rounded-lg p-4 text-neutral-300 placeholder-neutral-500 focus:outline-none resize-none ${errors.prompt
-                        ? 'border-red-500 focus:border-red-500'
-                        : 'border-neutral-700 focus:border-blue-500'
-                        }`}
+                      className={`w-full h-32 bg-neutral-800 border rounded-lg p-4 text-neutral-300 placeholder-neutral-500 focus:outline-none resize-none ${
+                        errors.prompt
+                          ? 'border-red-500 focus:border-red-500'
+                          : 'border-neutral-700 focus:border-blue-500'
+                      }`}
                     />
                     {errors.prompt && (
                       <p className='text-red-400 text-xs mt-1'>
@@ -655,10 +656,11 @@ export const ImageToImage = () => {
                               onValueChange={field.onChange}
                             >
                               <SelectTrigger
-                                className={`w-[180px] bg-neutral-800 text-neutral-300 ${errors.outputFormat
-                                  ? 'border-red-500'
-                                  : 'border-neutral-700'
-                                  }`}
+                                className={`w-[180px] bg-neutral-800 text-neutral-300 ${
+                                  errors.outputFormat
+                                    ? 'border-red-500'
+                                    : 'border-neutral-700'
+                                }`}
                               >
                                 <SelectValue placeholder='Select format' />
                               </SelectTrigger>

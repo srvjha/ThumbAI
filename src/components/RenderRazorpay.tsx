@@ -168,11 +168,9 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
           forceCloseRazorpay();
 
           // Best-effort: mark order as cancelled in backend
-          axios
-            .post('/api/order/cancel', { orderId })
-            .catch(() => {
-              // silently ignore; this is non-critical for the user
-            });
+          axios.post('/api/order/cancel', { orderId }).catch(() => {
+            // silently ignore; this is non-critical for the user
+          });
         },
       },
       retry: {
@@ -228,9 +226,7 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
 
   // Show loading state while user data is being fetched
   if (isLoading) {
-    return (
-      <Loader className='h-10 animate-spin text-center mx-auto w-full' />
-    );
+    return <Loader className='h-10 animate-spin text-center mx-auto w-full' />;
   }
 
   if (isError) {

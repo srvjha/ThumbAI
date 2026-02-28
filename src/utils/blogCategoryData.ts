@@ -1,5 +1,5 @@
 export const blogCategoryWiseData = {
-    Technology: `
+  Technology: `
     Subject & Composition
     Focus on a modern, sleek tech aesthetic. Use abstract representations of code, circuits, or digital networks.
     
@@ -16,7 +16,7 @@ export const blogCategoryWiseData = {
     Title should be bold large and at the top of the thumbnail
     `,
 
-    opinion: `
+  opinion: `
     Subject & Composition
     Use a split composition or a strong central conceptual image that represents the conflict or point of view. If the author is famous, a thoughtful portrait works; otherwise, use metaphorical imagery (e.g., a path diverging, a scale balancing).
     
@@ -33,7 +33,7 @@ export const blogCategoryWiseData = {
     Title should be bold large and at the top of the thumbnail
     `,
 
-    listicle: `
+  listicle: `
     Subject & Composition
     Organized and structured layout. A grid or a split screen showing 2-3 examples of the items listed. A large number is essential (e.g., "7", "Top 10").
     
@@ -50,7 +50,7 @@ export const blogCategoryWiseData = {
     Title should be bold large and at the top of the thumbnail
     `,
 
-    news: `
+  news: `
     Subject & Composition
     Broadcast style. A relevant image of the subject (e.g., a company logo, a person in the news, a device) with a "Breaking News" or "Update" overlay style.
     
@@ -67,7 +67,7 @@ export const blogCategoryWiseData = {
     Title should be bold large and at the top of the thumbnail
     `,
 
-    review: `
+  review: `
     Subject & Composition
     Product-focused. The product should be the hero, well-lit and center stage. If it's a software, a clean screenshot of the dashboard.
     
@@ -84,7 +84,7 @@ export const blogCategoryWiseData = {
     Title should be bold large and at the top of the thumbnail
     `,
 
-    story: `
+  story: `
     Subject & Composition
     Narrative and emotional. Use an illustration or a customized photo that captures a specific moment or feeling. Avoid looking like a stock photo; it should feel personal.
     

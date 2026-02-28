@@ -5,10 +5,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { Role } from '@prisma/client';
 
-
 export const GET = async (req: NextRequest) => {
   try {
-     const { userId } = await auth();
+    const { userId } = await auth();
     if (!userId) {
       throw new ApiError('Unauthorized', 401);
     }
@@ -16,11 +15,11 @@ export const GET = async (req: NextRequest) => {
     const getUserRole = await db.user.findUnique({
       where: { clerk_id: userId },
     });
-  
+
     if (getUserRole?.role !== Role.ADMIN) {
       throw new ApiError('Forbidden - Admin access required', 403);
     }
-    
+
     // Fetch all users with their thumbnails
     const users = await db.user.findMany({
       include: {
@@ -67,4 +66,3 @@ export const GET = async (req: NextRequest) => {
     );
   }
 };
-

@@ -1,4 +1,3 @@
-
 export type BlogQuestionnaireData = {
   blogType: string[];
   audience: string[];
@@ -181,7 +180,6 @@ export const youtubeQuestionarie = [
     ],
   },
 ];
-
 
 export const blogQuestionarie = [
   {

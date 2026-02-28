@@ -101,10 +101,11 @@ export const Questionnaire = ({
                       onClick={() =>
                         toggleOption(currentQuestionId, option.value)
                       }
-                      className={`relative w-full sm:w-[280px] md:w-[300px] lg:w-[320px] h-[120px]  p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${isSelected
-                        ? 'border-blue-500 bg-blue-500/10'
-                        : 'border-neutral-600 hover:border-neutral-500 bg-neutral-750'
-                        }`}
+                      className={`relative w-full sm:w-[280px] md:w-[300px] lg:w-[320px] h-[120px]  p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                        isSelected
+                          ? 'border-blue-500 bg-blue-500/10'
+                          : 'border-neutral-600 hover:border-neutral-500 bg-neutral-750'
+                      }`}
                     >
                       <div className='flex items-start justify-between'>
                         <div className='flex-1'>
@@ -116,10 +117,11 @@ export const Questionnaire = ({
                           </p>
                         </div>
                         <div
-                          className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ml-3 ${isSelected
-                            ? 'border-blue-500 bg-blue-500'
-                            : 'border-neutral-500'
-                            }`}
+                          className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ml-3 ${
+                            isSelected
+                              ? 'border-blue-500 bg-blue-500'
+                              : 'border-neutral-500'
+                          }`}
                         >
                           {isSelected && (
                             <Check className='w-4 h-4 text-white' />

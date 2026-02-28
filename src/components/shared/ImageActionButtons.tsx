@@ -3,11 +3,7 @@
 import { Copy, Download, Share2 } from 'lucide-react';
 import { Button } from '../ui/button';
 import toast from 'react-hot-toast';
-import {
-  downloadImage,
-  copyToClipboard,
-  shareImage,
-} from './imageUtils';
+import { downloadImage, copyToClipboard, shareImage } from './imageUtils';
 
 interface ImageActionButtonsProps {
   imageUrl: string;

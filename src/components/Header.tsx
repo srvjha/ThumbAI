@@ -22,10 +22,7 @@ export const Header = () => {
     return authData?.role === 'ADMIN';
   }, [authData]);
 
-  const navLinks = [
-    { label: 'Pricing', href: '/pricing' },
-  ];
-
+  const navLinks = [{ label: 'Pricing', href: '/pricing' }];
 
   return (
     <header className='fixed top-0 w-full bg-transparent backdrop-blur-md border-none border-neutral-800 z-50'>
@@ -59,7 +56,10 @@ export const Header = () => {
 
             {isAdmin && (
               <Link href='/admin'>
-                <Badge variant='secondary' className='bg-blue-600 text-white cursor-pointer hover:bg-blue-700'>
+                <Badge
+                  variant='secondary'
+                  className='bg-blue-600 text-white cursor-pointer hover:bg-blue-700'
+                >
                   Admin
                 </Badge>
               </Link>
@@ -67,14 +67,12 @@ export const Header = () => {
 
             <div className='px-4 py-4 space-y-4'>
               {!isLoaded && (
-                <div className="flex justify-center">
-                  <Skeleton className="h-8 w-8 rounded-full" />
+                <div className='flex justify-center'>
+                  <Skeleton className='h-8 w-8 rounded-full' />
                 </div>
               )}
 
-              {isLoaded && isSignedIn && (
-                <UserButton afterSignOutUrl='/' />
-              )}
+              {isLoaded && isSignedIn && <UserButton afterSignOutUrl='/' />}
 
               {isLoaded && !isSignedIn && (
                 <Link href='/sign-in'>
@@ -82,7 +80,6 @@ export const Header = () => {
                 </Link>
               )}
             </div>
-
           </div>
 
           {/* Mobile Menu Button */}
@@ -104,14 +101,12 @@ export const Header = () => {
             <div className='px-4 py-4 space-y-4'>
               <div className='px-4 py-4 space-y-4'>
                 {!isLoaded && (
-                  <div className="flex justify-center">
-                    <Skeleton className="h-8 w-8 rounded-full" />
+                  <div className='flex justify-center'>
+                    <Skeleton className='h-8 w-8 rounded-full' />
                   </div>
                 )}
 
-                {isLoaded && isSignedIn && (
-                  <UserButton afterSignOutUrl='/' />
-                )}
+                {isLoaded && isSignedIn && <UserButton afterSignOutUrl='/' />}
 
                 {isLoaded && !isSignedIn && (
                   <Link href='/sign-in'>
@@ -137,12 +132,14 @@ export const Header = () => {
 
               {isAdmin && (
                 <Link href='/admin'>
-                  <Badge variant='secondary' className='bg-blue-600 text-white cursor-pointer hover:bg-blue-700 w-full justify-center px-2 py-1 text-base'>
+                  <Badge
+                    variant='secondary'
+                    className='bg-blue-600 text-white cursor-pointer hover:bg-blue-700 w-full justify-center px-2 py-1 text-base'
+                  >
                     Admin
                   </Badge>
                 </Link>
               )}
-
             </div>
           </div>
         )}

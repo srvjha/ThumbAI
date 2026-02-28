@@ -23,13 +23,13 @@ export const POST = async (req: NextRequest) => {
       isValidPrompt: false,
     };
 
-    if (type === "blog" && choices === "random") {
+    if (type === 'blog' && choices === 'random') {
       userPayload.isValidPrompt = true;
       userPayload.prompt = prompt;
     } else {
       const finalPrompt: FinalPrompt = await generateThumbnailPrompt(
         prompt,
-        "Text-to-Image",
+        'Text-to-Image',
         userChoices,
         type as 'youtube' | 'blog',
       );
@@ -43,8 +43,6 @@ export const POST = async (req: NextRequest) => {
       userPayload.isValidPrompt = true;
       userPayload.prompt = finalPrompt.response;
     }
-
-
 
     const result = await fal.subscribe('fal-ai/nano-banana/', {
       input: {
