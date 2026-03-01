@@ -22,7 +22,7 @@ export const POST = async (req: NextRequest) => {
     choices = 'random',
     userChoices,
     userId,
-    type = 'youtube',
+    workflow,
   } = await req.json();
 
   let userPayload = {
@@ -30,19 +30,24 @@ export const POST = async (req: NextRequest) => {
     isValidPrompt: false,
   };
 
-  if (choices === 'random' && mode === 'normal') {
+  if (mode === 'normal') {
+    const finalPrompt: FinalPrompt = await generateThumbnailPrompt(
+      prompt,
+      workflow || 'IMAGE_TO_IMAGE',
+      choices === 'random' ? 'random' : 'personalized',
+      choices === 'random' ? undefined : userChoices,
+    );
+
+    if (!finalPrompt.valid_prompt) {
+      return NextResponse.json(
+        new ApiResponse(200, finalPrompt, 'valid prompt not provided'),
+      );
+    }
     userPayload.isValidPrompt = true;
-    userPayload.prompt = prompt;
+    userPayload.prompt = finalPrompt.response;
   } else {
-    const finalPrompt: FinalPrompt =
-      mode === 'normal'
-        ? await generateThumbnailPrompt(
-            prompt,
-            'Image-to-Image',
-            userChoices,
-            type,
-          )
-        : await generateChatPrompt(prompt);
+    // ChatGPT fallback for chat edit mode
+    const finalPrompt: FinalPrompt = await generateChatPrompt(prompt);
 
     if (!finalPrompt.valid_prompt) {
       return NextResponse.json(

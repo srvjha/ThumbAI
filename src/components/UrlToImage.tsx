@@ -30,6 +30,7 @@ import { ResultPanel } from './shared/ResultPanel';
 import { FormQuestionnaire } from './shared/FormQuestionnaire';
 import { ImageData } from './shared/imageUtils';
 import { updateThumbnailStatus } from '@/actions/thumbnail';
+import { MODEL } from '@prisma/client';
 
 type FormValues = {
   url: string;
@@ -68,7 +69,6 @@ export const UrlToImageGenerator = () => {
 
   const url = watch('url');
   const aspectRatios = watch('aspectRatios');
-  const defaultImage = watch('imagesUrl') || [];
   const { data: userInfo } = useAuth();
   const { mutate: deductCreditsMutation } = useCredits();
 
@@ -117,7 +117,7 @@ export const UrlToImageGenerator = () => {
         userChoices: data.questionnaire ?? '',
         aspectRatio: data.aspectRatios[0],
         userId: userInfo!.id,
-        type: 'blog',
+        workflow: MODEL.URL_TO_IMAGE,
       });
 
       if (!res.data.data.valid_prompt) {

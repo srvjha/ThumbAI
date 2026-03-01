@@ -30,6 +30,7 @@ import { ResultPanel } from './shared/ResultPanel';
 import { FormQuestionnaire } from './shared/FormQuestionnaire';
 import { ImageData } from './shared/imageUtils';
 import { updateThumbnailStatus } from '@/actions/thumbnail';
+import { MODEL } from '@prisma/client';
 
 type FormValues = {
   prompt: string;
@@ -241,7 +242,7 @@ export const ImageToImage = () => {
           choices: data.choices,
           userChoices: data.questionnaire || '',
           userId: userInfo!.id,
-          type: 'youtube',
+          workflow: MODEL.IMAGE_TO_IMAGE,
         });
 
         if (!res.data.data.valid_prompt) {
