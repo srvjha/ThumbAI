@@ -15,7 +15,7 @@ export const POST = async (req: NextRequest) => {
       aspectRatio = '16:9',
       userChoices = '',
       userId,
-      type = 'youtube',
+      workflow,
     } = await req.json();
 
     let userPayload = {
@@ -23,26 +23,22 @@ export const POST = async (req: NextRequest) => {
       isValidPrompt: false,
     };
 
-    if (type === 'blog' && choices === 'random') {
-      userPayload.isValidPrompt = true;
-      userPayload.prompt = prompt;
-    } else {
-      const finalPrompt: FinalPrompt = await generateThumbnailPrompt(
-        prompt,
-        'Text-to-Image',
-        userChoices,
-        type as 'youtube' | 'blog',
+    // Run through the selected workflow architecture (Random vs Personalized)
+    const finalPrompt: FinalPrompt = await generateThumbnailPrompt(
+      prompt,
+      workflow || 'TEXT_TO_IMAGE',
+      choices === 'random' ? 'random' : 'personalized',
+      choices === 'random' ? undefined : userChoices,
+    );
+
+    if (!finalPrompt.valid_prompt) {
+      return NextResponse.json(
+        new ApiResponse(200, finalPrompt, 'valid prompt not provided'),
       );
-
-      if (!finalPrompt.valid_prompt) {
-        return NextResponse.json(
-          new ApiResponse(200, finalPrompt, 'valid prompt not provided'),
-        );
-      }
-
-      userPayload.isValidPrompt = true;
-      userPayload.prompt = finalPrompt.response;
     }
+
+    userPayload.isValidPrompt = true;
+    userPayload.prompt = finalPrompt.response;
 
     const result = await fal.subscribe('fal-ai/nano-banana/', {
       input: {
@@ -71,7 +67,7 @@ export const POST = async (req: NextRequest) => {
           image_url: [],
           content_type: outputFormat,
           aspect_ratio: aspectRatio,
-          model_used: type === 'blog' ? 'URL_TO_IMAGE' : 'TEXT_TO_IMAGE',
+          model_used: workflow,
         },
       });
     }

@@ -1,8 +1,10 @@
 'use server';
 import { Agent, run } from '@openai/agents';
 import { z } from 'zod';
-import { THUMBNAIL_DESIGN_INSTRUCTIONS } from '@/utils/instructions/thumbnail';
-import { BLOG_DESIGN_INSTRUCTIONS } from '@/utils/instructions/blog';
+import { MODEL } from '@prisma/client';
+import { TEXT_TO_IMAGE_INSTRUCTIONS } from '@/utils/instructions/workflows/textToImage';
+import { IMAGE_TO_IMAGE_INSTRUCTIONS } from '@/utils/instructions/workflows/imageToImage';
+import { URL_TO_IMAGE_INSTRUCTIONS } from '@/utils/instructions/workflows/urlToImage';
 
 const thumbnailPromptSchema = z.object({
   valid_prompt: z
@@ -35,17 +37,34 @@ const generateThumbnailPromptAgent = new Agent({
 export const generateThumbnailPrompt = async (
   rawUserPrompt: string,
   workflow: string,
-  rawUserChoice: any,
-  type: 'youtube' | 'blog' = 'youtube',
+  choicesMode: 'random' | 'personalized',
+  rawUserChoice?: any,
 ) => {
-  const designInstructions =
-    type === 'blog' ? BLOG_DESIGN_INSTRUCTIONS : THUMBNAIL_DESIGN_INSTRUCTIONS;
+  let designInstructions = '';
+  if (workflow === MODEL.TEXT_TO_IMAGE || workflow === 'Text-to-Image') {
+    designInstructions = TEXT_TO_IMAGE_INSTRUCTIONS;
+  } else if (
+    workflow === MODEL.IMAGE_TO_IMAGE ||
+    workflow === 'Image-to-Image'
+  ) {
+    designInstructions = IMAGE_TO_IMAGE_INSTRUCTIONS;
+  } else if (workflow === MODEL.URL_TO_IMAGE || workflow === 'Url-to-Image') {
+    designInstructions = URL_TO_IMAGE_INSTRUCTIONS;
+  } else {
+    designInstructions = TEXT_TO_IMAGE_INSTRUCTIONS; // fallback
+  }
+
+  const userSelectionText =
+    choicesMode === 'personalized' && rawUserChoice
+      ? `\nUser Selection (Personalized Choices): ${JSON.stringify(rawUserChoice, null, 2)}`
+      : '';
 
   const context = `
     ${designInstructions}
+    ---
     User Prompt: ${rawUserPrompt}
-    User Selection: ${JSON.stringify(rawUserChoice, null, 2)}
-    ${type === 'youtube' ? `Workflow: ${workflow} ` : ''}
+    Choices Mode: ${choicesMode}
+    Workflow: ${workflow}${userSelectionText}
   `;
 
   const result = await run(generateThumbnailPromptAgent, context);

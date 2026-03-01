@@ -29,6 +29,7 @@ import { ResultPanel } from './shared/ResultPanel';
 import { FormQuestionnaire } from './shared/FormQuestionnaire';
 import { ImageData } from './shared/imageUtils';
 import { updateThumbnailStatus } from '@/actions/thumbnail';
+import { MODEL } from '@prisma/client';
 
 type FormValues = {
   prompt: string;
@@ -68,7 +69,6 @@ export const TextToImageGenerator = () => {
 
   const prompt = watch('prompt');
   const aspectRatios = watch('aspectRatios');
-  const defaultImage = watch('imagesUrl') || [];
   const [isChatOpen, setIsChatOpen] = useState(false);
   const { data: userInfo } = useAuth();
   const { mutate: deductCreditsMutation } = useCredits();
@@ -102,7 +102,7 @@ export const TextToImageGenerator = () => {
           aspectRatio,
           choices: data.choices,
           userId: userInfo!.id,
-          type: 'youtube',
+          workflow: MODEL.TEXT_TO_IMAGE,
         });
 
         if (!res.data.data.valid_prompt) {
