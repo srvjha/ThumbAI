@@ -46,7 +46,6 @@ export const POST = async (req: NextRequest) => {
     userPayload.isValidPrompt = true;
     userPayload.prompt = finalPrompt.response;
   } else {
-    // ChatGPT fallback for chat edit mode
     const finalPrompt: FinalPrompt = await generateChatPrompt(prompt);
 
     if (!finalPrompt.valid_prompt) {
@@ -83,7 +82,7 @@ export const POST = async (req: NextRequest) => {
         image_url: [],
         content_type: outputFormat,
         aspect_ratio: aspectRatio ?? '16:9',
-        model_used: mode === 'chat' ? 'TEXT_TO_IMAGE' : 'IMAGE_TO_IMAGE',
+        model_used: workflow || (mode === 'chat' ? 'TEXT_TO_IMAGE' : 'IMAGE_TO_IMAGE'),
       },
     });
   }

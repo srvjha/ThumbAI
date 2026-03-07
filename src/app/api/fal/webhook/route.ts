@@ -11,7 +11,6 @@ export const POST = async (req: NextRequest) => {
     requestId: request_id,
     logs: true,
   });
-
   if (requestStatus.status === 'COMPLETED') {
     const result = await fal.queue.result('fal-ai/nano-banana/edit', {
       requestId: request_id,
@@ -22,7 +21,7 @@ export const POST = async (req: NextRequest) => {
       where: { request_id },
       data: {
         status: ['COMPLETED'],
-        image_url: result.data.images[0].url,
+        image_url: [result.data.images[0].url],
       },
     });
   } else {
