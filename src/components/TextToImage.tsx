@@ -197,7 +197,7 @@ export const TextToImageGenerator = () => {
         images_urls: imagesToSend,
         aspectRatio: aspectRatios[0] || '16:9',
         userId: userInfo!.id,
-        type: 'youtube',
+        workflow: MODEL.TEXT_TO_IMAGE,
       });
 
       if (!res.data.data.valid_prompt) {

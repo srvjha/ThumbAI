@@ -21,14 +21,22 @@ export async function GET(req: NextRequest) {
 
         if (thumbnail?.status?.includes('COMPLETED')) {
           controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify(thumbnail)}\n\n`),
+            encoder.encode(
+              `data: ${JSON.stringify({
+                status: 'COMPLETED',
+                image_url: thumbnail.image_url?.[0] ?? '',
+              })}\n\n`,
+            ),
           );
           done = true;
           controller.close();
         } else {
+          const currentStatus = Array.isArray(thumbnail?.status)
+            ? thumbnail.status[0]
+            : (thumbnail?.status || 'PENDING');
           controller.enqueue(
             encoder.encode(
-              `data: ${JSON.stringify({ status: thumbnail?.status || 'PENDING' })}\n\n`,
+              `data: ${JSON.stringify({ status: currentStatus })}\n\n`,
             ),
           );
           await new Promise((resolve) => setTimeout(resolve, 2000));

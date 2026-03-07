@@ -345,7 +345,7 @@ export const ImageToImage = () => {
         images_urls: formattedImages,
         aspectRatio: aspectRatios[0] || '16:9',
         userId: userInfo!.id,
-        type: 'youtube',
+        workflow: MODEL.IMAGE_TO_IMAGE,
       });
 
       if (!res.data.data.valid_prompt) {
