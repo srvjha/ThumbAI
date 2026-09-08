@@ -3,17 +3,26 @@ import { razorpay } from '@/config/razorpay';
 import crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { env } from '@/config/env';
+import { getPlan, toPaise } from '@/config/plans';
+import { requireUser } from '@/lib/auth';
+import { apiErrorResponse } from '@/utils/ApiError';
 
 export const createOrder = async (req: NextRequest) => {
   try {
-    const { productId, productName, amount } = await req.json();
-    if (!productId || !amount) {
+    const user = await requireUser();
+
+    const { productId } = await req.json();
+
+    // Price and credits come from the server catalogue, never the request.
+    const plan = getPlan(productId);
+    if (!plan) {
       return NextResponse.json(
-        { success: false, message: 'Product ID and amount are required' },
+        { success: false, message: 'Unknown plan' },
         { status: 400 },
       );
     }
 
+    const amount = toPaise(plan.priceInRupees);
     const receiptNo = `receipt_${Date.now()}`;
 
     // Create Razorpay order
@@ -27,9 +36,11 @@ export const createOrder = async (req: NextRequest) => {
     // Save order in DB
     const order = await db.order.create({
       data: {
-        productId,
-        productName,
+        user_id: user.id,
+        productId: plan.id,
+        productName: plan.name,
         amount,
+        credits: plan.credits,
         currency: 'INR',
         razorpayOrderId: razorpayOrder.id,
       },
@@ -43,15 +54,8 @@ export const createOrder = async (req: NextRequest) => {
       },
       { status: 200 },
     );
-  } catch (error: any) {
-    return NextResponse.json(
-      {
-        success: false,
-        message: 'Failed to create order',
-        error: error.message,
-      },
-      { status: 500 },
-    );
+  } catch (error) {
+    return apiErrorResponse(error);
   }
 };
 

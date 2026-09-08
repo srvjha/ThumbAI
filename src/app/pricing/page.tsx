@@ -7,13 +7,10 @@ import { RenderRazorpay } from '@/components/RenderRazorpay';
 import { env } from '@/config/env';
 import { useAuth } from '@/hooks/user/auth';
 import { useRouter } from 'next/navigation';
+import { PLANS, type Plan } from '@/config/plans';
 
-export interface PricingDetails {
-  id: string;
-  name: string;
-  credit: number;
-  amount: number;
-}
+/** Kept as the public name for consumers like RenderRazorpay. */
+export type PricingDetails = Plan;
 
 const PricingPage = () => {
   const [orderDetails, setOrderDetails] = useState<{
@@ -22,20 +19,19 @@ const PricingPage = () => {
     amount: number;
   } | null>(null);
 
-  const [planDetails, setPlanDetails] = useState<PricingDetails | null>(null);
+  const [planDetails, setPlanDetails] = useState<Plan | null>(null);
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
   const router = useRouter();
   const { data: userInfo } = useAuth();
-  const handleBuyNow = async (product: PricingDetails) => {
+  const handleBuyNow = async (product: Plan) => {
     if (!userInfo) {
       return router.push('/sign-in');
     }
     try {
       setLoadingPlanId(product.id);
+      // Only the plan id is sent; the server resolves price and credits
+      // from src/config/plans.ts.
       const res = await axios.post(`/api/order/order`, {
-        amount: product.amount * 100, // Razorpay expects paise
-        currency: 'INR',
-        productName: product.name,
         productId: product.id,
       });
 
@@ -105,15 +101,8 @@ const PricingPage = () => {
             popular={true}
             badge='60% OFF'
             ctaText='Get Pro Now - Save ₹150!'
-            loading={loadingPlanId === '2'}
-            onClick={() =>
-              handleBuyNow({
-                id: '2',
-                name: 'Creator Pro',
-                credit: 8,
-                amount: 80,
-              })
-            }
+            loading={loadingPlanId === PLANS['creator-pro'].id}
+            onClick={() => handleBuyNow(PLANS['creator-pro'])}
           />
 
           <PricingCard
@@ -129,15 +118,8 @@ const PricingPage = () => {
             ]}
             badge='50% OFF'
             ctaText='Go Elite - Save ₹200!'
-            loading={loadingPlanId === '3'}
-            onClick={() =>
-              handleBuyNow({
-                id: '3',
-                name: 'Business Elite',
-                credit: 20,
-                amount: 150,
-              })
-            }
+            loading={loadingPlanId === PLANS['business-elite'].id}
+            onClick={() => handleBuyNow(PLANS['business-elite'])}
           />
         </div>
       </div>

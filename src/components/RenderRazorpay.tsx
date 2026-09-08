@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef } from 'react';
 import axios from 'axios';
+import type { Plan } from '@/config/plans';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/hooks/user/auth';
 import { Loader } from 'lucide-react';
@@ -16,12 +17,7 @@ interface RenderRazorpayProps {
   keyId: string;
   currency: string;
   amount: number;
-  planDetails: {
-    id: string;
-    name: string;
-    credit: number;
-    amount: number;
-  };
+  planDetails: Plan;
 }
 
 // Utility function for loading external script
@@ -147,11 +143,11 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
               // Update user credits
               const updateRes = await axios.put('/api/user/update', {
                 userId: currentUser.id,
-                credits: planDetails.credit,
+                credits: planDetails.credits,
               });
 
               toast.success(
-                `Payment Successful ✅ ${planDetails.credit} credits added`,
+                `Payment Successful ✅ ${planDetails.credits} credits added`,
               );
             } else {
               toast.error('Payment successful but credit update failed');
