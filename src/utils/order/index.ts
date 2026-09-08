@@ -5,7 +5,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { env } from '@/config/env';
 import { getPlan, toPaise } from '@/config/plans';
 import { requireUser } from '@/lib/auth';
+import { grantCreditsForOrder } from '@/lib/credits';
 import { apiErrorResponse } from '@/utils/ApiError';
+
+/** Constant-time compare so the secret can't be probed by timing. */
+const signaturesMatch = (a: string, b: unknown): boolean => {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  const bufA = Buffer.from(a, 'utf8');
+  const bufB = Buffer.from(b, 'utf8');
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+};
 
 export const createOrder = async (req: NextRequest) => {
   try {
@@ -101,6 +111,8 @@ export const refundOrder = async (req: NextRequest) => {
 
 export const verifyPayment = async (req: NextRequest) => {
   try {
+    await requireUser();
+
     const { orderId, paymentId, signature } = await req.json();
 
     const expectedSignature = crypto
@@ -108,7 +120,7 @@ export const verifyPayment = async (req: NextRequest) => {
       .update(`${orderId}|${paymentId}`)
       .digest('hex');
 
-    if (expectedSignature === signature) {
+    if (signaturesMatch(expectedSignature, signature)) {
       // Update order in DB
       await db.order.update({
         where: { razorpayOrderId: orderId },
@@ -119,7 +131,11 @@ export const verifyPayment = async (req: NextRequest) => {
         },
       });
 
-      return NextResponse.json({ status: 'success' }, { status: 200 });
+      // Idempotent, and also driven by the webhook. Doing it here too means
+      // credits land immediately instead of waiting on webhook delivery.
+      const { credits } = await grantCreditsForOrder(orderId);
+
+      return NextResponse.json({ status: 'success', credits }, { status: 200 });
     } else {
       // Mark order as failed if signature is invalid
       await db.order.updateMany({

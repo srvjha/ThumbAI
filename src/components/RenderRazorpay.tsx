@@ -4,6 +4,7 @@ import axios from 'axios';
 import type { Plan } from '@/config/plans';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/hooks/user/auth';
+import { useQueryClient } from '@tanstack/react-query';
 import { Loader } from 'lucide-react';
 
 declare global {
@@ -72,6 +73,7 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
   const userRef = useRef<any>(null);
 
   const { data: userInfo, isLoading, isError } = useAuth();
+  const queryClient = useQueryClient();
 
   // Update ref whenever user data changes
   useEffect(() => {
@@ -130,30 +132,24 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
         // Handle verification
         setTimeout(async () => {
           try {
-            const verifyRes = await axios.post('/api/order/verify', {
+            // The server grants the credits after verifying the Razorpay
+            // signature; the client only reports the outcome.
+            await axios.post('/api/order/verify', {
               orderId: response.razorpay_order_id,
               paymentId: response.razorpay_payment_id,
               signature: response.razorpay_signature,
             });
 
-            // Use ref to get current user data
-            const currentUser = userRef.current;
+            toast.success(
+              `Payment successful ✅ ${planDetails.credits} credits added`,
+            );
 
-            if (currentUser?.id) {
-              // Update user credits
-              const updateRes = await axios.put('/api/user/update', {
-                userId: currentUser.id,
-                credits: planDetails.credits,
-              });
-
-              toast.success(
-                `Payment Successful ✅ ${planDetails.credits} credits added`,
-              );
-            } else {
-              toast.error('Payment successful but credit update failed');
-            }
-          } catch (error: any) {
-            toast.error('Payment verification failed ❌');
+            // Refresh the header credit count.
+            queryClient.invalidateQueries({ queryKey: ['user'] });
+          } catch (error) {
+            toast.error(
+              'Payment received, but confirmation failed. Your credits will appear shortly.',
+            );
           }
         }, 200);
       },
