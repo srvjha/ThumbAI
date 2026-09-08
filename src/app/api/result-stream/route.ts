@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { db } from '@/db';
 import { requireUser } from '@/lib/auth';
 import { apiErrorResponse } from '@/utils/ApiError';
+import { syncGenerationFromFal } from '@/lib/generationResult';
 
 const POLL_INTERVAL_MS = 2000;
 
@@ -45,6 +46,8 @@ export async function GET(req: NextRequest) {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
       };
 
+      let tick = 0;
+
       try {
         while (true) {
           // The client navigated away or the connection dropped. Without this
@@ -57,6 +60,16 @@ export async function GET(req: NextRequest) {
             send({ status: 'TIMEOUT' });
             break;
           }
+
+          // Reconcile with Fal periodically rather than trusting the webhook
+          // to be the only source of truth. A lost delivery would otherwise
+          // leave this row PENDING forever with the user already charged —
+          // and in local development the webhook cannot reach localhost at
+          // all. Every other tick keeps the call rate modest.
+          if (tick % 2 === 0) {
+            await syncGenerationFromFal(requestId);
+          }
+          tick += 1;
 
           const current = await db.thumbnail.findUnique({
             where: { request_id: requestId },
