@@ -50,3 +50,8 @@ next-env.d.ts
 
 # Fillup production changes
 /scripts
+
+# agent tooling (local config, symlinks, logs)
+/.claude/
+# vendored agent skills - reinstall from skills-lock.json via `npx skills install`
+/.agents/
