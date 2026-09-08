@@ -22,6 +22,16 @@ export const requireUser = async (): Promise<User> => {
     // Authenticated with Clerk but no local row yet — the register webhook
     // has not landed. Treated as unauthorized rather than auto-provisioned so
     // credits can only ever originate from the webhook.
+    //
+    // In development that webhook cannot reach localhost, so this is the
+    // common cause of a "signed in but everything 401s" loop. Name the id, or
+    // the failure is indistinguishable from being signed out.
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn(
+        `[auth] Clerk session ${clerkId} has no local User row.\n` +
+          `       Seed it:  node --env-file=.env tools/seed-dev-user.mjs ${clerkId}`,
+      );
+    }
     throw new ApiError('Unauthorized', 401);
   }
 
