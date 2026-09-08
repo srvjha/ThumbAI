@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { env } from '@/config/env';
 import { getPlan, toPaise } from '@/config/plans';
 import { requireUser } from '@/lib/auth';
+import { Role } from '@prisma/client';
 import { grantCreditsForOrder } from '@/lib/credits';
 import { apiErrorResponse } from '@/utils/ApiError';
 
@@ -71,16 +72,38 @@ export const createOrder = async (req: NextRequest) => {
 
 export const refundOrder = async (req: NextRequest) => {
   try {
-    const { paymentId, amount } = await req.json();
-
-    if (!paymentId || !amount) {
+    // Refunds move money out. Admin only.
+    const user = await requireUser();
+    if (user.role !== Role.ADMIN) {
       return NextResponse.json(
-        { success: false, message: 'Payment ID and amount are required' },
+        { success: false, message: 'Forbidden' },
+        { status: 403 },
+      );
+    }
+
+    const { paymentId } = await req.json();
+
+    if (!paymentId) {
+      return NextResponse.json(
+        { success: false, message: 'Payment ID is required' },
         { status: 400 },
       );
     }
+
+    // Refund the amount actually charged, not one supplied by the caller.
+    const order = await db.order.findFirst({
+      where: { razorpayPaymentId: paymentId },
+    });
+
+    if (!order?.amount) {
+      return NextResponse.json(
+        { success: false, message: 'Order not found for that payment' },
+        { status: 404 },
+      );
+    }
+
     const razorpayResponse = await razorpay.payments.refund(paymentId, {
-      amount: parseInt(amount), // amount in paise
+      amount: order.amount, // amount in paise
     });
 
     // Mark order as refunded in DB (best-effort)
@@ -111,9 +134,17 @@ export const refundOrder = async (req: NextRequest) => {
 
 export const verifyPayment = async (req: NextRequest) => {
   try {
-    await requireUser();
+    const user = await requireUser();
 
     const { orderId, paymentId, signature } = await req.json();
+
+    const order = await db.order.findUnique({
+      where: { razorpayOrderId: orderId },
+    });
+
+    if (!order || order.user_id !== user.id) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
 
     const expectedSignature = crypto
       .createHmac('sha256', env.RAZORPAY_KEY_SECRET as string)
@@ -155,6 +186,8 @@ export const verifyPayment = async (req: NextRequest) => {
 
 export const cancelOrder = async (req: NextRequest) => {
   try {
+    const user = await requireUser();
+
     const { orderId } = await req.json();
 
     if (!orderId) {
@@ -164,8 +197,9 @@ export const cancelOrder = async (req: NextRequest) => {
       );
     }
 
+    // Scoped to the caller's own orders.
     await db.order.updateMany({
-      where: { razorpayOrderId: orderId },
+      where: { razorpayOrderId: orderId, user_id: user.id },
       data: { status: 'cancelled' },
     });
 
