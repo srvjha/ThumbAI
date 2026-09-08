@@ -69,7 +69,7 @@ export const models = [
     isNew: true,
     backgroundImage: './pgmarry.jpeg',
     icon: <Wand2 className='w-3 h-3' />,
-    navigate: '/nano-banana/text-to-image',
+    navigate: '/studio/text-to-image',
   },
   {
     title: 'EditThumb',
@@ -79,7 +79,7 @@ export const models = [
     isNew: true,
     backgroundImage: './hitshchai.jpeg',
     icon: <Edit3 className='w-3 h-3' />,
-    navigate: '/nano-banana/edit-image',
+    navigate: '/studio/image-to-image',
   },
   {
     title: 'BlogThumb',
@@ -89,6 +89,6 @@ export const models = [
     isNew: true,
     backgroundImage: './hiteshdocker.jpg',
     icon: <Link2 className='w-3 h-3' />,
-    navigate: '/nano-banana/url-to-image',
+    navigate: '/studio/blog-cover',
   },
 ];

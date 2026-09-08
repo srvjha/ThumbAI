@@ -166,7 +166,7 @@ export const TextToImageGenerator = () => {
     if (!img) return;
 
     router.push(
-      `/nano-banana/edit-image?url=${encodeURIComponent(img.url)}&aspectRatio=${
+      `/studio/image-to-image?url=${encodeURIComponent(img.url)}&aspectRatio=${
         img.aspectRatio
       }&prompt=${encodeURIComponent(prompt)}&outputFormat=${watch(
         'outputFormat',

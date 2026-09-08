@@ -12,21 +12,21 @@ const modes = [
     label: 'Text to Image',
     description: 'Generate thumbnails from text descriptions',
     icon: <Wand2 className='w-4 h-4' />,
-    path: '/nano-banana/text-to-image',
+    path: '/studio/text-to-image',
   },
   {
-    id: 'edit-image',
+    id: 'image-to-image',
     label: 'Image to Image',
     description: 'Edit existing images with AI',
     icon: <Settings className='w-4 h-4' />,
-    path: '/nano-banana/edit-image',
+    path: '/studio/image-to-image',
   },
   {
-    id: 'url-to-image',
-    label: 'URL to Image',
-    description: 'Generate thumbnails from url',
+    id: 'blog-cover',
+    label: 'Blog Cover',
+    description: 'Turn a blog URL into a cover image',
     icon: <Link2 className='w-4 h-4' />,
-    path: '/nano-banana/url-to-image',
+    path: '/studio/blog-cover',
   },
 ];
 
@@ -69,10 +69,6 @@ export default function GeneratorLayout({
           </div>
 
           <div className='flex items-center gap-4'>
-            <Badge className='bg-neutral-900 flex justify-center items-center gap-2 text-center text-sm border-neutral-600  hover:bg-neutral-800 text-neutral-300 px-3 py-2 rounded-md'>
-              <span className='w-2 h-2 rounded-full bg-green-600 -mt-0.5'></span>
-              Nano Banana
-            </Badge>
             <div className='relative' ref={dropdownRef}>
               <Button
                 variant='outline'

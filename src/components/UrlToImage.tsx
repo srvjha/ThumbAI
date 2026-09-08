@@ -167,7 +167,7 @@ export const UrlToImageGenerator = () => {
     const urlTitleKeywords = url.split('/').pop() as string;
 
     router.push(
-      `/nano-banana/edit-image?url=${encodeURIComponent(img.url)}&aspectRatio=${
+      `/studio/image-to-image?url=${encodeURIComponent(img.url)}&aspectRatio=${
         img.aspectRatio
       }&blog=${encodeURIComponent(urlTitleKeywords)}&outputFormat=${watch(
         'outputFormat',

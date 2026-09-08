@@ -33,7 +33,7 @@ export const HeroSection = () => {
 
         <div className='flex flex-col sm:flex-row gap-4 justify-center mb-16'>
           <Link
-            href='/nano-banana/edit-image'
+            href='/studio/image-to-image'
             className='flex flex-col sm:flex-row gap-4 justify-center'
           >
             <button className='bg-gradient-to-r cursor-pointer border border-black/10 bg-blue-600 text-white px-5 py-3  rounded-xl font-semibold text-lg shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all flex items-center justify-center'>
@@ -44,7 +44,7 @@ export const HeroSection = () => {
 
           <div className='relative inline-block'>
             <Link
-              href='/nano-banana/url-to-image'
+              href='/studio/blog-cover'
               className='flex flex-col sm:flex-row gap-4 justify-center'
             >
               <button className='bg-gradient-to-r cursor-pointer border border-blue-500/30 text-white px-5 py-3  rounded-xl font-semibold text-lg shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all flex items-center justify-center'>
