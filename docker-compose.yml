@@ -1,0 +1,28 @@
+# Local development database.
+#
+# Production runs on Neon. This exists so local work never points at the
+# production database — see .env.example.
+#
+#   docker compose up -d
+#   npx prisma migrate dev
+services:
+  postgres:
+    image: postgres:17
+    container_name: thumbai-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: thumbai
+      POSTGRES_PASSWORD: thumbai
+      POSTGRES_DB: thumbai
+    ports:
+      - '5433:5432' # 5433 to avoid clashing with any local Postgres
+    volumes:
+      - thumbai-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U thumbai -d thumbai']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  thumbai-pgdata:

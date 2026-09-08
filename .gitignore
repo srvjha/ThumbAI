@@ -55,3 +55,6 @@ next-env.d.ts
 /.claude/
 # vendored agent skills - reinstall from skills-lock.json via `npx skills install`
 /.agents/
+
+# database dumps - contain real user data, never commit
+/backups

@@ -42,11 +42,49 @@ Prompt authoring runs on `PROMPT_MODEL` in the same file, overridable with
 git clone <repo> && cd thumbai
 npm install                 # also runs prisma generate
 cp .env.example .env        # then fill it in, see below
-npx prisma migrate deploy   # apply migrations
+npm run db:up               # local Postgres via docker compose
+npm run db:deploy           # apply migrations to it
 npm run dev
 ```
 
 Open http://localhost:3000.
+
+### Local and production databases are separate
+
+Production runs on Neon. Local runs on a Postgres container, so `next dev`
+cannot reach production data.
+
+| File | Holds | Loaded |
+| --- | --- | --- |
+| `.env` | local `DATABASE_URL` plus all other keys | automatically by Next |
+| `.env.prod` | **only** the production `DATABASE_URL` | never automatically |
+
+`.env.prod` is not a Next.js convention, which is the point: nothing picks it
+up by accident. Production commands opt in explicitly and print the target
+host before acting.
+
+| Command | Target |
+| --- | --- |
+| `npm run db:up` / `db:down` | local container |
+| `npm run db:migrate` | local — create and apply a new migration |
+| `npm run db:deploy` | local — apply existing migrations |
+| `npm run db:studio` | local — browse data |
+| `npm run db:status:prod` | production — show migration state |
+| `npm run db:deploy:prod` | production — apply migrations |
+| `npm run db:backup:prod` | production — `pg_dump` into `backups/` |
+
+Back up before migrating production: `npm run db:backup:prod`. Dumps land in
+`backups/`, which is gitignored because they contain real user data.
+
+### Admin tooling
+
+```bash
+node --env-file=.env tools/grant-admin.mjs                     # list users (read-only)
+node --env-file=.env tools/grant-admin.mjs you@example.com 100 # promote + set credits
+```
+
+Email is not unique in the schema, so the script refuses to act when more than
+one row matches and prints the ids instead.
 
 ### Environment
 
