@@ -27,8 +27,9 @@ import { useAuth } from '@/hooks/user/auth';
 import { ResultPanel } from './shared/ResultPanel';
 import { FormQuestionnaire } from './shared/FormQuestionnaire';
 import { ImageData } from './shared/imageUtils';
-import { updateThumbnailStatus } from '@/actions/thumbnail';
 import { MODEL } from '@prisma/client';
+import { waitForGeneration } from '@/lib/waitForGeneration';
+import { EDIT_MODEL } from '@/config/models';
 
 type FormValues = {
   prompt: string;
@@ -78,7 +79,7 @@ export const ImageToImage = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [processedImageUrls, setProcessedImageUrls] = useState<string[]>([]); // Store processed URLs
-  const { data: userInfo } = useAuth();
+  const { data: userInfo, refetch: refetchUser } = useAuth();
   // Modified processImage function to accept aspect ratio
   const processImage = (file: File, aspectRatio: string): Promise<File> => {
     return new Promise((resolve, reject) => {
@@ -208,66 +209,59 @@ export const ImageToImage = () => {
     setStatus('generating');
 
     try {
-      // Loop over aspect ratios
-      for (const aspectRatio of data.aspectRatios) {
-        // 1. Process and upload files
-        const processedFiles = await Promise.all(
-          data.uploadedFiles.map((file) => processImage(file, aspectRatio)),
-        );
+      // Each aspect ratio is an independent job; run them together rather
+      // than waiting for one to finish before starting the next.
+      const perRatio = await Promise.all(
+        data.aspectRatios.map(async (aspectRatio) => {
+          const processedFiles = await Promise.all(
+            data.uploadedFiles.map((file) => processImage(file, aspectRatio)),
+          );
 
-        const uploadedUrls = await Promise.all(
-          processedFiles.map((file) => uploadFile(file)),
-        );
+          const uploadedUrls = await Promise.all(
+            processedFiles.map((file) => uploadFile(file)),
+          );
 
-        // 2. Submit job
-        const res = await axios.post('/api/edit', {
-          mode: 'normal',
-          prompt: data.prompt,
-          numImages: data.numImages,
-          outputFormat: data.outputFormat,
-          images_urls: uploadedUrls,
-          aspectRatio,
-          choices: data.choices,
-          userChoices: data.questionnaire || '',
-          workflow: MODEL.IMAGE_TO_IMAGE,
-        });
+          const res = await axios.post('/api/edit', {
+            mode: 'normal',
+            prompt: data.prompt,
+            numImages: data.numImages,
+            outputFormat: data.outputFormat,
+            images_urls: uploadedUrls,
+            aspectRatio,
+            choices: data.choices,
+            userChoices: data.questionnaire || '',
+            workflow: MODEL.IMAGE_TO_IMAGE,
+          });
 
-        if (!res.data.data.valid_prompt) {
-          setIsGenerating(false);
-          setStatus('completed');
-          return toast.error(res.data.data.response, { id: 'generation' });
-        }
-
-        const { requestId } = res.data.data;
-
-        // 3. Open SSE connection
-        const evtSource = new EventSource(
-          `/api/result-stream?requestId=${requestId}`,
-        );
-
-        evtSource.onmessage = (event) => {
-          const payload = JSON.parse(event.data);
-
-          if (payload.status === 'COMPLETED') {
-            setEditedImages([{ url: payload.image_url, aspectRatio }]);
-
-            setProcessedImageUrls((prev) => [...prev, payload.image_url]);
-
-            setStatus('completed');
-            toast.success('Images edited successfully!', { id: 'generation' });
-
-            updateThumbnailStatus(requestId, [payload.image_url]);
-
-            evtSource.close();
+          if (!res.data.data.valid_prompt) {
+            throw new Error(res.data.data.response ?? 'Invalid prompt');
           }
-        };
+
+          setStatus('in-progress');
+
+          const urls = await waitForGeneration(res.data.data.requestId);
+          return urls.map((url) => ({ url, aspectRatio }));
+        }),
+      );
+
+      const results = perRatio.flat();
+
+      if (results.length === 0) {
+        throw new Error('No images were returned');
       }
+
+      // Replaces, rather than discarding all but the last ratio's result.
+      setEditedImages(results);
+      setProcessedImageUrls(results.map((image) => image.url));
+      setStatus('completed');
+      toast.success('Images edited successfully!', { id: 'generation' });
+      refetchUser();
     } catch (err) {
-      console.error(err);
       setStatus('idle');
-      toast.error('Failed to edit images. Please try again.', {
-        id: 'generation',
-      });
+      const message =
+        err instanceof Error ? err.message : 'Failed to edit images.';
+      toast.error(message, { id: 'generation' });
+      refetchUser();
     } finally {
       setIsGenerating(false);
     }
@@ -317,7 +311,6 @@ export const ImageToImage = () => {
         : editedImages.filter((img) => img.url.length > 0).map((e) => e.url);
 
     const noOfImages = watch('numImages');
-    console.log('images:', noOfImages);
 
     try {
       const res = await axios.post('/api/edit', {
@@ -337,45 +330,31 @@ export const ImageToImage = () => {
         return;
       }
 
-      const { requestId } = res.data.data;
+      const urls = await waitForGeneration(res.data.data.requestId, {
+        onStatus: () => setStatus('in-progress'),
+      });
 
-      // 3. Open SSE connection
-      const evtSource = new EventSource(
-        `/api/result-stream?requestId=${requestId}`,
+      setEditedImages(
+        urls.map((url) => ({ url, aspectRatio: aspectRatios[0] || '16:9' })),
       );
 
-      evtSource.onmessage = (event) => {
-        const payload = JSON.parse(event.data);
-
-        if (payload.status === 'COMPLETED') {
-          console.log('imageUrl: ', payload.image_url);
-          setEditedImages([
-            { url: payload.image_url, aspectRatio: aspectRatios[0] },
-          ]);
-
-          setMessages((prev) => [
-            ...prev,
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          parts: [
             {
-              id: crypto.randomUUID(),
-              role: 'assistant',
-              parts: [
-                {
-                  type: 'text',
-                  text: `I've updated your images as per "${userPrompt}".`,
-                },
-              ],
+              type: 'text',
+              text: `I've updated your images as per "${userPrompt}".`,
             },
-          ]);
+          ],
+        },
+      ]);
 
-          setStatus('completed');
-
-          updateThumbnailStatus(requestId, [payload.image_url]);
-
-          evtSource.close();
-        }
-      };
+      setStatus('completed');
+      refetchUser();
     } catch (err) {
-      console.error(err);
       setMessages((prev) => [
         ...prev,
         {

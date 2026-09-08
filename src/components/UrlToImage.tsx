@@ -23,13 +23,17 @@ import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/user/auth';
 import { Input } from './ui/input';
-import { detectBlog } from '@/agent/detectBlog';
-import { generatePromptForBlog } from '@/agent/generatePromptForBlog';
+import { describeBlog } from '@/agent/describeBlog';
 import { ResultPanel } from './shared/ResultPanel';
 import { FormQuestionnaire } from './shared/FormQuestionnaire';
 import { ImageData } from './shared/imageUtils';
-import { updateThumbnailStatus } from '@/actions/thumbnail';
 import { MODEL } from '@prisma/client';
+import { waitForGeneration } from '@/lib/waitForGeneration';
+import {
+  TEXT_TO_IMAGE_MODELS,
+  DEFAULT_TIER,
+  type ModelTier,
+} from '@/config/models';
 
 type FormValues = {
   url: string;
@@ -39,6 +43,7 @@ type FormValues = {
   aspectRatios: string[];
   imagesUrl?: string[];
   questionnaire?: string[];
+  tier: ModelTier;
 };
 
 export const UrlToImageGenerator = () => {
@@ -60,6 +65,7 @@ export const UrlToImageGenerator = () => {
       outputFormat: 'jpeg',
       aspectRatios: ['16:9'],
       imagesUrl: [''],
+      tier: DEFAULT_TIER,
     },
     mode: 'onChange',
   });
@@ -68,83 +74,78 @@ export const UrlToImageGenerator = () => {
 
   const url = watch('url');
   const aspectRatios = watch('aspectRatios');
-  const { data: userInfo } = useAuth();
+  const { data: userInfo, refetch: refetchUser } = useAuth();
 
   const onSubmit = async (data: FormValues) => {
-    if (userInfo?.credits === 0) {
-      toast.error('Your Free Credits Exhausted, Buy a Plan to use ThumbAI');
-      return;
-    } else if (
-      userInfo?.credits !== undefined &&
-      userInfo.credits < data.numImages
-    ) {
+    const perImage = TEXT_TO_IMAGE_MODELS[data.tier].creditsPerImage;
+    const totalCost = data.numImages * perImage;
+
+    // Server is authoritative on credits; this is just a fast local guard.
+    if (userInfo?.credits !== undefined && userInfo.credits < totalCost) {
       toast.error(
-        'Credits are less than the no of images you want to generate',
+        `This needs ${totalCost} credits and you have ${userInfo.credits}.`,
       );
       return;
     }
-    let prompt: string = '';
+
     setIsGenerating(true);
     setStatus('generating');
-
-    // check for the url if its valid or not
-    const validBlog = await detectBlog(data.url);
-    if (!validBlog?.isBlog) {
-      toast.error('Invalid Blog URL');
-      return;
-    } else {
-      const blogData = await generatePromptForBlog(data.url);
-      if (!blogData) {
-        toast.error('Failed to generate prompt');
-        return;
-      }
-      prompt = blogData.prompt;
-      if (prompt.length === 0) {
-        toast.error('Invalid URL');
-        return;
-      }
-    }
+    setGeneratedImages([]);
 
     try {
-      let results: ImageData[] = [];
+      // Reads the page and drafts a prompt from its actual content.
+      const blog = await describeBlog(data.url);
+
+      if (!blog.isBlog || !blog.prompt) {
+        // Previously these paths returned without clearing isGenerating,
+        // leaving the button stuck on "Generating..." forever.
+        toast.error(blog.reason || 'That URL does not look like an article.');
+        return;
+      }
 
       const res = await axios.post('/api/generate', {
-        prompt: prompt,
+        prompt: blog.prompt,
         numImages: data.numImages,
         outputFormat: data.outputFormat,
         userChoices: data.questionnaire ?? '',
-        aspectRatio: data.aspectRatios[0],
+        aspectRatio: data.aspectRatios[0] ?? '16:9',
+        // Was omitted entirely, so the server defaulted to 'random' and the
+        // questionnaire answers were discarded.
+        choices: data.choices,
         workflow: MODEL.URL_TO_IMAGE,
+        tier: data.tier,
       });
 
       if (!res.data.data.valid_prompt) {
-        setIsGenerating(false);
-        setStatus('completed');
         toast.error(res.data.data.response, { id: 'generation' });
         return;
       }
 
-      const imgs =
-        res.data?.data?.data?.images?.map((img: any) => ({
-          url: img.url,
-          aspectRatio: data.aspectRatios,
-        })) || [];
-      results = [...results, ...imgs];
+      setStatus('in-progress');
 
-      const urls = imgs.map((img: any) => img.url);
-      if (urls.length > 0) {
-        await updateThumbnailStatus(res.data.data.requestId, urls);
+      const urls = await waitForGeneration(res.data.data.requestId);
+
+      if (urls.length === 0) {
+        throw new Error('No images were returned');
       }
 
-      setGeneratedImages(results);
+      setGeneratedImages(
+        urls.map((url) => ({
+          url,
+          aspectRatio: data.aspectRatios[0] ?? '16:9',
+        })),
+      );
       setStatus('completed');
-      toast.success('Images edited successfully!', { id: 'generation' });
+      toast.success('Cover image generated!', { id: 'generation' });
+      refetchUser();
     } catch (err) {
       setStatus('idle');
-      toast.error('Failed to edit images. Please try again.', {
-        id: 'generation',
-      });
+      const message =
+        err instanceof Error ? err.message : 'Failed to generate the image.';
+      toast.error(message, { id: 'generation' });
+      refetchUser();
     } finally {
+      // Always clears, on every path.
       setIsGenerating(false);
     }
   };
