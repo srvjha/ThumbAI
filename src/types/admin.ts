@@ -9,7 +9,7 @@ export interface UserData {
   thumbnails: Array<{
     id: string;
     status: string;
-    imageUrl: string | null;
+    imageUrl: string[];
     createdAt: string;
   }>;
 }

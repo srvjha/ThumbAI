@@ -62,20 +62,23 @@ export async function GET(req: NextRequest) {
             where: { request_id: requestId },
           });
 
-          if (current?.status?.includes('COMPLETED')) {
+          if (current?.status === 'COMPLETED') {
             send({
               status: 'COMPLETED',
+              // image_url kept for existing clients; image_urls carries the
+              // full set so a 4-image request no longer surfaces just one.
               image_url: current.image_url?.[0] ?? '',
+              image_urls: current.image_url ?? [],
             });
             break;
           }
 
-          if (current?.status?.includes('FAILED')) {
+          if (current?.status === 'FAILED') {
             send({ status: 'FAILED' });
             break;
           }
 
-          send({ status: current?.status?.[0] ?? 'PENDING' });
+          send({ status: current?.status ?? 'PENDING' });
 
           await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
         }

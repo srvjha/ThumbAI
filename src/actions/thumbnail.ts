@@ -1,6 +1,7 @@
 'use server';
 
 import { db } from '@/db';
+import { GEN_STATUS } from '@prisma/client';
 
 export async function updateThumbnailStatus(
   requestId: string,
@@ -19,8 +20,8 @@ export async function updateThumbnailStatus(
     await db.thumbnail.update({
       where: { request_id: requestId },
       data: {
-        status: { push: 'COMPLETED' },
-        image_url: { push: imageUrls },
+        status: GEN_STATUS.COMPLETED,
+        image_url: imageUrls,
       },
     });
 

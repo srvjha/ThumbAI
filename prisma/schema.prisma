@@ -30,11 +30,19 @@ model Thumbnail {
   user_prompt          String   @default("")
   enhanced_ai_prompt   String   @default("")
   num_of_images        Int?
-  status               String[]
+  // Single value, not a list. This used to be String[] that callers *pushed*
+  // onto, so rows accumulated ['PENDING','COMPLETED'] while readers indexed
+  // [0] and saw the stale value.
+  status               GEN_STATUS @default(PENDING)
   image_url            String[]
   content_type         String?
   aspect_ratio         String?
   model_used           MODEL?
+  // The Fal endpoint that served this request. The webhook needs it to poll
+  // the right queue; it previously hardcoded the image-to-image endpoint for
+  // every workflow.
+  model_endpoint       String?
+  model_tier           TIER?
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
@@ -45,6 +53,18 @@ enum MODEL {
   TEXT_TO_IMAGE
   IMAGE_TO_IMAGE
   URL_TO_IMAGE
+}
+
+enum TIER {
+  DRAFT
+  QUALITY
+}
+
+enum GEN_STATUS {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
 }
 
 model Order {

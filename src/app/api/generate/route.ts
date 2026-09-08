@@ -4,6 +4,7 @@ import { ApiResponse } from '@/utils/ApiResponse';
 import { generateThumbnailPrompt } from '@/agent/generateThumbnailPrompt';
 import { FinalPrompt } from '../edit/route';
 import { db } from '@/db';
+import { GEN_STATUS } from '@prisma/client';
 import { requireUser } from '@/lib/auth';
 import { deductCredits, refundCredits } from '@/lib/credits';
 import { apiErrorResponse } from '@/utils/ApiError';
@@ -77,7 +78,7 @@ export const POST = async (req: NextRequest) => {
           user_prompt: prompt,
           enhanced_ai_prompt: userPayload.prompt,
           num_of_images: numImages,
-          status: ['PENDING'],
+          status: GEN_STATUS.PENDING,
           image_url: [],
           content_type: outputFormat,
           aspect_ratio: aspectRatio,
