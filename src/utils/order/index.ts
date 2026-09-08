@@ -120,15 +120,8 @@ export const refundOrder = async (req: NextRequest) => {
       },
       { status: 200 },
     );
-  } catch (error: any) {
-    return NextResponse.json(
-      {
-        success: false,
-        message: 'Unable to issue refund',
-        error: error?.error?.description || error.message,
-      },
-      { status: 500 },
-    );
+  } catch (error) {
+    return apiErrorResponse(error);
   }
 };
 
@@ -176,11 +169,8 @@ export const verifyPayment = async (req: NextRequest) => {
 
       return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
     }
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || 'Something went wrong' },
-      { status: 500 },
-    );
+  } catch (error) {
+    return apiErrorResponse(error);
   }
 };
 
@@ -207,14 +197,7 @@ export const cancelOrder = async (req: NextRequest) => {
       { success: true, message: 'Order marked as cancelled' },
       { status: 200 },
     );
-  } catch (error: any) {
-    return NextResponse.json(
-      {
-        success: false,
-        message: 'Unable to cancel order',
-        error: error?.message,
-      },
-      { status: 500 },
-    );
+  } catch (error) {
+    return apiErrorResponse(error);
   }
 };
