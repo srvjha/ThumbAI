@@ -20,10 +20,9 @@ import {
 } from './ui/accordion';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { fal } from '@fal-ai/client';
 import { useChat } from '@ai-sdk/react';
 import { ChatToggleButton, PopoutChat } from './ChatPopup';
-import { env } from '@/config/env';
+import { uploadFile } from '@/config/falClient';
 import { useAuth } from '@/hooks/user/auth';
 import { useCredits } from '@/hooks/user/credits';
 import { ResultPanel } from './shared/ResultPanel';
@@ -137,15 +136,6 @@ export const ImageToImage = () => {
     });
   };
 
-  const uploadFileToFal = async (file: File): Promise<string> => {
-    fal.config({
-      credentials: env.NEXT_PUBLIC_FAL_KEY,
-    });
-
-    const url = await fal.storage.upload(file);
-    return url;
-  };
-
   const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
@@ -228,7 +218,7 @@ export const ImageToImage = () => {
         );
 
         const uploadedUrls = await Promise.all(
-          processedFiles.map((file) => uploadFileToFal(file)),
+          processedFiles.map((file) => uploadFile(file)),
         );
 
         // 2. Submit job
