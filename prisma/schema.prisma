@@ -20,6 +20,7 @@ model User {
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
   Thumbnail Thumbnail[]
+  Order     Order[]
 }
 
 model Thumbnail {
@@ -48,9 +49,17 @@ enum MODEL {
 
 model Order {
   id                String      @id @default(uuid())
+  // Nullable only for orders predating this column; every new order sets it.
+  user_id           String?
   productId         String
   productName       String?
   amount            Int?
+  // Credits this purchase grants, resolved from the server-side plan
+  // catalogue at creation time so the amount can never be set by a client.
+  credits           Int         @default(0)
+  // Set once the webhook has topped up the buyer. Razorpay retries
+  // deliveries, so the grant is guarded on this rather than on status.
+  credits_granted   Boolean     @default(false)
   currency          String      @default("INR")
   razorpayOrderId   String?     @unique
   razorpayPaymentId String?
@@ -58,6 +67,10 @@ model Order {
   status            OrderStatus @default(created)
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
+
+  user              User?       @relation(fields: [user_id], references: [id])
+
+  @@index([user_id])
 }
 
 enum PLAN {
