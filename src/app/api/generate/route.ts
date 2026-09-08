@@ -4,9 +4,18 @@ import { ApiResponse } from '@/utils/ApiResponse';
 import { generateThumbnailPrompt } from '@/agent/generateThumbnailPrompt';
 import { FinalPrompt } from '../edit/route';
 import { db } from '@/db';
+import { requireUser } from '@/lib/auth';
+import { deductCredits, refundCredits } from '@/lib/credits';
+import { apiErrorResponse } from '@/utils/ApiError';
 
 export const POST = async (req: NextRequest) => {
+  let charged: { userId: string; cost: number } | null = null;
+
   try {
+    // The acting user comes from the session. A userId in the body is not a
+    // credential and is ignored.
+    const user = await requireUser();
+
     const {
       prompt,
       numImages = 1,
@@ -14,7 +23,6 @@ export const POST = async (req: NextRequest) => {
       outputFormat = 'jpeg',
       aspectRatio = '16:9',
       userChoices = '',
-      userId,
       workflow,
     } = await req.json();
 
@@ -32,6 +40,7 @@ export const POST = async (req: NextRequest) => {
     );
 
     if (!finalPrompt.valid_prompt) {
+      // Nothing was charged — the prompt never reached the image model.
       return NextResponse.json(
         new ApiResponse(200, finalPrompt, 'valid prompt not provided'),
       );
@@ -39,6 +48,11 @@ export const POST = async (req: NextRequest) => {
 
     userPayload.isValidPrompt = true;
     userPayload.prompt = finalPrompt.response;
+
+    // Charge before submitting so concurrent requests cannot overdraw.
+    const cost = numImages;
+    await deductCredits(user.id, cost);
+    charged = { userId: user.id, cost };
 
     const result = await fal.subscribe('fal-ai/nano-banana/', {
       input: {
@@ -59,7 +73,7 @@ export const POST = async (req: NextRequest) => {
       await db.thumbnail.create({
         data: {
           request_id: result.requestId,
-          user_id: userId,
+          user_id: user.id,
           user_prompt: prompt,
           enhanced_ai_prompt: userPayload.prompt,
           num_of_images: numImages,
@@ -71,6 +85,7 @@ export const POST = async (req: NextRequest) => {
         },
       });
     }
+
     return NextResponse.json(
       new ApiResponse(
         200,
@@ -85,10 +100,11 @@ export const POST = async (req: NextRequest) => {
       { status: 200 },
     );
   } catch (error) {
+    // Don't keep the user's money if we never produced an image.
+    if (charged) {
+      await refundCredits(charged.userId, charged.cost);
+    }
     console.error('Generate API error:', error);
-    return NextResponse.json(
-      new ApiResponse(500, null, 'Internal server error'),
-      { status: 500 },
-    );
+    return apiErrorResponse(error);
   }
 };

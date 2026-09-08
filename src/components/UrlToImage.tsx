@@ -22,7 +22,6 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/user/auth';
-import { useCredits } from '@/hooks/user/credits';
 import { Input } from './ui/input';
 import { detectBlog } from '@/agent/detectBlog';
 import { generatePromptForBlog } from '@/agent/generatePromptForBlog';
@@ -70,7 +69,6 @@ export const UrlToImageGenerator = () => {
   const url = watch('url');
   const aspectRatios = watch('aspectRatios');
   const { data: userInfo } = useAuth();
-  const { mutate: deductCreditsMutation } = useCredits();
 
   const onSubmit = async (data: FormValues) => {
     if (userInfo?.credits === 0) {
@@ -116,7 +114,6 @@ export const UrlToImageGenerator = () => {
         outputFormat: data.outputFormat,
         userChoices: data.questionnaire ?? '',
         aspectRatio: data.aspectRatios[0],
-        userId: userInfo!.id,
         workflow: MODEL.URL_TO_IMAGE,
       });
 
@@ -142,7 +139,6 @@ export const UrlToImageGenerator = () => {
       setGeneratedImages(results);
       setStatus('completed');
       toast.success('Images edited successfully!', { id: 'generation' });
-      deductCreditsMutation({ userId: userInfo!.id, credits: data.numImages });
     } catch (err) {
       setStatus('idle');
       toast.error('Failed to edit images. Please try again.', {

@@ -24,7 +24,6 @@ import { useChat } from '@ai-sdk/react';
 import { ChatToggleButton, PopoutChat } from './ChatPopup';
 import { uploadFile } from '@/config/falClient';
 import { useAuth } from '@/hooks/user/auth';
-import { useCredits } from '@/hooks/user/credits';
 import { ResultPanel } from './shared/ResultPanel';
 import { FormQuestionnaire } from './shared/FormQuestionnaire';
 import { ImageData } from './shared/imageUtils';
@@ -80,7 +79,6 @@ export const ImageToImage = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [processedImageUrls, setProcessedImageUrls] = useState<string[]>([]); // Store processed URLs
   const { data: userInfo } = useAuth();
-  const { mutate: deductCreditsMutation } = useCredits();
   // Modified processImage function to accept aspect ratio
   const processImage = (file: File, aspectRatio: string): Promise<File> => {
     return new Promise((resolve, reject) => {
@@ -231,7 +229,6 @@ export const ImageToImage = () => {
           aspectRatio,
           choices: data.choices,
           userChoices: data.questionnaire || '',
-          userId: userInfo!.id,
           workflow: MODEL.IMAGE_TO_IMAGE,
         });
 
@@ -258,10 +255,6 @@ export const ImageToImage = () => {
 
             setStatus('completed');
             toast.success('Images edited successfully!', { id: 'generation' });
-            deductCreditsMutation({
-              userId: userInfo!.id,
-              credits: data.numImages,
-            });
 
             updateThumbnailStatus(requestId, [payload.image_url]);
 
@@ -334,7 +327,6 @@ export const ImageToImage = () => {
         outputFormat: watch('outputFormat'),
         images_urls: formattedImages,
         aspectRatio: aspectRatios[0] || '16:9',
-        userId: userInfo!.id,
         workflow: MODEL.IMAGE_TO_IMAGE,
       });
 
@@ -376,7 +368,6 @@ export const ImageToImage = () => {
           ]);
 
           setStatus('completed');
-          deductCreditsMutation({ userId: userInfo!.id, credits: 1 });
 
           updateThumbnailStatus(requestId, [payload.image_url]);
 

@@ -24,7 +24,6 @@ import { useRouter } from 'next/navigation';
 import { ChatToggleButton, PopoutChat } from './ChatPopup';
 import { useChat } from '@ai-sdk/react';
 import { useAuth } from '@/hooks/user/auth';
-import { useCredits } from '@/hooks/user/credits';
 import { ResultPanel } from './shared/ResultPanel';
 import { FormQuestionnaire } from './shared/FormQuestionnaire';
 import { ImageData } from './shared/imageUtils';
@@ -71,7 +70,6 @@ export const TextToImageGenerator = () => {
   const aspectRatios = watch('aspectRatios');
   const [isChatOpen, setIsChatOpen] = useState(false);
   const { data: userInfo } = useAuth();
-  const { mutate: deductCreditsMutation } = useCredits();
 
   const onSubmit = async (data: FormValues) => {
     if (userInfo?.credits === 0) {
@@ -101,7 +99,6 @@ export const TextToImageGenerator = () => {
           userChoices: data.questionnaire ?? '',
           aspectRatio,
           choices: data.choices,
-          userId: userInfo!.id,
           workflow: MODEL.TEXT_TO_IMAGE,
         });
 
@@ -128,7 +125,6 @@ export const TextToImageGenerator = () => {
       setGeneratedImages(results);
       setStatus('completed');
       toast.success('Images edited successfully!', { id: 'generation' });
-      deductCreditsMutation({ userId: userInfo!.id, credits: data.numImages });
     } catch (err) {
       setStatus('idle');
       toast.error('Failed to edit images. Please try again.', {
@@ -196,7 +192,6 @@ export const TextToImageGenerator = () => {
         outputFormat: watch('outputFormat'),
         images_urls: imagesToSend,
         aspectRatio: aspectRatios[0] || '16:9',
-        userId: userInfo!.id,
         workflow: MODEL.TEXT_TO_IMAGE,
       });
 
@@ -238,7 +233,6 @@ export const TextToImageGenerator = () => {
           ]);
 
           setStatus('completed');
-          deductCreditsMutation({ userId: userInfo!.id, credits: noOfImages });
 
           updateThumbnailStatus(requestId, [payload.image_url]);
 

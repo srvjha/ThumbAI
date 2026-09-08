@@ -1,4 +1,5 @@
 import { db } from '@/db';
+import { ApiError } from '@/utils/ApiError';
 
 /**
  * Tops up the buyer for a paid order. Safe to call more than once.
@@ -55,4 +56,44 @@ export const grantCreditsForOrder = async (
 
     return { granted: true, credits: order.credits };
   });
+};
+
+/**
+ * Charges a user for a generation, atomically.
+ *
+ * The guard lives in the WHERE clause rather than in a read-then-write, so two
+ * concurrent generations cannot both pass a `credits >= cost` check and
+ * overdraw the balance. Throws 402 when the user cannot afford it.
+ */
+export const deductCredits = async (
+  userId: string,
+  cost: number,
+): Promise<void> => {
+  if (!Number.isInteger(cost) || cost < 1) {
+    throw new ApiError('Invalid credit cost', 400);
+  }
+
+  const charged = await db.user.updateMany({
+    where: { id: userId, credits: { gte: cost } },
+    data: { credits: { decrement: cost } },
+  });
+
+  if (charged.count === 0) {
+    throw new ApiError('Not enough credits', 402);
+  }
+};
+
+/** Returns credits after a failed generation. Best effort — never throws. */
+export const refundCredits = async (
+  userId: string,
+  cost: number,
+): Promise<void> => {
+  try {
+    await db.user.update({
+      where: { id: userId },
+      data: { credits: { increment: cost } },
+    });
+  } catch (err) {
+    console.error('Failed to refund credits', { userId, cost, err });
+  }
 };
