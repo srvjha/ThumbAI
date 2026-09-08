@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ThumbAI">
+  <!-- Flat: no gradient, no glow. The mark is drawn at 16 device pixels in a
+       browser tab, where soft edges and fine detail turn to mush. -->
+  <rect width="64" height="64" rx="13" fill="#2563EB"/>
+  <!-- Bold slab T, set large in the tile with thick strokes so the silhouette
+       still reads at tab size. -->
+  <path d="M10 15h44v11H38.5v24h-13V26H10z" fill="#FFFFFF"/>
+</svg>
