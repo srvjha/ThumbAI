@@ -1,40 +1,53 @@
 import { OpenAI } from 'openai';
-import { userPromptRewriting } from './userPromptRewriting';
+import { PROMPT_MODEL } from '@/config/models';
 
 const client = new OpenAI();
 
+/**
+ * Rewrites a follow-up chat instruction into a clean edit instruction.
+ *
+ * One call, not two. This used to run userPromptRewriting() and then a second
+ * rewrite pass, each on a small model, and each free to drop detail the user
+ * had actually asked for. The first pass also had a regex heuristic that
+ * silently threw its own output away and fell back to the raw prompt whenever
+ * the result happened to contain words like "step" or "follow".
+ */
 const CHAT_SYSTEM_PROMPT = `
-You are a prompt rewriter. 
-Your goal is to make the user's prompt clearer and grammatically correct, 
-while strictly preserving the original intent, context, and action type. 
+You clean up a user's image-editing instruction so an image model can follow it.
 
 Rules:
-- Do not change whether the user is asking to edit, generate, replace, or add something.
-- Do not add new context or assumptions that were not in the original prompt.
-- Only improve grammar, clarity, and phrasing.
-- Return only the rewritten prompt, nothing else.
+- Preserve the intent and the action exactly. If they asked to change one
+  thing, do not turn it into a request to regenerate everything.
+- Never introduce subjects, objects, colours or styles the user did not ask
+  for.
+- Fix grammar, spelling and phrasing. Resolve vague references where the
+  meaning is unambiguous.
+- If the instruction includes text to render, quote it exactly and state that
+  it must be spelled correctly and legible.
+- Return only the rewritten instruction. No preamble, no explanation.
+
+If the input is empty, gibberish, or has no discernible instruction, return
+exactly: INVALID
 `;
 
 export const generateChatPrompt = async (chatPrompt: string) => {
-  const { valid_prompt, enhanced_prompt } =
-    await userPromptRewriting(chatPrompt);
-  if (!valid_prompt) {
-    return { valid_prompt, response: 'Please give a meaningful prompt.' };
+  if (!chatPrompt?.trim()) {
+    return { valid_prompt: false, response: 'Please give a meaningful prompt.' };
   }
 
-  const finalResponse = await client.chat.completions.create({
-    model: 'gpt-4.1-mini',
+  const completion = await client.chat.completions.create({
+    model: PROMPT_MODEL,
     messages: [
       { role: 'system', content: CHAT_SYSTEM_PROMPT },
-      {
-        role: 'user',
-        content: enhanced_prompt,
-      },
+      { role: 'user', content: chatPrompt },
     ],
   });
 
-  const finalChatPrompt =
-    finalResponse.choices[0].message.content?.trim() ?? chatPrompt;
+  const response = completion.choices[0]?.message?.content?.trim() ?? '';
 
-  return { valid_prompt, response: finalChatPrompt };
+  if (!response || response === 'INVALID') {
+    return { valid_prompt: false, response: 'Please give a meaningful prompt.' };
+  }
+
+  return { valid_prompt: true, response };
 };

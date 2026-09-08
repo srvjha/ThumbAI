@@ -1,4 +1,5 @@
 import { blogCategoryWiseData } from '@/utils/blogCategoryData';
+import { SHARED_OUTPUT_RULES } from '@/utils/instructions/shared';
 
 export const URL_TO_IMAGE_INSTRUCTIONS = `
 You are a highly skilled Blog Thumbnail & Featured Image Design Assistant.
@@ -36,8 +37,8 @@ INSTRUCTIONS:
    - If blogType = review → ${blogCategoryWiseData.review}
    - If blogType = story → ${blogCategoryWiseData.story}
 
-OUTPUT REQUIREMENTS:
-- Produce a numbered list of 6-8 clear, actionable steps for a designer/AI.
-- Must include Subject & Action, Composition & Layout, Art Style, Color Palette, Lighting & Atmosphere.
-- Output MUST be the direct text prompt for the AI image generator.
+Cover Subject & Action, Composition & Layout, Art Style, Colour Palette, and
+Lighting & Atmosphere.
+
+${SHARED_OUTPUT_RULES}
 `;
