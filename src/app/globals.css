@@ -150,13 +150,6 @@
   }
 }
 
-.word-spacing-tight {
-  word-spacing: -0.15em; /* adjust as needed */
-}
-.word-spacing-wide {
-  word-spacing: 0.3em; /* if you want more spacing */
-}
-
 @theme inline {
   --animate-scroll: scroll var(--animation-duration, 40s)
     var(--animation-direction, forwards) linear infinite;

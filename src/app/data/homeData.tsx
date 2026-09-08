@@ -70,7 +70,6 @@ export const models = [
     backgroundImage: './pgmarry.jpeg',
     icon: <Wand2 className='w-3 h-3' />,
     navigate: '/nano-banana/text-to-image',
-    onClick: () => console.log('Navigate to text-to-image'),
   },
   {
     title: 'EditThumb',
@@ -81,6 +80,15 @@ export const models = [
     backgroundImage: './hitshchai.jpeg',
     icon: <Edit3 className='w-3 h-3' />,
     navigate: '/nano-banana/edit-image',
-    onClick: () => console.log('Navigate to image-editor'),
+  },
+  {
+    title: 'BlogThumb',
+    subtitle: 'blog-cover',
+    description:
+      'Paste a blog URL and get a cover image drawn from what the article actually says.',
+    isNew: true,
+    backgroundImage: './hiteshdocker.jpg',
+    icon: <Link2 className='w-3 h-3' />,
+    navigate: '/nano-banana/url-to-image',
   },
 ];
