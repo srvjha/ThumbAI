@@ -6,12 +6,16 @@ export type BlogQuestionnaireData = {
   tone: string[];
 };
 
-export type youtubeQuestionarieData = {
+// Mirrors the ids in youtubeQuestionarie below. It previously declared a
+// `tone` field that no question produces, and omitted `audience` and
+// `emotion`, which two of them do.
+export type YoutubeQuestionnaireData = {
   category: string[];
   appearance: string[];
   colorScheme: string[];
   thumbnailStyle: string[];
-  tone: string[];
+  audience: string[];
+  emotion: string[];
 };
 
 export const youtubeQuestionarie = [
