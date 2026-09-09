@@ -18,6 +18,7 @@ import {
   downloadImagesAsZip,
 } from './imageUtils';
 import { ImageActionButtons } from './ImageActionButtons';
+import { CustomizeButton } from '../CustomizeDialog';
 import { ReactNode } from 'react';
 
 interface ResultPanelProps {
@@ -27,6 +28,9 @@ interface ResultPanelProps {
   outputFormat: string;
   onEdit?: (selectedIdx: number) => void;
   renderCustomContent?: () => ReactNode;
+  /** Opens the conversational editor. Rendered beside the other actions. */
+  onCustomize?: () => void;
+  hasChatMessages?: boolean;
 }
 
 const StatusBadge: React.FC<{ status: string }> = ({ status }) => (
@@ -77,6 +81,8 @@ export const ResultPanel: React.FC<ResultPanelProps> = ({
   outputFormat,
   onEdit,
   renderCustomContent,
+  onCustomize,
+  hasChatMessages = false,
 }) => {
   const handleDownloadAll = async () => {
     if (displayImages.length === 0) return;
@@ -166,6 +172,13 @@ export const ResultPanel: React.FC<ResultPanelProps> = ({
                       ))}
                     </SelectContent>
                   </Select>
+                )}
+
+                {onCustomize && (
+                  <CustomizeButton
+                    onClick={onCustomize}
+                    hasMessages={hasChatMessages}
+                  />
                 )}
 
                 <Button

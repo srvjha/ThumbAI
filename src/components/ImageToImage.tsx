@@ -21,7 +21,7 @@ import {
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useChat } from '@ai-sdk/react';
-import { ChatToggleButton, PopoutChat } from './ChatPopup';
+import { CustomizeDialog } from './CustomizeDialog';
 import { uploadFile } from '@/config/falClient';
 import { useAuth } from '@/hooks/user/auth';
 import { ResultPanel } from './shared/ResultPanel';
@@ -78,6 +78,7 @@ export const ImageToImage = () => {
   const [localPreviews, setLocalPreviews] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [activeVersion, setActiveVersion] = useState(0);
   const [processedImageUrls, setProcessedImageUrls] = useState<string[]>([]); // Store processed URLs
   const { data: userInfo, refetch: refetchUser } = useAuth();
   // Modified processImage function to accept aspect ratio
@@ -252,6 +253,7 @@ export const ImageToImage = () => {
 
       // Replaces, rather than discarding all but the last ratio's result.
       setEditedImages(results);
+      setActiveVersion(0);
       setProcessedImageUrls(results.map((image) => image.url));
       setStatus('completed');
       toast.success('Images edited successfully!', { id: 'generation' });
@@ -334,9 +336,18 @@ export const ImageToImage = () => {
         onStatus: () => setStatus('in-progress'),
       });
 
-      setEditedImages(
-        urls.map((url) => ({ url, aspectRatio: aspectRatios[0] || '16:9' })),
-      );
+      setEditedImages((prev) => {
+        const next = [
+          ...prev,
+          ...urls.map((url) => ({
+            url,
+            aspectRatio: aspectRatios[0] || '16:9',
+          })),
+        ];
+        setActiveVersion(next.length - 1);
+        return next;
+      });
+      setProcessedImageUrls((prev) => [...prev, ...urls]);
 
       setMessages((prev) => [
         ...prev,
@@ -693,25 +704,25 @@ export const ImageToImage = () => {
           displayImages={displayImages}
           isGenerating={isGenerating}
           outputFormat={watch('outputFormat')}
+          onCustomize={
+            displayImages.length > 0 ? () => setIsChatOpen(true) : undefined
+          }
+          hasChatMessages={messages.length > 0}
         />
       </div>
 
-      {displayImages.length > 0 && (
-        <ChatToggleButton
-          onClick={() => setIsChatOpen(true)}
-          hasMessages={messages.length > 0}
-          isGenerating={isGenerating}
-        />
-      )}
-
-      <PopoutChat
+      <CustomizeDialog
         isOpen={isChatOpen}
         onClose={() => setIsChatOpen(false)}
+        versions={displayImages}
+        activeIndex={activeVersion}
+        onSelectVersion={setActiveVersion}
         messages={messages}
         onSendMessage={handleChatSubmit}
         onRegenerate={regenerate}
         chatStatus={chatStatus}
         isGenerating={isGenerating}
+        creditCost={EDIT_MODEL.creditsPerImage}
       />
     </div>
   );

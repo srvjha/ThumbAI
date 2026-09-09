@@ -21,7 +21,7 @@ import {
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
-import { ChatToggleButton, PopoutChat } from './ChatPopup';
+import { CustomizeDialog } from './CustomizeDialog';
 import { useChat } from '@ai-sdk/react';
 import { useAuth } from '@/hooks/user/auth';
 import { ResultPanel } from './shared/ResultPanel';
@@ -31,6 +31,7 @@ import { MODEL } from '@prisma/client';
 import { waitForGeneration } from '@/lib/waitForGeneration';
 import {
   TEXT_TO_IMAGE_MODELS,
+  EDIT_MODEL,
   DEFAULT_TIER,
   type ModelTier,
 } from '@/config/models';
@@ -77,6 +78,7 @@ export const TextToImageGenerator = () => {
   const aspectRatios = watch('aspectRatios');
   const tier = watch('tier');
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [activeVersion, setActiveVersion] = useState(0);
   const { data: userInfo, refetch: refetchUser } = useAuth();
 
   const numImages = watch('numImages');
@@ -135,6 +137,7 @@ export const TextToImageGenerator = () => {
       }
 
       setGeneratedImages(results);
+      setActiveVersion(0);
       setStatus('completed');
       toast.success('Images generated successfully!', { id: 'generation' });
       refetchUser();
@@ -221,13 +224,17 @@ export const TextToImageGenerator = () => {
         onStatus: () => setStatus('in-progress'),
       });
 
-      setGeneratedImages((prev) => [
-        ...prev,
-        ...urls.map((url) => ({
-          url,
-          aspectRatio: aspectRatios[0] || '16:9',
-        })),
-      ]);
+      setGeneratedImages((prev) => {
+        const next = [
+          ...prev,
+          ...urls.map((url) => ({
+            url,
+            aspectRatio: aspectRatios[0] || '16:9',
+          })),
+        ];
+        setActiveVersion(next.length - 1);
+        return next;
+      });
 
       setMessages((prev) => [
         ...prev,
@@ -555,24 +562,24 @@ export const TextToImageGenerator = () => {
           isGenerating={isGenerating}
           outputFormat={watch('outputFormat')}
           onEdit={handleEdit}
+          onCustomize={
+            displayImages.length > 0 ? () => setIsChatOpen(true) : undefined
+          }
+          hasChatMessages={messages.length > 0}
         />
       </div>
-      {displayImages.length > 0 && (
-        <ChatToggleButton
-          onClick={() => setIsChatOpen(true)}
-          hasMessages={messages.length > 0}
-          isGenerating={isGenerating}
-        />
-      )}
-
-      <PopoutChat
+      <CustomizeDialog
         isOpen={isChatOpen}
         onClose={() => setIsChatOpen(false)}
+        versions={displayImages}
+        activeIndex={activeVersion}
+        onSelectVersion={setActiveVersion}
         messages={messages}
         onSendMessage={handleChatSubmit}
         onRegenerate={regenerate}
         chatStatus={chatStatus}
         isGenerating={isGenerating}
+        creditCost={EDIT_MODEL.creditsPerImage}
       />
     </div>
   );

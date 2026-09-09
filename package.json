@@ -61,7 +61,6 @@
     "react-dom": "19.1.0",
     "react-hook-form": "^7.62.0",
     "react-hot-toast": "^2.6.0",
-    "react-rnd": "^10.5.2",
     "react-syntax-highlighter": "^15.6.3",
     "sharp": "^0.34.4",
     "streamdown": "^1.0.12",
