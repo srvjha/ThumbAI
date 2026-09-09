@@ -84,9 +84,8 @@ const draftModel: ModelDefinition = {
     // when reproducibility or factual accuracy matters.
     prompt: `${DESIGN_SYSTEM_PROMPT}\n\n---\n\n${prompt}`,
     image_size: GPT_IMAGE_SIZES[aspectRatio],
-    // 'high' costs ~4x 'medium'. Text crispness is the one thing that does
-    // survive downscaling, so this tradeoff is worth measuring rather than
-    // assuming — see the eval notes in the README.
+    // 'high' costs ~4x 'medium'. Text renders cleanly at medium in practice,
+    // which is the only part of the difference that survives downscaling.
     quality: 'medium',
     num_images: numImages,
     output_format: outputFormat,
