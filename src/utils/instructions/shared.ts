@@ -8,40 +8,33 @@
  */
 export const SHARED_OUTPUT_RULES = `
 OUTPUT FORMAT
-- Write flowing descriptive prose, not a numbered list and not instructions to
-  a human designer. The output is fed straight to an image model.
-- Be specific and concrete. Name colours, materials, lighting, lens, and
-  composition. Vague prompts are why generations come out inconsistent.
-- Aim for 120-220 words. Do not pad, but do not omit specifics either.
+Write the prompt as five labelled sections separated by blank lines. Both
+Google's and fal's prompting guidance converge on this shape, and the last
+section is the one most often left out:
 
-TYPOGRAPHY (this is what makes or breaks a thumbnail)
-- State the exact headline text to render, in quotes, and keep it to 5 words
-  or fewer. Short text renders cleanly; long text does not.
-- Say where it sits, that it is bold and high-contrast against what is behind
-  it, and that it must be spelled exactly as quoted.
-- Never ask for a paragraph of text, small print, or more than two text
-  elements.
+Scene: where and when this image exists.
+Subject: the single focal subject, described concretely.
+Details: art style, colour palette with named colours, lighting, camera angle
+  or lens feel, materials and textures.
+Text: the exact headline in double quotes, plus its weight, colour and
+  placement. Write "Text: none" if the design carries no text.
+Constraints: what must not appear or drift.
 
-AVOID
-- Garbled or misspelled lettering, watermarks, signatures, UI chrome.
-- Extra limbs or fingers, warped faces.
-- Muddy low-contrast composition: a thumbnail is judged at ~320px wide, so the
-  subject must read instantly at that size.
+Substitute visual facts for adjectives. "Overcast daylight, brushed aluminium,
+50mm feel, soft bounce light" gives the model something to render; "stunning",
+"masterpiece" and "high quality" give it nothing.
+
+Aim for 120-220 words across all five sections. Do not pad, and do not omit
+specifics.
+
+DEFAULTS FOR THIS MEDIUM
+Unless the brief says otherwise:
+- Three to four words of headline text. Five is the ceiling.
+- One focal subject and nothing competing with it.
+- If a person appears, give them visible emotion and eye contact.
+- Separate subject from background by brightness, not just hue.
 `;
 
-/**
- * Invariant design rules, sent as a system instruction rather than folded into
- * the prompt.
- *
- * These never change per request, so they belong in the model's system slot
- * where they don't compete with the actual brief for attention. The nano-banana
- * models accept `system_prompt` directly; gpt-image-2 has no such field, so the
- * registry prepends it (see src/config/models.ts).
- *
- * The specifics come from published thumbnail CTR research rather than taste:
- * faces with visible emotion, high subject/background contrast, and very short
- * text all correlate with materially higher click-through.
- */
 export const DESIGN_SYSTEM_PROMPT = `
 You render thumbnails and cover images that must work at small size in a
 crowded feed. A thumbnail is judged at roughly 320px wide, and on mobile
