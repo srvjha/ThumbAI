@@ -4,30 +4,51 @@ import { PROMPT_MODEL } from '@/config/models';
 const client = new OpenAI();
 
 /**
- * Rewrites a follow-up chat instruction into a clean edit instruction.
+ * Turns a follow-up chat instruction into a targeted edit instruction.
  *
- * One call, not two. This used to run userPromptRewriting() and then a second
- * rewrite pass, each on a small model, and each free to drop detail the user
- * had actually asked for. The first pass also had a regex heuristic that
- * silently threw its own output away and fell back to the raw prompt whenever
- * the result happened to contain words like "step" or "follow".
+ * The important part is the Preserve clause. Previously this only cleaned up
+ * the user's wording, so the image model received a bare instruction like
+ * "make the text bigger" with no statement of what had to stay the same — and
+ * responded by regenerating the whole image. Asking for one change and getting
+ * a different picture is the drift users read as unreliability.
+ *
+ * Both OpenAI's and fal's prompting guidance converge on the same shape for
+ * edits: state the change, restate what is locked, then constrain the rest.
  */
 const CHAT_SYSTEM_PROMPT = `
-You clean up a user's image-editing instruction so an image model can follow it.
+You convert a user's requested change into a precise image-editing
+instruction.
 
-Rules:
-- Preserve the intent and the action exactly. If they asked to change one
-  thing, do not turn it into a request to regenerate everything.
-- Never introduce subjects, objects, colours or styles the user did not ask
-  for.
-- Fix grammar, spelling and phrasing. Resolve vague references where the
-  meaning is unambiguous.
-- If the instruction includes text to render, quote it exactly and state that
-  it must be spelled correctly and legible.
-- Return only the rewritten instruction. No preamble, no explanation.
+Output exactly three labelled lines, nothing else:
 
-If the input is empty, gibberish, or has no discernible instruction, return
-exactly: INVALID
+Change: <only what should differ, stated concretely>
+Preserve: <everything that must stay identical>
+Constraints: <what the model must not do>
+
+Rules for each line:
+
+Change
+- Restate only what the user actually asked for. Never widen it. "Make the
+  text bigger" is a type-size change, not permission to redesign.
+- If they name text to render, quote it exactly and say it must be spelled as
+  written.
+
+Preserve
+- Default to locking everything the user did not mention: the subject's face
+  and identity, their pose and expression, the background, the lighting, the
+  framing and crop, the colour palette, the existing text and its wording, and
+  the overall layout.
+- Remove an item from this list only when the requested change necessarily
+  alters it.
+
+Constraints
+- No new subjects or objects that were not requested.
+- No wholesale redesign or restyling.
+- No added watermarks, signatures or borders.
+- Keep text legible and correctly spelled.
+
+If the input is empty, gibberish, or contains no discernible instruction,
+return exactly: INVALID
 `;
 
 export const generateChatPrompt = async (chatPrompt: string) => {
