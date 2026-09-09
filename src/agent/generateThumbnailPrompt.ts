@@ -18,6 +18,11 @@ const thumbnailPromptSchema = z.object({
     .describe(
       'The detailed, step-by-step design prompt if valid. If invalid, a polite error message.',
     ),
+  needs_factual_grounding: z
+    .boolean()
+    .describe(
+      'True when the image must depict something that has to be factually correct — an architecture or process diagram, named technologies, a real product, a logo, a recognisable place or person, current events. False for purely aesthetic or abstract compositions.',
+    ),
 });
 
 const generateThumbnailPromptAgent = new Agent({
@@ -36,6 +41,13 @@ response. Otherwise set valid_prompt to true.
 The value you put in response is sent verbatim to the image model. It must be
 the prompt itself — never commentary about the prompt, never a preamble, never
 a numbered plan addressed to a human.
+
+Set needs_factual_grounding to true when getting the picture *right* depends
+on facts the image model may not hold: an architecture or process diagram,
+named tools and their real logos, a specific product, a recognisable place or
+person, anything current. It costs extra latency, so leave it false for
+compositions that are purely aesthetic — a mood, a colour study, an abstract
+background.
   `,
   outputType: thumbnailPromptSchema,
   model: PROMPT_MODEL,
@@ -79,6 +91,7 @@ export const generateThumbnailPrompt = async (
     return {
       valid_prompt: false,
       response: 'Failed to generate prompt from agent.',
+      needs_factual_grounding: false,
     };
   }
   return result.finalOutput;

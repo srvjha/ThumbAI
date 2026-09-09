@@ -47,6 +47,13 @@ export interface ModelDefinition {
   creditsPerImage: number;
   /** Approximate Fal cost per image, in USD. For budgeting and admin views. */
   usdPerImage: number;
+  /**
+   * Whether the endpoint accepts a seed. gpt-image-2 does not, so Draft
+   * generations cannot be reproduced or re-rolled deterministically.
+   */
+  supportsSeed: boolean;
+  /** Whether the endpoint can ground the render in web search. */
+  supportsWebSearch: boolean;
   buildInput: (options: ModelInputOptions) => Record<string, unknown>;
 }
 
@@ -68,6 +75,8 @@ const draftModel: ModelDefinition = {
   description: 'Fast, strong text rendering. Best value per image.',
   creditsPerImage: 1,
   usdPerImage: 0.04,
+  supportsSeed: false,
+  supportsWebSearch: false,
   buildInput: ({ prompt, aspectRatio, numImages, outputFormat }) => ({
     // gpt-image-2 exposes no system_prompt field, so the invariant rules are
     // prepended. It also has no seed or web-search parameter — those are
@@ -90,6 +99,8 @@ const qualityModel: ModelDefinition = {
   description: 'Sharpest typography and face consistency. Slower.',
   creditsPerImage: 3,
   usdPerImage: 0.15,
+  supportsSeed: true,
+  supportsWebSearch: true,
   buildInput: ({
     prompt,
     aspectRatio,
@@ -125,6 +136,8 @@ export const EDIT_MODEL: ModelDefinition = {
   description: 'Edits and composites up to 14 reference images.',
   creditsPerImage: 2,
   usdPerImage: 0.08,
+  supportsSeed: true,
+  supportsWebSearch: true,
   buildInput: ({
     prompt,
     aspectRatio,
@@ -171,6 +184,20 @@ export const isOutputFormat = (value: unknown): value is OutputFormat =>
   value === 'jpeg' || value === 'png' || value === 'webp';
 
 export const MAX_IMAGES_PER_REQUEST = 4;
+
+/** Fal seeds are 32-bit unsigned integers. */
+export const MAX_SEED = 2 ** 32 - 1;
+
+export const isValidSeed = (value: unknown): value is number =>
+  Number.isInteger(value) && (value as number) >= 0 && (value as number) <= MAX_SEED;
+
+/**
+ * Chosen here rather than left to the provider, because a seed we did not pick
+ * is a seed we cannot record — and an unrecorded seed cannot be reused to make
+ * a variation or to re-run an eval.
+ */
+export const randomSeed = (): number =>
+  Math.floor(Math.random() * (MAX_SEED + 1));
 
 /**
  * Model used for prompt authoring (not image generation).

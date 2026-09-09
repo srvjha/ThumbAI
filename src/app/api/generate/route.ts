@@ -14,6 +14,8 @@ import {
   getTextToImageModel,
   isAspectRatio,
   isOutputFormat,
+  isValidSeed,
+  randomSeed,
   resolveTier,
 } from '@/config/models';
 
@@ -35,6 +37,7 @@ export const POST = async (req: NextRequest) => {
       userChoices = '',
       workflow,
       tier,
+      seed,
     } = body;
 
     // Validate before spending anything: these values reach a paid API.
@@ -58,8 +61,16 @@ export const POST = async (req: NextRequest) => {
       );
     }
 
+    if (seed !== undefined && !isValidSeed(seed)) {
+      throw new ApiError('seed must be an integer between 0 and 2^32-1', 400);
+    }
+
     const resolvedTier = resolveTier(tier);
     const model = getTextToImageModel(resolvedTier);
+
+    // Only pick a seed where the endpoint honours one, so a recorded seed
+    // always reflects what was actually sent.
+    const usedSeed = model.supportsSeed ? (seed ?? randomSeed()) : undefined;
 
     // Run through the selected workflow architecture (Random vs Personalized)
     const finalPrompt: FinalPrompt = await generateThumbnailPrompt(
@@ -89,6 +100,8 @@ export const POST = async (req: NextRequest) => {
         aspectRatio,
         numImages,
         outputFormat,
+        enableWebSearch: finalPrompt.needs_factual_grounding ?? false,
+        seed: usedSeed,
       }),
       webhookUrl: `${env.NEXT_PUBLIC_FAL_WEBHOOK_URL}/api/fal/webhook`,
     });
@@ -111,6 +124,7 @@ export const POST = async (req: NextRequest) => {
         model_used: workflow,
         model_endpoint: model.endpointId,
         model_tier: resolvedTier === 'quality' ? TIER.QUALITY : TIER.DRAFT,
+        seed: usedSeed ?? null,
       },
     });
 
@@ -123,6 +137,7 @@ export const POST = async (req: NextRequest) => {
           requestId: request_id,
           tier: resolvedTier,
           creditsCharged: cost,
+          seed: usedSeed ?? null,
         },
         'Request submitted successfully',
       ),

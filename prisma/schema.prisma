@@ -43,6 +43,9 @@ model Thumbnail {
   // every workflow.
   model_endpoint       String?
   model_tier           TIER?
+  // The seed actually sent, when the endpoint honours one. Recorded so a
+  // generation can be reproduced or re-rolled as a deliberate variation.
+  seed                 Int?
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
