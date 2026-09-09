@@ -22,6 +22,25 @@ const geistMono = Geist_Mono({
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://thumbai.app';
 
+/**
+ * Clerk renders its own components, so it needs telling about the theme once
+ * here rather than per page. Without this the sign-in card and the header
+ * avatar menu came out in Clerk's default light styling against a dark app.
+ * Values track the tokens in globals.css.
+ */
+const clerkAppearance = {
+  variables: {
+    colorPrimary: '#2563eb',
+    colorBackground: '#0a0a0a',
+    colorText: '#fafafa',
+    colorTextSecondary: '#a3a3a3',
+    colorInputBackground: '#171717',
+    colorInputText: '#fafafa',
+    colorDanger: '#f87171',
+    borderRadius: '0.625rem',
+  },
+} as const;
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
@@ -59,7 +78,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
+    <ClerkProvider appearance={clerkAppearance}>
       {/* `dark` belongs on <html> so the root element is themed too, not just
           body's descendants. */}
       <html
