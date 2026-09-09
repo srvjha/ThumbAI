@@ -1,136 +1,142 @@
-import { Check, TrendingUp, Loader2 } from 'lucide-react';
+'use client';
 
-interface PricingParams {
-  title: string;
-  price: string;
-  originalPrice?: string;
-  validity?: string;
-  description: string;
-  features: string[];
-  highlighted?: boolean;
-  popular?: boolean;
-  checkBgColor?: string;
-  checkTextColor?: string;
-  ctaText?: string;
-  badge?: string;
+import { Check, Loader2 } from 'lucide-react';
+import { Button } from './ui/button';
+import { cn } from '@/lib/utils';
+import { type Plan, savingsPercent } from '@/config/plans';
+
+interface PricingCardProps {
+  plan: Plan;
+  /** The one plan we steer people toward. Styled, not stickered. */
+  recommended?: boolean;
+  ctaText: string;
   onClick?: () => void | Promise<void>;
   loading?: boolean;
+  /** Rendered instead of a button for the free plan. */
+  ctaHref?: string;
 }
 
-const Button = ({ children, className, ...props }: any) => (
-  <button
-    className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 hover:scale-[1.02] ${className}`}
-    {...props}
-  >
-    {children}
-  </button>
-);
-
+/**
+ * A plan card.
+ *
+ * The credit count leads rather than the price, because that is the thing
+ * being bought and the thing the plans actually differ on — previously it was
+ * buried inside a feature list while three cards showed near-identical prose.
+ *
+ * Deliberately restrained: no scale-on-hover, no rotated discount sticker, and
+ * one signal for "recommended" rather than a ring plus a pill plus a badge.
+ */
 export const PricingCard = ({
-  title,
-  price,
-  originalPrice,
-  validity,
-  description,
-  features,
-  highlighted = false,
-  popular = false,
-  checkBgColor = 'bg-blue-500',
-  checkTextColor = 'text-white',
-  ctaText = 'Get Started',
-  badge,
+  plan,
+  recommended = false,
+  ctaText,
   onClick,
   loading = false,
-}: PricingParams) => {
+  ctaHref,
+}: PricingCardProps) => {
+  const saved = savingsPercent(plan);
+  const perCredit =
+    plan.priceInRupees > 0
+      ? (plan.priceInRupees / plan.credits).toFixed(1).replace(/\.0$/, '')
+      : null;
+
   return (
     <div
-      className={`rounded-2xl w-full max-w-[380px] p-8 flex flex-col h-full relative transition-all duration-300 transform hover:scale-[1.05] hover:shadow-2xl
-        ${
-          highlighted
-            ? 'bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-800 dark:to-neutral-900 border-none  '
-            : 'bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 shadow-lg hover:border-neutral-300 dark:hover:border-neutral-600'
-        }
-        ${popular ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-neutral-50 dark:ring-offset-neutral-900' : ''}
-      `}
+      className={cn(
+        'relative flex w-full max-w-sm flex-col rounded-xl border p-6',
+        recommended
+          ? 'border-brand/60 bg-neutral-900/60'
+          : 'border-neutral-800 bg-neutral-900/30',
+      )}
     >
-      {popular && (
-        <div className='absolute -top-4 left-1/2 transform -translate-x-1/2 px-6 py-2 bg-blue-600  text-white rounded-full text-sm font-bold shadow-lg'>
-          Most Popular
-        </div>
+      {recommended && (
+        <span className='absolute -top-px left-6 right-6 h-px bg-brand' />
       )}
 
-      {badge && (
-        <div className='absolute -top-3 -right-3 px-3 py-1 bg-red-500 text-white rounded-full text-xs font-bold transform rotate-12'>
-          {badge}
-        </div>
-      )}
-
-      <div className='text-center mb-6'>
-        <h3 className='text-2xl font-bold mb-2 text-gray-800 dark:text-gray-100'>
-          {title}
+      <div className='flex items-baseline justify-between gap-3'>
+        <h3 className='text-base font-semibold text-neutral-100'>
+          {plan.name}
         </h3>
+        {recommended && (
+          <span className='text-xs font-medium text-brand'>Recommended</span>
+        )}
+      </div>
 
-        <div className='flex items-center justify-center gap-2 mb-2'>
-          {originalPrice && (
-            <span className='text-2xl text-gray-400 dark:text-gray-500 line-through font-medium'>
-              ₹{originalPrice}
-            </span>
-          )}
-          <div className='text-5xl font-bold text-gray-900 dark:text-white flex items-center'>
-            ₹{price}
-            {validity && (
-              <span className='text-lg font-normal ml-1 text-gray-500 dark:text-gray-400'>
-                {validity}
+      <p className='mt-1 text-sm text-neutral-400'>{plan.tagline}</p>
+
+      {/* The hero number is the credit count, not the price. */}
+      <div className='mt-6 flex items-baseline gap-2'>
+        <span className='text-4xl font-semibold tracking-tight text-neutral-50'>
+          {plan.credits}
+        </span>
+        <span className='text-sm text-neutral-400'>credits</span>
+      </div>
+
+      <div className='mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm'>
+        {plan.priceInRupees === 0 ? (
+          <span className='text-neutral-300'>Free, on signup</span>
+        ) : (
+          <>
+            <span className='text-neutral-100'>₹{plan.priceInRupees}</span>
+            {plan.originalPriceInRupees && (
+              <span className='text-neutral-500 line-through'>
+                ₹{plan.originalPriceInRupees}
               </span>
             )}
-          </div>
-        </div>
-
-        {originalPrice && (
-          <div className='inline-flex items-center gap-1 px-3 py-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-full text-sm font-semibold'>
-            <TrendingUp size={14} />
-            Save ₹{parseInt(originalPrice) - parseInt(price)}
-          </div>
+            {saved > 0 && (
+              <span className='text-emerald-400'>{saved}% off</span>
+            )}
+            {perCredit && (
+              <span className='text-neutral-500'>· ₹{perCredit} a credit</span>
+            )}
+          </>
         )}
       </div>
 
-      <p className='text-center text-xs text-gray-600 dark:text-gray-300 mb-6 leading-relaxed'>
-        {description}
-      </p>
-
-      <div className='space-y-4 flex-grow mb-8'>
-        {features.map((feature, index) => (
-          <div key={index} className='flex items-start gap-3'>
-            <div className='mt-0.5'>
-              <div
-                className={`w-6 h-6 rounded-full flex items-center justify-center ${checkBgColor}`}
-              >
-                <Check className={`h-4 w-4 ${checkTextColor}`} />
-              </div>
-            </div>
-            <p className='text-gray-700 dark:text-gray-200 text-sm leading-relaxed'>
-              {feature}
-            </p>
-          </div>
+      <ul className='mt-6 mb-8 flex-1 space-y-3'>
+        {plan.features.map((feature) => (
+          <li key={feature} className='flex gap-2.5 text-sm'>
+            {/* Outlined rather than a filled disc: four solid blue dots per
+                card competed with the button for attention. */}
+            <Check
+              aria-hidden
+              className='mt-0.5 h-4 w-4 shrink-0 text-brand'
+              strokeWidth={2.5}
+            />
+            <span className='text-neutral-300'>{feature}</span>
+          </li>
         ))}
-      </div>
+      </ul>
 
-      <Button
-        className={`bg-blue-600 text-white cursor-pointer ${
-          loading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-700'
-        }`}
-        onClick={onClick}
-        disabled={loading}
-      >
-        {loading ? (
-          <span className='flex items-center justify-center gap-2'>
-            <Loader2 className='w-4 h-4 animate-spin' />
-            Processing...
-          </span>
-        ) : (
-          ctaText
-        )}
-      </Button>
+      {ctaHref ? (
+        <Button
+          asChild
+          variant='outline'
+          className='w-full border-neutral-700 text-neutral-200 hover:bg-neutral-800'
+        >
+          <a href={ctaHref}>{ctaText}</a>
+        </Button>
+      ) : (
+        <Button
+          onClick={onClick}
+          disabled={loading}
+          className={cn(
+            'w-full cursor-pointer',
+            recommended
+              ? 'bg-brand text-brand-foreground hover:bg-brand/90'
+              : 'bg-neutral-100 text-neutral-900 hover:bg-neutral-200',
+          )}
+        >
+          {loading ? (
+            <>
+              <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+              Starting checkout
+            </>
+          ) : (
+            ctaText
+          )}
+        </Button>
+      )}
     </div>
   );
 };

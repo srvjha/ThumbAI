@@ -10,6 +10,8 @@
  * Schemas verified against the live queue OpenAPI documents.
  */
 
+import { DESIGN_SYSTEM_PROMPT } from '@/utils/instructions/shared';
+
 export type ModelTier = 'draft' | 'quality';
 
 export type AspectRatio = '16:9' | '9:16';
@@ -23,6 +25,18 @@ export interface ModelInputOptions {
   outputFormat: OutputFormat;
   /** Reference images, for editing endpoints. */
   imageUrls?: string[];
+  /**
+   * Fixing the seed makes a generation reproducible, which is what lets a
+   * prompt change be evaluated against a like-for-like baseline instead of a
+   * fresh random draw. Also powers "make a variation".
+   */
+  seed?: number;
+  /**
+   * Grounds the render in web search. Worth it when the image contains
+   * something that has to be factually right — an architecture diagram, a
+   * real product, a logo — and wasteful otherwise.
+   */
+  enableWebSearch?: boolean;
 }
 
 export interface ModelDefinition {
@@ -33,6 +47,13 @@ export interface ModelDefinition {
   creditsPerImage: number;
   /** Approximate Fal cost per image, in USD. For budgeting and admin views. */
   usdPerImage: number;
+  /**
+   * Whether the endpoint accepts a seed. gpt-image-2 does not, so Draft
+   * generations cannot be reproduced or re-rolled deterministically.
+   */
+  supportsSeed: boolean;
+  /** Whether the endpoint can ground the render in web search. */
+  supportsWebSearch: boolean;
   buildInput: (options: ModelInputOptions) => Record<string, unknown>;
 }
 
@@ -54,11 +75,17 @@ const draftModel: ModelDefinition = {
   description: 'Fast, strong text rendering. Best value per image.',
   creditsPerImage: 1,
   usdPerImage: 0.04,
+  supportsSeed: false,
+  supportsWebSearch: false,
   buildInput: ({ prompt, aspectRatio, numImages, outputFormat }) => ({
-    prompt,
+    // gpt-image-2 exposes no system_prompt field, so the invariant rules are
+    // prepended. It also has no seed or web-search parameter — those are
+    // silently unavailable on this tier, which is a reason to prefer Quality
+    // when reproducibility or factual accuracy matters.
+    prompt: `${DESIGN_SYSTEM_PROMPT}\n\n---\n\n${prompt}`,
     image_size: GPT_IMAGE_SIZES[aspectRatio],
-    // 'high' costs ~4x 'medium' for a difference that does not survive
-    // being viewed at thumbnail size.
+    // 'high' costs ~4x 'medium'. Text renders cleanly at medium in practice,
+    // which is the only part of the difference that survives downscaling.
     quality: 'medium',
     num_images: numImages,
     output_format: outputFormat,
@@ -71,12 +98,24 @@ const qualityModel: ModelDefinition = {
   description: 'Sharpest typography and face consistency. Slower.',
   creditsPerImage: 3,
   usdPerImage: 0.15,
-  buildInput: ({ prompt, aspectRatio, numImages, outputFormat }) => ({
+  supportsSeed: true,
+  supportsWebSearch: true,
+  buildInput: ({
     prompt,
+    aspectRatio,
+    numImages,
+    outputFormat,
+    seed,
+    enableWebSearch,
+  }) => ({
+    prompt,
+    system_prompt: DESIGN_SYSTEM_PROMPT,
     aspect_ratio: aspectRatio,
     resolution: '2K',
     num_images: numImages,
     output_format: outputFormat,
+    enable_web_search: enableWebSearch ?? false,
+    ...(seed === undefined ? {} : { seed }),
   }),
 };
 
@@ -96,19 +135,29 @@ export const EDIT_MODEL: ModelDefinition = {
   description: 'Edits and composites up to 14 reference images.',
   creditsPerImage: 2,
   usdPerImage: 0.08,
+  supportsSeed: true,
+  supportsWebSearch: true,
   buildInput: ({
     prompt,
     aspectRatio,
     numImages,
     outputFormat,
     imageUrls = [],
+    seed,
+    enableWebSearch,
   }) => ({
     prompt,
+    system_prompt: DESIGN_SYSTEM_PROMPT,
     image_urls: imageUrls,
     aspect_ratio: aspectRatio,
     resolution: '1K',
     num_images: numImages,
     output_format: outputFormat,
+    // Reason about the composition before rendering. Editing has to respect
+    // an existing subject, which is exactly where planning pays off.
+    thinking_level: 'high',
+    enable_web_search: enableWebSearch ?? false,
+    ...(seed === undefined ? {} : { seed }),
   }),
 };
 
@@ -134,6 +183,20 @@ export const isOutputFormat = (value: unknown): value is OutputFormat =>
   value === 'jpeg' || value === 'png' || value === 'webp';
 
 export const MAX_IMAGES_PER_REQUEST = 4;
+
+/** Fal seeds are 32-bit unsigned integers. */
+export const MAX_SEED = 2 ** 32 - 1;
+
+export const isValidSeed = (value: unknown): value is number =>
+  Number.isInteger(value) && (value as number) >= 0 && (value as number) <= MAX_SEED;
+
+/**
+ * Chosen here rather than left to the provider, because a seed we did not pick
+ * is a seed we cannot record — and an unrecorded seed cannot be reused to make
+ * a variation or to re-run an eval.
+ */
+export const randomSeed = (): number =>
+  Math.floor(Math.random() * (MAX_SEED + 1));
 
 /**
  * Model used for prompt authoring (not image generation).

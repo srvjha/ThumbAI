@@ -14,11 +14,15 @@ import {
   MAX_IMAGES_PER_REQUEST,
   isAspectRatio,
   isOutputFormat,
+  isValidSeed,
+  randomSeed,
 } from '@/config/models';
 
 export interface FinalPrompt {
   valid_prompt: boolean;
   response: string;
+  /** Set by the prompt agent when the image has to be factually right. */
+  needs_factual_grounding?: boolean;
 }
 
 /** nano-banana-2/edit composites at most 14 reference images. */
@@ -42,6 +46,7 @@ export const POST = async (req: NextRequest) => {
       choices = 'random',
       userChoices,
       workflow,
+      seed,
     } = await req.json();
 
     // Validate before spending anything: these values reach a paid API.
@@ -53,6 +58,9 @@ export const POST = async (req: NextRequest) => {
     }
     if (!isOutputFormat(outputFormat)) {
       throw new ApiError('Unsupported output format', 400);
+    }
+    if (seed !== undefined && !isValidSeed(seed)) {
+      throw new ApiError('seed must be an integer between 0 and 2^32-1', 400);
     }
     if (!Array.isArray(images_urls)) {
       throw new ApiError('images_urls must be an array', 400);
@@ -82,6 +90,7 @@ export const POST = async (req: NextRequest) => {
     }
 
     let enhancedPrompt: string;
+    let needsGrounding = false;
 
     if (mode === 'normal') {
       const finalPrompt: FinalPrompt = await generateThumbnailPrompt(
@@ -97,6 +106,7 @@ export const POST = async (req: NextRequest) => {
         );
       }
       enhancedPrompt = finalPrompt.response;
+      needsGrounding = finalPrompt.needs_factual_grounding ?? false;
     } else {
       const finalPrompt: FinalPrompt = await generateChatPrompt(prompt);
 
@@ -107,6 +117,10 @@ export const POST = async (req: NextRequest) => {
       }
       enhancedPrompt = finalPrompt.response;
     }
+
+    const usedSeed = EDIT_MODEL.supportsSeed
+      ? (seed ?? randomSeed())
+      : undefined;
 
     // Charge before submitting so concurrent requests cannot overdraw.
     const cost = imageCount * EDIT_MODEL.creditsPerImage;
@@ -120,6 +134,8 @@ export const POST = async (req: NextRequest) => {
         numImages: imageCount,
         outputFormat,
         imageUrls: images_urls,
+        enableWebSearch: needsGrounding,
+        seed: usedSeed,
       }),
       webhookUrl: `${env.NEXT_PUBLIC_FAL_WEBHOOK_URL}/api/fal/webhook`,
     });
@@ -142,6 +158,7 @@ export const POST = async (req: NextRequest) => {
         model_used:
           workflow || (mode === 'chat' ? 'TEXT_TO_IMAGE' : 'IMAGE_TO_IMAGE'),
         model_endpoint: EDIT_MODEL.endpointId,
+        seed: usedSeed ?? null,
       },
     });
 
@@ -153,6 +170,7 @@ export const POST = async (req: NextRequest) => {
           success: true,
           requestId: request_id,
           creditsCharged: cost,
+          seed: usedSeed ?? null,
         },
         'Request Submitted Successfully',
       ),
