@@ -1,16 +1,19 @@
 'use client';
-import React, { useState } from 'react';
+
+import { useState } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 import { PricingCard } from '@/components/Pricing';
 import { RenderRazorpay } from '@/components/RenderRazorpay';
 import { env } from '@/config/env';
 import { useAuth } from '@/hooks/user/auth';
-import { useRouter } from 'next/navigation';
-import { PLANS, type Plan } from '@/config/plans';
+import { CREDIT_COSTS, FREE_PLAN, PLANS, type Plan } from '@/config/plans';
 
 /** Kept as the public name for consumers like RenderRazorpay. */
 export type PricingDetails = Plan;
+
+const PLAN_ORDER = ['creator-pro', 'business-elite'] as const;
 
 const PricingPage = () => {
   const [orderDetails, setOrderDetails] = useState<{
@@ -23,6 +26,7 @@ const PricingPage = () => {
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
   const router = useRouter();
   const { data: userInfo } = useAuth();
+
   const handleBuyNow = async (product: Plan) => {
     if (!userInfo) {
       return router.push('/sign-in');
@@ -43,88 +47,76 @@ const PricingPage = () => {
           currency: data.order.currency,
           amount: data.order.amount,
         });
-
-        // ✅ Save the plan details
         setPlanDetails(product);
       }
     } catch (err) {
-      console.error('Failed to create Razorpay order', err);
-      toast.error('Failed to start checkout. Please try again.');
+      toast.error('Could not start checkout. Please try again.');
     } finally {
       setLoadingPlanId(null);
     }
   };
 
   return (
-    <div className='min-h-screen bg-neutral-950 mt-8 py-16 px-4'>
-      <div className='max-w-7xl mx-auto'>
-        {/* Header Section */}
-        <div className='text-center mb-16'>
-          <h1 className='text-5xl font-bold text-neutral-400 mb-6 leading-tight'>
-            Generate{' '}
-            <span className='text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600'>
-              Stunning Thumbnails
-            </span>
-            <br />
-            That Actually Convert
+    <div className='min-h-screen bg-neutral-950'>
+      <div className='mx-auto max-w-6xl px-4 pt-28 pb-24 sm:px-6 lg:px-8'>
+        <header className='max-w-2xl'>
+          <h1 className='text-3xl font-semibold tracking-tight text-neutral-50 sm:text-4xl'>
+            Buy credits, not a subscription
           </h1>
+          <p className='mt-3 text-base text-neutral-400'>
+            One credit is one draft thumbnail. Credits never expire, and you are
+            only charged when an image is actually produced — a failed
+            generation is refunded automatically.
+          </p>
+        </header>
+
+        <div className='mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3'>
+          <PricingCard
+            plan={FREE_PLAN}
+            ctaText={userInfo ? 'Go to the studio' : 'Start free'}
+            ctaHref={userInfo ? '/studio/text-to-image' : '/sign-up'}
+          />
+
+          {PLAN_ORDER.map((id) => {
+            const plan = PLANS[id];
+            return (
+              <PricingCard
+                key={plan.id}
+                plan={plan}
+                recommended={plan.id === 'creator-pro'}
+                ctaText={`Get ${plan.credits} credits`}
+                loading={loadingPlanId === plan.id}
+                onClick={() => handleBuyNow(plan)}
+              />
+            );
+          })}
         </div>
 
-        {/* Pricing Cards */}
-        <div className='flex flex-wrap justify-center gap-8 mb-16'>
-          <PricingCard
-            title='Free Starter'
-            price='0'
-            description='Perfect for testing our quality.'
-            features={[
-              '3 High Quality Thumbnails',
-              'Download Images in standard resolution',
-              'Download URL links for easy sharing',
-              'YouTube thumbnail and shorts thumbnail sizes',
-            ]}
-            ctaText='Start Free Today'
-            onClick={() => {}}
-          />
-
-          <PricingCard
-            title='Creator Pro'
-            price='80'
-            originalPrice='200'
-            description='Most popular! Huge savings.'
-            features={[
-              '8 High Quality Thumbnails',
-              'HD Download Images available',
-              'Fast Download URL links',
-              'YouTube thumbnail and shorts optimization',
-            ]}
-            highlighted={true}
-            popular={true}
-            badge='60% OFF'
-            ctaText='Get Pro Now - Save ₹150!'
-            loading={loadingPlanId === PLANS['creator-pro'].id}
-            onClick={() => handleBuyNow(PLANS['creator-pro'])}
-          />
-
-          <PricingCard
-            title='Business Elite'
-            price='150'
-            originalPrice='300'
-            description='⭐ Ultimate value!'
-            features={[
-              '20 High Quality Thumbnails',
-              'HD Download Images available',
-              'Priority Download URL links',
-              'YouTube formats + custom sizes',
-            ]}
-            badge='50% OFF'
-            ctaText='Go Elite - Save ₹200!'
-            loading={loadingPlanId === PLANS['business-elite'].id}
-            onClick={() => handleBuyNow(PLANS['business-elite'])}
-          />
-        </div>
+        {/* "8 credits" is not "8 thumbnails" once tiers exist. Saying so here
+            is cheaper than answering it in support. */}
+        <section className='mt-16 rounded-xl border border-neutral-800 bg-neutral-900/30 p-6'>
+          <h2 className='text-sm font-semibold text-neutral-100'>
+            What a credit buys
+          </h2>
+          <dl className='mt-4 grid gap-4 sm:grid-cols-3'>
+            {CREDIT_COSTS.map((item) => (
+              <div key={item.label}>
+                <dt className='text-sm text-neutral-300'>{item.label}</dt>
+                <dd className='mt-0.5 text-sm text-neutral-500'>
+                  {item.credits} {item.credits === 1 ? 'credit' : 'credits'}
+                </dd>
+              </div>
+            ))}
+          </dl>
+          <p className='mt-5 text-sm text-neutral-500'>
+            Draft is the default and is the better value for most thumbnails.
+            Quality uses a slower model with sharper typography and stronger
+            face consistency — worth it when the design leans on text or on a
+            recognisable person.
+          </p>
+        </section>
       </div>
 
-      {/* Render Razorpay Checkout */}
       {orderDetails && planDetails && (
         <RenderRazorpay
           amount={orderDetails.amount}
