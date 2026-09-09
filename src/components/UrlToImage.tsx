@@ -23,7 +23,6 @@ import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/user/auth';
 import { Input } from './ui/input';
-import { describeBlog } from '@/agent/describeBlog';
 import { ResultPanel } from './shared/ResultPanel';
 import { FormQuestionnaire } from './shared/FormQuestionnaire';
 import { ImageData } from './shared/imageUtils';
@@ -93,24 +92,16 @@ export const UrlToImageGenerator = () => {
     setGeneratedImages([]);
 
     try {
-      // Reads the page and drafts a prompt from its actual content.
-      const blog = await describeBlog(data.url);
-
-      if (!blog.isBlog || !blog.prompt) {
-        // Previously these paths returned without clearing isGenerating,
-        // leaving the button stuck on "Generating..." forever.
-        toast.error(blog.reason || 'That URL does not look like an article.');
-        return;
-      }
-
+      // The URL goes to the server, which reads the page and authors the
+      // prompt once. This used to call describeBlog() here to produce a
+      // finished image prompt, which /api/generate then re-authored — two
+      // LLM passes, the second flattening the first's specifics.
       const res = await axios.post('/api/generate', {
-        prompt: blog.prompt,
+        blogUrl: data.url,
         numImages: data.numImages,
         outputFormat: data.outputFormat,
         userChoices: data.questionnaire ?? '',
         aspectRatio: data.aspectRatios[0] ?? '16:9',
-        // Was omitted entirely, so the server defaulted to 'random' and the
-        // questionnaire answers were discarded.
         choices: data.choices,
         workflow: MODEL.URL_TO_IMAGE,
         tier: data.tier,
