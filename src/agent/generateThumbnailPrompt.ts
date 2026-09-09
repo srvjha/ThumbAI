@@ -5,6 +5,7 @@ import { MODEL } from '@prisma/client';
 import { TEXT_TO_IMAGE_INSTRUCTIONS } from '@/utils/instructions/workflows/textToImage';
 import { IMAGE_TO_IMAGE_INSTRUCTIONS } from '@/utils/instructions/workflows/imageToImage';
 import { URL_TO_IMAGE_INSTRUCTIONS } from '@/utils/instructions/workflows/urlToImage';
+import { PROMPT_MODEL } from '@/config/models';
 
 const thumbnailPromptSchema = z.object({
   valid_prompt: z
@@ -22,16 +23,22 @@ const thumbnailPromptSchema = z.object({
 const generateThumbnailPromptAgent = new Agent({
   name: 'Thumbnail Prompt Generator',
   instructions: `
-    You are an expert Design Assistant specialized in creating detailed image generation prompts.
-    
-    Your goal is to parse the User's Request and the provided Design Instructions (Context) to output a structured design prompt.
-    
-    You are also responsible for validating the user's prompt. 
-    If the prompt is meaningless, gibberish, or empty, set valid_prompt to false and provide a polite message asking for a meaningful prompt in the response field.
-    Otherwise, set valid_prompt to true and generate the design instructions as per the rules provided in the user context.
+You are an art director who writes prompts for image generation models.
+
+You receive a user's request plus design instructions for the current
+workflow. Produce a single, specific, detailed image prompt that follows those
+instructions exactly.
+
+Validation: if the request is empty, gibberish, or carries no discernible
+subject, set valid_prompt to false and put a short, friendly explanation in
+response. Otherwise set valid_prompt to true.
+
+The value you put in response is sent verbatim to the image model. It must be
+the prompt itself — never commentary about the prompt, never a preamble, never
+a numbered plan addressed to a human.
   `,
   outputType: thumbnailPromptSchema,
-  model: 'gpt-4o-mini',
+  model: PROMPT_MODEL,
 });
 
 export const generateThumbnailPrompt = async (

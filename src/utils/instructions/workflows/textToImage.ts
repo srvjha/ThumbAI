@@ -1,4 +1,5 @@
 import { categoryWiseData } from '@/utils/thumbanilCategoryData';
+import { SHARED_OUTPUT_RULES } from '@/utils/instructions/shared';
 
 export const TEXT_TO_IMAGE_INSTRUCTIONS = `
 You are a highly skilled YouTube Thumbnail Creation Assistant.
@@ -38,9 +39,8 @@ INSTRUCTIONS
    - Generate only details explicitly stated or clearly implied.
    - Do not invent props or effects unless they naturally fit the topic.
 
-OUTPUT REQUIREMENTS
-- Output a numbered step-by-step instruction set (maximum 2–3 steps).
-- Keep total output under 150 words.
-- Explicitly mention the final chosen category.
-- Output MUST be the direct text prompt for the AI image generator.
+${SHARED_OUTPUT_RULES}
+
+Also state the resolved category explicitly at the end, as
+"category: <name>".
 `;

@@ -21,15 +21,20 @@ import {
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
-import { ChatToggleButton, PopoutChat } from './ChatPopup';
+import { CustomizeDialog } from './CustomizeDialog';
 import { useChat } from '@ai-sdk/react';
 import { useAuth } from '@/hooks/user/auth';
-import { useCredits } from '@/hooks/user/credits';
 import { ResultPanel } from './shared/ResultPanel';
 import { FormQuestionnaire } from './shared/FormQuestionnaire';
 import { ImageData } from './shared/imageUtils';
-import { updateThumbnailStatus } from '@/actions/thumbnail';
 import { MODEL } from '@prisma/client';
+import { waitForGeneration } from '@/lib/waitForGeneration';
+import {
+  TEXT_TO_IMAGE_MODELS,
+  EDIT_MODEL,
+  DEFAULT_TIER,
+  type ModelTier,
+} from '@/config/models';
 
 type FormValues = {
   prompt: string;
@@ -39,6 +44,7 @@ type FormValues = {
   aspectRatios: string[];
   imagesUrl?: string[];
   questionnaire?: string[];
+  tier: ModelTier;
 };
 
 export const TextToImageGenerator = () => {
@@ -61,6 +67,7 @@ export const TextToImageGenerator = () => {
       outputFormat: 'jpeg',
       aspectRatios: ['16:9'],
       imagesUrl: [''],
+      tier: DEFAULT_TIER,
     },
     mode: 'onChange',
   });
@@ -69,71 +76,78 @@ export const TextToImageGenerator = () => {
 
   const prompt = watch('prompt');
   const aspectRatios = watch('aspectRatios');
+  const tier = watch('tier');
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const { data: userInfo } = useAuth();
-  const { mutate: deductCreditsMutation } = useCredits();
+  const [activeVersion, setActiveVersion] = useState(0);
+  const { data: userInfo, refetch: refetchUser } = useAuth();
+
+  const numImages = watch('numImages');
+  const creditCost =
+    (numImages || 1) *
+    (aspectRatios?.length || 1) *
+    TEXT_TO_IMAGE_MODELS[tier ?? DEFAULT_TIER].creditsPerImage;
 
   const onSubmit = async (data: FormValues) => {
-    if (userInfo?.credits === 0) {
-      toast.error('Your Free Credits Exhausted, Buy a Plan to use ThumbAI');
-      return;
-    } else if (
-      userInfo?.credits !== undefined &&
-      userInfo.credits < data.numImages
-    ) {
+    const perImage = TEXT_TO_IMAGE_MODELS[data.tier].creditsPerImage;
+    const totalCost = data.numImages * data.aspectRatios.length * perImage;
+
+    // Server is authoritative on credits; this is just a fast local guard.
+    if (userInfo?.credits !== undefined && userInfo.credits < totalCost) {
       toast.error(
-        'Credits are less than the no of images you want to generate',
+        `This needs ${totalCost} credits and you have ${userInfo.credits}.`,
       );
       return;
     }
+
     setIsGenerating(true);
     setStatus('generating');
+    setGeneratedImages([]);
 
     try {
-      let results: ImageData[] = [];
+      // Each aspect ratio is an independent job, so run them together
+      // instead of waiting for one to finish before starting the next.
+      const perRatio = await Promise.all(
+        data.aspectRatios.map(async (aspectRatio) => {
+          const res = await axios.post('/api/generate', {
+            prompt: data.prompt,
+            numImages: data.numImages,
+            outputFormat: data.outputFormat,
+            userChoices: data.questionnaire ?? '',
+            aspectRatio,
+            choices: data.choices,
+            workflow: MODEL.TEXT_TO_IMAGE,
+            tier: data.tier,
+          });
 
-      // Process images for each selected aspect ratio
-      for (const aspectRatio of data.aspectRatios) {
-        const res = await axios.post('/api/generate', {
-          prompt: data.prompt,
-          numImages: data.numImages,
-          outputFormat: data.outputFormat,
-          userChoices: data.questionnaire ?? '',
-          aspectRatio,
-          choices: data.choices,
-          userId: userInfo!.id,
-          workflow: MODEL.TEXT_TO_IMAGE,
-        });
+          if (!res.data.data.valid_prompt) {
+            throw new Error(res.data.data.response ?? 'Invalid prompt');
+          }
 
-        if (!res.data.data.valid_prompt) {
-          setIsGenerating(false);
-          setStatus('completed');
-          toast.error(res.data.data.response, { id: 'generation' });
-          return;
-        }
+          setStatus('in-progress');
 
-        const imgs =
-          res.data?.data?.data?.images?.map((img: any) => ({
-            url: img.url,
-            aspectRatio: aspectRatio,
-          })) || [];
-        results = [...results, ...imgs];
+          const urls = await waitForGeneration(res.data.data.requestId);
+          return urls.map((url) => ({ url, aspectRatio }));
+        }),
+      );
 
-        const urls = imgs.map((img: any) => img.url);
-        if (urls.length > 0) {
-          await updateThumbnailStatus(res.data.data.requestId, urls);
-        }
+      const results = perRatio.flat();
+
+      if (results.length === 0) {
+        throw new Error('No images were returned');
       }
 
       setGeneratedImages(results);
+      setActiveVersion(0);
       setStatus('completed');
-      toast.success('Images edited successfully!', { id: 'generation' });
-      deductCreditsMutation({ userId: userInfo!.id, credits: data.numImages });
+      toast.success('Images generated successfully!', { id: 'generation' });
+      refetchUser();
     } catch (err) {
       setStatus('idle');
-      toast.error('Failed to edit images. Please try again.', {
-        id: 'generation',
-      });
+      const message =
+        err instanceof Error ? err.message : 'Failed to generate images.';
+      toast.error(message, { id: 'generation' });
+      // A failed job is refunded server side; resync the displayed balance.
+      refetchUser();
     } finally {
       setIsGenerating(false);
     }
@@ -155,7 +169,7 @@ export const TextToImageGenerator = () => {
     if (!img) return;
 
     router.push(
-      `/nano-banana/edit-image?url=${encodeURIComponent(img.url)}&aspectRatio=${
+      `/studio/image-to-image?url=${encodeURIComponent(img.url)}&aspectRatio=${
         img.aspectRatio
       }&prompt=${encodeURIComponent(prompt)}&outputFormat=${watch(
         'outputFormat',
@@ -196,7 +210,6 @@ export const TextToImageGenerator = () => {
         outputFormat: watch('outputFormat'),
         images_urls: imagesToSend,
         aspectRatio: aspectRatios[0] || '16:9',
-        userId: userInfo!.id,
         workflow: MODEL.TEXT_TO_IMAGE,
       });
 
@@ -207,46 +220,38 @@ export const TextToImageGenerator = () => {
         return;
       }
 
-      const { requestId } = res.data.data;
+      const urls = await waitForGeneration(res.data.data.requestId, {
+        onStatus: () => setStatus('in-progress'),
+      });
 
-      // 3. Open SSE connection
-      const evtSource = new EventSource(
-        `/api/result-stream?requestId=${requestId}`,
-      );
+      setGeneratedImages((prev) => {
+        const next = [
+          ...prev,
+          ...urls.map((url) => ({
+            url,
+            aspectRatio: aspectRatios[0] || '16:9',
+          })),
+        ];
+        setActiveVersion(next.length - 1);
+        return next;
+      });
 
-      evtSource.onmessage = (event) => {
-        const payload = JSON.parse(event.data);
-
-        if (payload.status === 'COMPLETED') {
-          setGeneratedImages((prev) => [
-            ...prev,
-            { url: payload.image_url, aspectRatio: aspectRatios[0] },
-          ]);
-
-          setMessages((prev) => [
-            ...prev,
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          parts: [
             {
-              id: crypto.randomUUID(),
-              role: 'assistant',
-              parts: [
-                {
-                  type: 'text',
-                  text: `I've updated your images as per "${userPrompt}".`,
-                },
-              ],
+              type: 'text',
+              text: `I've updated your images as per "${userPrompt}".`,
             },
-          ]);
+          ],
+        },
+      ]);
 
-          setStatus('completed');
-          deductCreditsMutation({ userId: userInfo!.id, credits: noOfImages });
-
-          updateThumbnailStatus(requestId, [payload.image_url]);
-
-          evtSource.close();
-        } else {
-          // console.log('Still processing:', payload.status);
-        }
-      };
+      setStatus('completed');
+      refetchUser();
     } catch (err) {
       setMessages((prev) => [
         ...prev,
@@ -311,6 +316,56 @@ export const TextToImageGenerator = () => {
                   </div>
                 )}
               />
+              {/* Model tier */}
+              <Controller
+                name='tier'
+                control={control}
+                render={({ field }) => (
+                  <div>
+                    <label className='block text-sm font-medium text-neutral-300 mb-2'>
+                      Quality
+                    </label>
+                    <div className='grid grid-cols-2 gap-3'>
+                      {(
+                        Object.keys(TEXT_TO_IMAGE_MODELS) as ModelTier[]
+                      ).map((key) => {
+                        const model = TEXT_TO_IMAGE_MODELS[key];
+                        const selected = field.value === key;
+                        return (
+                          <button
+                            key={key}
+                            type='button'
+                            aria-pressed={selected}
+                            onClick={() => field.onChange(key)}
+                            className={`text-left rounded-lg border p-3 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                              selected
+                                ? 'border-blue-500 bg-blue-500/10'
+                                : 'border-neutral-700 hover:border-neutral-600'
+                            }`}
+                          >
+                            <div className='flex items-center justify-between mb-1'>
+                              <span className='text-sm font-medium text-neutral-100'>
+                                {model.label}
+                              </span>
+                              <span className='text-xs text-neutral-400'>
+                                {model.creditsPerImage}
+                                {model.creditsPerImage === 1
+                                  ? ' credit'
+                                  : ' credits'}
+                                /image
+                              </span>
+                            </div>
+                            <p className='text-xs text-neutral-400'>
+                              {model.description}
+                            </p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              />
+
               <FormQuestionnaire
                 control={control}
                 choicesFieldName='choices'
@@ -486,6 +541,10 @@ export const TextToImageGenerator = () => {
                       {(aspectRatios?.length || 0) > 1
                         ? `${aspectRatios?.length} Formats`
                         : 'Image'}
+                      <span className='ml-2 text-neutral-600'>
+                        ({creditCost}{' '}
+                        {creditCost === 1 ? 'credit' : 'credits'})
+                      </span>
                     </>
                   )}
                 </Button>
@@ -503,24 +562,24 @@ export const TextToImageGenerator = () => {
           isGenerating={isGenerating}
           outputFormat={watch('outputFormat')}
           onEdit={handleEdit}
+          onCustomize={
+            displayImages.length > 0 ? () => setIsChatOpen(true) : undefined
+          }
+          hasChatMessages={messages.length > 0}
         />
       </div>
-      {displayImages.length > 0 && (
-        <ChatToggleButton
-          onClick={() => setIsChatOpen(true)}
-          hasMessages={messages.length > 0}
-          isGenerating={isGenerating}
-        />
-      )}
-
-      <PopoutChat
+      <CustomizeDialog
         isOpen={isChatOpen}
         onClose={() => setIsChatOpen(false)}
+        versions={displayImages}
+        activeIndex={activeVersion}
+        onSelectVersion={setActiveVersion}
         messages={messages}
         onSendMessage={handleChatSubmit}
         onRegenerate={regenerate}
         chatStatus={chatStatus}
         isGenerating={isGenerating}
+        creditCost={EDIT_MODEL.creditsPerImage}
       />
     </div>
   );

@@ -14,7 +14,6 @@ export const env = createEnv({
     RAZORPAY_WEBHOOK_SECRET: z.string(),
   },
   client: {
-    NEXT_PUBLIC_FAL_KEY: z.string(),
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string(),
     NEXT_PUBLIC_RAZORPAY_KEY_ID: z.string(),
     NEXT_PUBLIC_FAL_WEBHOOK_URL: z.string().url(),
@@ -30,7 +29,6 @@ export const env = createEnv({
     RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET,
     RAZORPAY_WEBHOOK_SECRET: process.env.RAZORPAY_WEBHOOK_SECRET,
 
-    NEXT_PUBLIC_FAL_KEY: process.env.NEXT_PUBLIC_FAL_KEY,
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
       process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
     NEXT_PUBLIC_RAZORPAY_KEY_ID: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,

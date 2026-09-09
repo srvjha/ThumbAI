@@ -1,260 +1,140 @@
-# ThumbAI Youtube Thumbnail Generator
+# ThumbAI
 
-A powerful, AI-driven image editing tool designed specifically for content
-creators who need to quickly generate professional thumbnails and social media
-content. Built with React, Next.js, and integrated with FAL AI for intelligent
-image processing.
+Generate YouTube thumbnails and blog cover images from a prompt, an image you
+already have, or a blog URL.
 
-## Features
+## Workflows
 
-### Core Functionality
+| Route | What it does |
+| --- | --- |
+| `/studio/text-to-image` | Describe the thumbnail; the app writes a design prompt and generates it. |
+| `/studio/image-to-image` | Upload photos (a face, a product) and composite them into a thumbnail. |
+| `/studio/blog-cover` | Paste a blog URL. The page is fetched and read, and a cover image is designed from its actual content. |
 
-- **AI-Powered Image Editing** - Transform images using natural language prompts
-- **Multiple Format Support** - Generate images in YouTube (16:9) and
-  Shorts/Reels (9:16) aspect ratios
-- **Batch Processing** - Edit multiple images simultaneously
-- **Format Flexibility** - Output in JPEG, PNG, or WEBP formats
+Every workflow outputs YouTube (16:9, 1280×720) and Shorts (9:16, 720×1280).
 
-### User Experience
+## Stack
 
-- **Drag & Drop Upload** - Intuitive file uploading with visual feedback
-- **URL Import** - Direct image import via URL
-- **Real-time Preview** - See your images before processing
-- **Bulk Download** - Download all edited images as a ZIP file
-- **Share Integration** - Native sharing capabilities with fallback to clipboard
+- Next.js 15 (App Router) and React 19
+- Clerk for authentication
+- Prisma and PostgreSQL
+- Fal AI for image generation, OpenAI for prompt authoring
+- Razorpay for payments
+- Tailwind CSS v4 with shadcn/ui
 
-## Tech Stack
+## Image models
 
-- **Frontend**: React 18+ with TypeScript
-- **Framework**: Next.js 14+ (App Router)
-- **Form Management**: React Hook Form
-- **UI Components**: Custom components with Tailwind CSS
-- **Icons**: Lucide React
-- **AI Integration**: FAL AI Client
-- **File Processing**: JSZip for bulk downloads
-- **Notifications**: React Hot Toast
+Defined in one place, `src/config/models.ts`. Swapping a model is a change
+there rather than in the route handlers.
 
-## Installation
+| Tier | Endpoint | Cost | Credits |
+| --- | --- | --- | --- |
+| Draft | `openai/gpt-image-2` (medium) | ~$0.040 / image | 1 |
+| Quality | `fal-ai/nano-banana-pro` (2K) | ~$0.150 / image | 3 |
+| Edit | `fal-ai/nano-banana-2/edit` | ~$0.080 / image | 2 |
 
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/image-editor-generator.git
-cd image-editor-generator
+Prompt authoring runs on `PROMPT_MODEL` in the same file, overridable with
+`OPENAI_PROMPT_MODEL`.
 
-# Install dependencies
-npm install
-# or
-yarn install
-# or
-pnpm install
-
-# Set up environment variables
-cp .env.example .env.local
-```
-
-## Environment Variables
-
-Create a `.env.local` file in your project root:
-
-```env
-NEXT_PUBLIC_FAL_KEY=your_fal_ai_api_key_here
-```
-
-## Getting Started
-
-1. **Start the development server**:
+## Getting started
 
 ```bash
+git clone <repo> && cd thumbai
+npm install                 # also runs prisma generate
+cp .env.example .env        # then fill it in, see below
+npm run db:up               # local Postgres via docker compose
+npm run db:deploy           # apply migrations to it
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
 ```
 
-2. **Open your browser** and navigate to `http://localhost:3000`
+Open http://localhost:3000.
 
-3. **Upload images** using drag & drop or the file picker
+### Local and production databases are separate
 
-4. **Enter your editing prompt** describing how you want to transform the images
+Production runs on Neon. Local runs on a Postgres container, so `next dev`
+cannot reach production data.
 
-5. **Select style tags** (optional) to enhance the editing process:
-   - Choose a mood that fits your content
-   - Pick a color theme for consistency
-   - Select optimization settings for your use case
+| File | Holds | Loaded |
+| --- | --- | --- |
+| `.env` | local `DATABASE_URL` plus all other keys | automatically by Next |
+| `.env.prod` | **only** the production `DATABASE_URL` | never automatically |
 
-6. **Configure output settings**:
-   - Number of variations (1-4)
-   - Aspect ratios (16:9, 9:16, or both)
-   - Output format (JPEG, PNG, WEBP)
+`.env.prod` is not a Next.js convention, which is the point: nothing picks it
+up by accident. Production commands opt in explicitly and print the target
+host before acting.
 
-7. **Click "Edit Image"** and wait for AI processing
+| Command | Target |
+| --- | --- |
+| `npm run db:up` / `db:down` | local container |
+| `npm run db:migrate` | local — create and apply a new migration |
+| `npm run db:deploy` | local — apply existing migrations |
+| `npm run db:studio` | local — browse data |
+| `npm run db:status:prod` | production — show migration state |
+| `npm run db:deploy:prod` | production — apply migrations |
+| `npm run db:backup:prod` | production — `pg_dump` into `backups/` |
 
-8. **Download or share** your edited images
+Back up before migrating production: `npm run db:backup:prod`. Dumps land in
+`backups/`, which is gitignored because they contain real user data.
 
-## Use Cases
-
-### Content Creators
-
-- **YouTube Thumbnails**: Create eye-catching thumbnails with consistent
-  branding
-- **Social Media Posts**: Generate content for Instagram, Twitter, Facebook
-- **Video Covers**: Design covers for Shorts, Reels, and TikTok videos
-
-### Marketers
-
-- **Campaign Assets**: Quickly adapt images for different platforms
-- **A/B Testing**: Generate multiple variations for testing
-- **Brand Consistency**: Apply consistent styling across image sets
-
-### Developers
-
-- **Rapid Prototyping**: Generate placeholder images with specific styling
-- **Asset Generation**: Create themed images for applications
-- **Batch Processing**: Process multiple images with consistent edits
-
-## 🔗 API Integration
-
-The component integrates with several APIs:
-
-### FAL AI Integration
-
-```typescript
-// Upload images to FAL storage
-const uploadFileToFal = async (file: File): Promise<string> => {
-  fal.config({
-    credentials: process.env.NEXT_PUBLIC_FAL_KEY,
-  });
-  const url = await fal.storage.upload(file);
-  return url;
-};
-```
-
-### Custom Edit API
-
-```typescript
-// Process images with custom prompts and settings
-const response = await axios.post('/api/edit', {
-  prompt: data.prompt,
-  numImages: data.numImages,
-  outputFormat: data.outputFormat,
-  images_urls: data.uploadedImages,
-  aspectRatio: data.aspectRatios,
-});
-```
-
-## Customization
-
-1. **Update the form validation** if needed for new requirements
-
-### Styling Customization
-
-The component uses Tailwind CSS with a dark theme. Key design tokens:
-
-- **Background**: `bg-neutral-950` (main), `bg-neutral-900/30` (cards)
-- **Borders**: `border-neutral-800` (primary), `border-neutral-700` (secondary)
-- **Text**: `text-neutral-100` (primary), `text-neutral-300` (secondary)
-- **Accents**: Blue for focus states, gradient buttons for primary actions
-
-## Security Considerations
-
-- **File Upload Validation**: Only image files are accepted
-- **URL Validation**: URL inputs are validated before processing
-- **API Key Protection**: FAL AI keys are stored as environment variables
-- **File Size Limits**: Consider implementing file size restrictions for
-  production
-
-## Deployment
-
-### Vercel (Recommended)
+### Admin tooling
 
 ```bash
-# Install Vercel CLI
-npm install -g vercel
-
-# Deploy
-vercel --prod
+node --env-file=.env tools/grant-admin.mjs                     # list users (read-only)
+node --env-file=.env tools/grant-admin.mjs you@example.com 100 # promote + set credits
 ```
 
-### Docker
+Email is not unique in the schema, so the script refuses to act when more than
+one row matches and prints the ids instead.
 
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-COPY . .
-RUN npm run build
-EXPOSE 3000
-CMD ["npm", "start"]
-```
+### Environment
 
-## 📈 Performance Optimizations
+Copy `.env.example` and fill in every value — the app validates them at startup
+via `src/config/env.ts` and will refuse to boot if any are missing.
 
-- **Image Lazy Loading**: Images load on demand
-- **Efficient State Management**: Minimal re-renders with React Hook Form
-- **File Upload Optimization**: Chunked uploads for large files
-- **Memory Management**: URL object cleanup after use
+There is deliberately **no** `NEXT_PUBLIC_FAL_KEY`. Anything prefixed
+`NEXT_PUBLIC_` is inlined into the browser bundle, so a Fal credential there is
+readable by any visitor and spendable against your account. Uploads go through
+`/api/upload`, which holds the key server side.
 
-## Troubleshooting
+### Webhooks
 
-### Common Issues
+Two endpoints need to be reachable from the internet, so use a tunnel
+(`ngrok http 3000`) in development:
 
-**Images not uploading:**
+| Provider | Endpoint | Purpose |
+| --- | --- | --- |
+| Clerk | `/api/webhook/register` | Creates the local `User` row on sign-up. Without it, sign-in succeeds but every API call returns 401. |
+| Razorpay | `/api/webhook/payment` | Grants credits after a verified payment. |
+| Fal | `/api/fal/webhook` | Receives finished generations. Set `NEXT_PUBLIC_FAL_WEBHOOK_URL` to the tunnel origin. |
 
-- Check FAL AI API key configuration
-- Verify network connectivity
-- Ensure image file formats are supported
+Fal deliveries are verified against Fal's ED25519 JWKS, so they must arrive with
+their original signature headers intact.
 
-**Slow processing:**
+## Scripts
 
-- Large images may take longer to process
-- Consider resizing images before upload
-- Check API rate limits
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Development server |
+| `npm run build` | Production build |
+| `npm run start` | Serve the production build |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm run format` | Prettier |
 
-**Download failures:**
+## Architecture notes
 
-- Browser popup blockers may prevent downloads
-- Check CORS settings for external image URLs
+**Credits are server-authoritative.** They are deducted inside the generation
+routes with a conditional update guarded on `credits >= cost`, so concurrent
+requests cannot overdraw, and refunded if the provider call fails. Nothing on
+the client can move a balance.
 
-## 🤝 Contributing
+**Generation is queued, not blocking.** Both `/api/generate` and `/api/edit`
+submit to Fal's queue and return a `request_id`. The browser subscribes to
+`/api/result-stream` (SSE, owner-only, capped at 5 minutes) while Fal calls
+`/api/fal/webhook` with the result.
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit changes: `git commit -m 'Add amazing feature'`
-4. Push to branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
-
-### Development Guidelines
-
-- Follow TypeScript best practices
-- Use meaningful component and variable names
-- Add proper error handling for all async operations
-- Include proper accessibility attributes
+**Plan pricing lives in `src/config/plans.ts`.** Checkout sends only a plan id;
+the price charged and the credits granted are both resolved server side.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
-for details.
-
-## Acknowledgments
-
-- [FAL AI](https://fal.ai/) for powerful image processing capabilities
-- [Lucide React](https://lucide.dev/) for beautiful icons
-- [Tailwind CSS](https://tailwindcss.com/) for utility-first styling
-- [React Hook Form](https://react-hook-form.com/) for efficient form management
-
-## Roadmap
-
-- [ ] Add more aspect ratio options (1:1, 4:5, etc.)
-- [ ] Implement image filters and effects
-- [ ] Add collaborative editing features
-- [ ] Include template library
-- [ ] Add AI-suggested prompts
-- [ ] Implement user accounts and history
-- [ ] Add batch editing workflows
-- [ ] Include analytics and usage tracking
-
----
-
-**Built with ❤️ for content creators worldwide**
+MIT

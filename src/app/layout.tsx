@@ -1,13 +1,56 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
+import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { Header } from '@/components/Header';
 import { Toaster } from 'react-hot-toast';
 import { ClerkProvider } from '@clerk/nextjs';
 import { QueryProvider } from '@/components/providers/query';
 
+// globals.css already expects --font-geist-sans / --font-geist-mono; nothing
+// ever defined them, so every screen fell back to the browser default sans.
+const geistSans = Geist({
+  subsets: ['latin'],
+  variable: '--font-geist-sans',
+  display: 'swap',
+});
+
+const geistMono = Geist_Mono({
+  subsets: ['latin'],
+  variable: '--font-geist-mono',
+  display: 'swap',
+});
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://thumbai.app';
+
 export const metadata: Metadata = {
-  title: 'AI Thumbnail Generator',
-  description: 'Design Your Youtube Thumbnail',
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: 'ThumbAI — AI thumbnail generator',
+    template: '%s · ThumbAI',
+  },
+  description:
+    'Generate YouTube thumbnails and blog cover images from a prompt, an image, or a blog URL.',
+  applicationName: 'ThumbAI',
+  openGraph: {
+    type: 'website',
+    siteName: 'ThumbAI',
+    title: 'ThumbAI — AI thumbnail generator',
+    description:
+      'Generate YouTube thumbnails and blog cover images from a prompt, an image, or a blog URL.',
+    url: siteUrl,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'ThumbAI — AI thumbnail generator',
+    description:
+      'Generate YouTube thumbnails and blog cover images from a prompt, an image, or a blog URL.',
+  },
+  robots: { index: true, follow: true },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#2563EB',
+  colorScheme: 'dark',
 };
 
 export default function RootLayout({
@@ -17,8 +60,13 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang='en'>
-        <body className={` dark bg-neutral-950`}>
+      {/* `dark` belongs on <html> so the root element is themed too, not just
+          body's descendants. */}
+      <html
+        lang='en'
+        className={`dark ${geistSans.variable} ${geistMono.variable}`}
+      >
+        <body className='bg-background text-foreground font-sans antialiased'>
           <QueryProvider>
             <Toaster />
             <Header />

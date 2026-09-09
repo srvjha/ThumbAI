@@ -10,8 +10,6 @@
 !.yarn/releases
 !.yarn/versions
 
-# hide the migrations file
-/prisma/migrations
 
 # testing
 /coverage
@@ -35,6 +33,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ...but the template carries no secrets and must be committed
+!.env.example
 
 # vercel
 .vercel
@@ -50,3 +50,11 @@ next-env.d.ts
 
 # Fillup production changes
 /scripts
+
+# agent tooling (local config, symlinks, logs)
+/.claude/
+# vendored agent skills - reinstall from skills-lock.json via `npx skills install`
+/.agents/
+
+# database dumps - contain real user data, never commit
+/backups

@@ -20,6 +20,7 @@ model User {
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
   Thumbnail Thumbnail[]
+  Order     Order[]
 }
 
 model Thumbnail {
@@ -29,11 +30,19 @@ model Thumbnail {
   user_prompt          String   @default("")
   enhanced_ai_prompt   String   @default("")
   num_of_images        Int?
-  status               String[]
+  // Single value, not a list. This used to be String[] that callers *pushed*
+  // onto, so rows accumulated ['PENDING','COMPLETED'] while readers indexed
+  // [0] and saw the stale value.
+  status               GEN_STATUS @default(PENDING)
   image_url            String[]
   content_type         String?
   aspect_ratio         String?
   model_used           MODEL?
+  // The Fal endpoint that served this request. The webhook needs it to poll
+  // the right queue; it previously hardcoded the image-to-image endpoint for
+  // every workflow.
+  model_endpoint       String?
+  model_tier           TIER?
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
@@ -46,11 +55,31 @@ enum MODEL {
   URL_TO_IMAGE
 }
 
+enum TIER {
+  DRAFT
+  QUALITY
+}
+
+enum GEN_STATUS {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
 model Order {
   id                String      @id @default(uuid())
+  // Nullable only for orders predating this column; every new order sets it.
+  user_id           String?
   productId         String
   productName       String?
   amount            Int?
+  // Credits this purchase grants, resolved from the server-side plan
+  // catalogue at creation time so the amount can never be set by a client.
+  credits           Int         @default(0)
+  // Set once the webhook has topped up the buyer. Razorpay retries
+  // deliveries, so the grant is guarded on this rather than on status.
+  credits_granted   Boolean     @default(false)
   currency          String      @default("INR")
   razorpayOrderId   String?     @unique
   razorpayPaymentId String?
@@ -58,6 +87,10 @@ model Order {
   status            OrderStatus @default(created)
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
+
+  user              User?       @relation(fields: [user_id], references: [id])
+
+  @@index([user_id])
 }
 
 enum PLAN {

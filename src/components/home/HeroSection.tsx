@@ -16,16 +16,7 @@ export const HeroSection = () => {
             AI-Powered Thumbnail Generation
           </span>
         </div>
-        <h1
-          className='
-            text-4xl sm:text-6xl lg:text-6xl 
-            font-bold mb-6 
-            bg-gradient-to-r from-white via-gray-200 to-gray-400 
-            bg-clip-text text-transparent leading-tight 
-            tracking-tight   /* decrease character spacing */
-            word-spacing-tight /* custom class for word spacing */
-          '
-        >
+        <h1 className='text-4xl sm:text-6xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent leading-tight tracking-tight'>
           Create High-Quality{' '}
           <span className='bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent'>
             Thumbnails
@@ -42,7 +33,7 @@ export const HeroSection = () => {
 
         <div className='flex flex-col sm:flex-row gap-4 justify-center mb-16'>
           <Link
-            href='/nano-banana/edit-image'
+            href='/studio/image-to-image'
             className='flex flex-col sm:flex-row gap-4 justify-center'
           >
             <button className='bg-gradient-to-r cursor-pointer border border-black/10 bg-blue-600 text-white px-5 py-3  rounded-xl font-semibold text-lg shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all flex items-center justify-center'>
@@ -53,7 +44,7 @@ export const HeroSection = () => {
 
           <div className='relative inline-block'>
             <Link
-              href='/nano-banana/url-to-image'
+              href='/studio/blog-cover'
               className='flex flex-col sm:flex-row gap-4 justify-center'
             >
               <button className='bg-gradient-to-r cursor-pointer border border-blue-500/30 text-white px-5 py-3  rounded-xl font-semibold text-lg shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all flex items-center justify-center'>
@@ -90,12 +81,12 @@ export const HeroSection = () => {
                 <span className='text-blue-400'>Thumbnail Workflow</span>
               </h2>
               <p className='text-xl text-gray-400 max-w-2xl mx-auto'>
-                Two specialized workflows designed for different thumbnail
-                creation needs.
+                Three workflows: write a prompt, edit an image you already
+                have, or turn a blog URL into a cover.
               </p>
             </div>
 
-            <div className='grid md:grid-cols-2 gap-8 max-w-4xl mx-auto'>
+            <div className='grid gap-8 sm:grid-cols-2 lg:grid-cols-3 max-w-6xl mx-auto'>
               {models.map((model, index) => (
                 <FeatureCard
                   key={index}
@@ -106,7 +97,6 @@ export const HeroSection = () => {
                   backgroundImage={model.backgroundImage}
                   icon={model.icon}
                   navigate={model.navigate}
-                  onClick={model.onClick}
                 />
               ))}
             </div>
@@ -114,8 +104,8 @@ export const HeroSection = () => {
             {/* Additional Info */}
             <div className='text-center mt-12'>
               <p className='text-gray-500 text-sm'>
-                Both models are optimized for thumbnail generation and support
-                high-resolution outputs
+                Every workflow outputs YouTube (16:9) and Shorts (9:16) sizes
+                at full resolution.
               </p>
             </div>
           </div>
