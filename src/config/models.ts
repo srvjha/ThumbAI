@@ -10,6 +10,8 @@
  * Schemas verified against the live queue OpenAPI documents.
  */
 
+import { DESIGN_SYSTEM_PROMPT } from '@/utils/instructions/shared';
+
 export type ModelTier = 'draft' | 'quality';
 
 export type AspectRatio = '16:9' | '9:16';
@@ -23,6 +25,18 @@ export interface ModelInputOptions {
   outputFormat: OutputFormat;
   /** Reference images, for editing endpoints. */
   imageUrls?: string[];
+  /**
+   * Fixing the seed makes a generation reproducible, which is what lets a
+   * prompt change be evaluated against a like-for-like baseline instead of a
+   * fresh random draw. Also powers "make a variation".
+   */
+  seed?: number;
+  /**
+   * Grounds the render in web search. Worth it when the image contains
+   * something that has to be factually right — an architecture diagram, a
+   * real product, a logo — and wasteful otherwise.
+   */
+  enableWebSearch?: boolean;
 }
 
 export interface ModelDefinition {
@@ -55,10 +69,15 @@ const draftModel: ModelDefinition = {
   creditsPerImage: 1,
   usdPerImage: 0.04,
   buildInput: ({ prompt, aspectRatio, numImages, outputFormat }) => ({
-    prompt,
+    // gpt-image-2 exposes no system_prompt field, so the invariant rules are
+    // prepended. It also has no seed or web-search parameter — those are
+    // silently unavailable on this tier, which is a reason to prefer Quality
+    // when reproducibility or factual accuracy matters.
+    prompt: `${DESIGN_SYSTEM_PROMPT}\n\n---\n\n${prompt}`,
     image_size: GPT_IMAGE_SIZES[aspectRatio],
-    // 'high' costs ~4x 'medium' for a difference that does not survive
-    // being viewed at thumbnail size.
+    // 'high' costs ~4x 'medium'. Text crispness is the one thing that does
+    // survive downscaling, so this tradeoff is worth measuring rather than
+    // assuming — see the eval notes in the README.
     quality: 'medium',
     num_images: numImages,
     output_format: outputFormat,
@@ -71,12 +90,22 @@ const qualityModel: ModelDefinition = {
   description: 'Sharpest typography and face consistency. Slower.',
   creditsPerImage: 3,
   usdPerImage: 0.15,
-  buildInput: ({ prompt, aspectRatio, numImages, outputFormat }) => ({
+  buildInput: ({
     prompt,
+    aspectRatio,
+    numImages,
+    outputFormat,
+    seed,
+    enableWebSearch,
+  }) => ({
+    prompt,
+    system_prompt: DESIGN_SYSTEM_PROMPT,
     aspect_ratio: aspectRatio,
     resolution: '2K',
     num_images: numImages,
     output_format: outputFormat,
+    enable_web_search: enableWebSearch ?? false,
+    ...(seed === undefined ? {} : { seed }),
   }),
 };
 
@@ -102,13 +131,21 @@ export const EDIT_MODEL: ModelDefinition = {
     numImages,
     outputFormat,
     imageUrls = [],
+    seed,
+    enableWebSearch,
   }) => ({
     prompt,
+    system_prompt: DESIGN_SYSTEM_PROMPT,
     image_urls: imageUrls,
     aspect_ratio: aspectRatio,
     resolution: '1K',
     num_images: numImages,
     output_format: outputFormat,
+    // Reason about the composition before rendering. Editing has to respect
+    // an existing subject, which is exactly where planning pays off.
+    thinking_level: 'high',
+    enable_web_search: enableWebSearch ?? false,
+    ...(seed === undefined ? {} : { seed }),
   }),
 };
 
