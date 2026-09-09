@@ -73,6 +73,12 @@ host before acting.
 | `npm run db:deploy:prod` | production — apply migrations |
 | `npm run db:backup:prod` | production — `pg_dump` into `backups/` |
 
+`npm run build` runs `prisma migrate deploy` first, so a deploy cannot ship
+code ahead of the schema it needs. That ordering has bitten twice: once when a
+`String[]` to enum change went out before the code that understood it, and once
+when a new column was added in code but never migrated. The build step is the
+only pre-deploy hook Vercel offers, so it is where this belongs.
+
 Back up before migrating production: `npm run db:backup:prod`. Dumps land in
 `backups/`, which is gitignored because they contain real user data.
 
