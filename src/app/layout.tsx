@@ -31,11 +31,17 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://thumbai.app';
 const clerkAppearance = {
   variables: {
     colorPrimary: '#2563eb',
+    colorPrimaryForeground: '#ffffff',
     colorBackground: '#0a0a0a',
-    colorText: '#fafafa',
-    colorTextSecondary: '#a3a3a3',
-    colorInputBackground: '#171717',
-    colorInputText: '#fafafa',
+    colorForeground: '#fafafa',
+    colorMutedForeground: '#a3a3a3',
+    colorInput: '#171717',
+    colorInputForeground: '#fafafa',
+    // Clerk derives secondary text (the "Continue with Google" label), the
+    // "or" divider and card borders from these. Left unset they keep the
+    // light-theme near-black and vanish against the dark card.
+    colorNeutral: '#fafafa',
+    colorBorder: '#262626',
     colorDanger: '#f87171',
     borderRadius: '0.625rem',
   },
