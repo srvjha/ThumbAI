@@ -73,14 +73,29 @@ export const POST = async (req: Request) => {
   }
 
   try {
-    await db.order.update({
-      where: { razorpayOrderId },
+    // updateMany rather than update: update throws when no row matches, and
+    // the Razorpay account also sees payments whose order isn't ours (other
+    // apps, payment links). That throw became a 500, Razorpay retried it for
+    // 24h and then disabled the webhook. A late payment.failed must also not
+    // overwrite an order that has already been paid.
+    const updated = await db.order.updateMany({
+      where: {
+        razorpayOrderId,
+        ...(statusToUpdate === 'failed' && { status: { not: 'paid' } }),
+      },
       data: {
         status: statusToUpdate,
         razorpayPaymentId: payment.id,
         razorpaySignature,
       },
     });
+
+    if (updated.count === 0) {
+      return NextResponse.json(
+        new ApiResponse(200, null, `No matching order for ${event}`),
+        { status: 200 },
+      );
+    }
 
     // The webhook is the authoritative grant path: it arrives even if the
     // buyer closed the tab right after paying.
