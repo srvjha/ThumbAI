@@ -5,6 +5,7 @@ import { ApiResponse } from '@/utils/ApiResponse';
 import { db } from '@/db';
 import { env } from '@/config/env';
 import { grantCreditsForOrder } from '@/lib/credits';
+import { RAZORPAY_APP_TAG } from '@/config/plans';
 
 /** Constant-time compare so the secret can't be probed by timing. */
 const signaturesMatch = (a: string, b: string): boolean => {
@@ -50,6 +51,16 @@ export const POST = async (req: Request) => {
   const event = payload.event;
   const payment = payload.payload?.payment?.entity;
   const razorpayOrderId: string | undefined = payment?.order_id;
+
+  // The Razorpay account is shared with another project, so this webhook also
+  // receives its payments. Skip anything our checkout didn't tag. (Razorpay
+  // sends empty notes as [], hence the optional chaining.)
+  if (payment?.notes?.app !== RAZORPAY_APP_TAG.app) {
+    return NextResponse.json(
+      new ApiResponse(200, null, `Ignored payment from another app: ${event}`),
+      { status: 200 },
+    );
+  }
 
   if (!razorpayOrderId) {
     return NextResponse.json(

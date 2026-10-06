@@ -69,6 +69,13 @@ export const FREE_PLAN: Plan = {
 };
 
 /** Razorpay bills in paise. */
+/**
+ * Tag set on every Razorpay order and checkout ThumbAI creates. The Razorpay
+ * account is shared with another project, and its webhook receives every
+ * payment on the account; this is how the webhook tells ours apart.
+ */
+export const RAZORPAY_APP_TAG = { app: 'thumbai' } as const;
+
 export const toPaise = (rupees: number): number => rupees * 100;
 
 export const getPlan = (planId: unknown): Plan | null => {

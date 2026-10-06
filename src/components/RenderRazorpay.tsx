@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef } from 'react';
 import axios from 'axios';
-import type { Plan } from '@/config/plans';
+import { RAZORPAY_APP_TAG, type Plan } from '@/config/plans';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/hooks/user/auth';
 import { useQueryClient } from '@tanstack/react-query';
@@ -105,7 +105,9 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
         email: userRef.current?.email,
         contact: userRef.current?.phone,
       },
+      // The webhook reads payment notes, which come from here, not the order.
       notes: {
+        ...RAZORPAY_APP_TAG,
         planId: planDetails.id,
         planName: planDetails.name,
       },

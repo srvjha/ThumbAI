@@ -3,7 +3,7 @@ import { razorpay } from '@/config/razorpay';
 import crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { env } from '@/config/env';
-import { getPlan, toPaise } from '@/config/plans';
+import { getPlan, RAZORPAY_APP_TAG, toPaise } from '@/config/plans';
 import { requireUser } from '@/lib/auth';
 import { Role } from '@prisma/client';
 import { grantCreditsForOrder } from '@/lib/credits';
@@ -42,6 +42,7 @@ export const createOrder = async (req: NextRequest) => {
       currency: 'INR',
       receipt: receiptNo,
       payment_capture: true,
+      notes: { ...RAZORPAY_APP_TAG, planId: plan.id },
     });
 
     // Save order in DB
