@@ -1,3 +1,4 @@
+import 'server-only';
 import dns from 'dns/promises';
 import net from 'net';
 
@@ -54,7 +55,7 @@ const assertPublicHost = async (hostname: string): Promise<void> => {
   }
 };
 
-const isPrivateAddress = (address: string): boolean => {
+export const isPrivateAddress = (address: string): boolean => {
   if (net.isIPv4(address)) {
     const [a, b] = address.split('.').map(Number);
     if (a === 10) return true;
@@ -164,7 +165,8 @@ export const fetchArticle = async (rawUrl: string): Promise<Article> => {
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     headers: {
       // Some publishers serve a challenge page to unknown agents.
-      'User-Agent': 'Mozilla/5.0 (compatible; ThumbAI/1.0; +https://thumbai.app)',
+      'User-Agent':
+        'Mozilla/5.0 (compatible; ThumbAI/1.0; +https://thumbai.app)',
       Accept: 'text/html,application/xhtml+xml',
     },
   }).catch(() => {
@@ -181,9 +183,7 @@ export const fetchArticle = async (rawUrl: string): Promise<Article> => {
   }
 
   if (!response.ok) {
-    throw new ArticleFetchError(
-      `That URL returned ${response.status}.`,
-    );
+    throw new ArticleFetchError(`That URL returned ${response.status}.`);
   }
 
   const contentType = response.headers.get('content-type') ?? '';
@@ -220,7 +220,8 @@ const fetchArticleFollowingOneRedirect = async (
     redirect: 'error',
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     headers: {
-      'User-Agent': 'Mozilla/5.0 (compatible; ThumbAI/1.0; +https://thumbai.app)',
+      'User-Agent':
+        'Mozilla/5.0 (compatible; ThumbAI/1.0; +https://thumbai.app)',
       Accept: 'text/html,application/xhtml+xml',
     },
   }).catch(() => {

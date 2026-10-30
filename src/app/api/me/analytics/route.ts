@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GEN_STATUS } from '@prisma/client';
 import { db } from '@/db';
-import { reconcileStaleGenerations } from '@/lib/generationResult';
+import { reconcileStaleGenerations } from '@/server/generations/results';
 import { EDIT_MODEL } from '@/config/models';
 import { ApiResponse } from '@/utils/ApiResponse';
 import type {
@@ -11,12 +11,12 @@ import type {
   SeriesPoint,
 } from '@/components/dashboard/types';
 import {
-  errorResponse,
   estimateCredits,
   generationSelect,
-  requireUser,
   toGenerationItem,
-} from '../generations/shared';
+} from '@/server/generations/queries';
+import { requireUser } from '@/server/auth';
+import { apiErrorResponse } from '@/server/errors';
 
 const DAY = 86_400_000;
 const RANGE_DAYS: Record<string, number> = { '7d': 7, '30d': 30, '90d': 90 };
@@ -229,7 +229,7 @@ export const GET = async (req: NextRequest) => {
       new ApiResponse(200, data, 'Analytics fetched successfully'),
       { status: 200 },
     );
-  } catch (err: any) {
-    return errorResponse(err);
+  } catch (err) {
+    return apiErrorResponse(err);
   }
 };

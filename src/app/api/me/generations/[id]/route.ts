@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { reconcileStaleGenerations } from '@/lib/generationResult';
+import { reconcileStaleGenerations } from '@/server/generations/results';
 import { ApiResponse } from '@/utils/ApiResponse';
-import { ApiError } from '@/utils/ApiError';
+import { ApiError, apiErrorResponse } from '@/server/errors';
 import type { GenerationDetail } from '@/components/dashboard/types';
 import {
-  errorResponse,
   estimateCredits,
   generationSelect,
-  requireUser,
   toGenerationItem,
-} from '../shared';
+} from '@/server/generations/queries';
+import { requireUser } from '@/server/auth';
 
 /** GET /api/me/generations/[id] — one of the signed-in user's generations. */
 export const GET = async (
@@ -51,7 +50,7 @@ export const GET = async (
       new ApiResponse(200, detail, 'Generation fetched successfully'),
       { status: 200 },
     );
-  } catch (err: any) {
-    return errorResponse(err);
+  } catch (err) {
+    return apiErrorResponse(err);
   }
 };

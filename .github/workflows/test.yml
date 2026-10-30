@@ -1,0 +1,34 @@
+name: Test
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: thumbai
+          POSTGRES_PASSWORD: thumbai
+          POSTGRES_DB: thumbai
+        ports: ['5433:5432']
+        options: >-
+          --health-cmd "pg_isready -U thumbai -d thumbai" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    env:
+      # prisma generate reads the schema's datasource; tests use their own db.
+      DATABASE_URL: postgresql://thumbai:thumbai@localhost:5433/thumbai
+      TEST_DATABASE_URL: postgresql://thumbai:thumbai@localhost:5433/thumbai_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test

@@ -1,5 +1,6 @@
+import 'server-only';
 import { db } from '@/db';
-import { ApiError } from '@/utils/ApiError';
+import { ApiError } from '@/server/errors';
 
 /**
  * Tops up the buyer for a paid order. Safe to call more than once.

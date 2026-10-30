@@ -1,3 +1,4 @@
+import 'server-only';
 import { OpenAI } from 'openai';
 import { PROMPT_MODEL } from '@/config/models';
 
@@ -53,7 +54,10 @@ return exactly: INVALID
 
 export const generateChatPrompt = async (chatPrompt: string) => {
   if (!chatPrompt?.trim()) {
-    return { valid_prompt: false, response: 'Please give a meaningful prompt.' };
+    return {
+      valid_prompt: false,
+      response: 'Please give a meaningful prompt.',
+    };
   }
 
   const completion = await client.chat.completions.create({
@@ -67,7 +71,10 @@ export const generateChatPrompt = async (chatPrompt: string) => {
   const response = completion.choices[0]?.message?.content?.trim() ?? '';
 
   if (!response || response === 'INVALID') {
-    return { valid_prompt: false, response: 'Please give a meaningful prompt.' };
+    return {
+      valid_prompt: false,
+      response: 'Please give a meaningful prompt.',
+    };
   }
 
   return { valid_prompt: true, response };

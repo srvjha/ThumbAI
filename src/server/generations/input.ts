@@ -1,5 +1,6 @@
+import 'server-only';
 import { MODEL } from '@prisma/client';
-import { ApiError } from '@/utils/ApiError';
+import { ApiError } from '@/server/errors';
 
 /**
  * Bounds on what a generation request may carry.
@@ -20,7 +21,10 @@ export const MAX_URL_CHARS = 2048;
  */
 export const parseWorkflow = (value: unknown): MODEL | undefined => {
   if (value === undefined || value === null || value === '') return undefined;
-  if (typeof value === 'string' && value in MODEL) return value as MODEL;
+  // Own keys only: `in` also matches inherited names like 'toString'.
+  if (typeof value === 'string' && Object.hasOwn(MODEL, value)) {
+    return value as MODEL;
+  }
   throw new ApiError('Unknown workflow', 400);
 };
 

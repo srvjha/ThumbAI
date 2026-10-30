@@ -1,7 +1,8 @@
+import 'server-only';
 import { fal } from '@fal-ai/client';
 import { db } from '@/db';
 import { GEN_STATUS } from '@prisma/client';
-import { refundCredits } from '@/lib/credits';
+import { refundCredits } from '@/server/credits';
 import { creditsPerImageForEndpoint } from '@/config/models';
 
 /**

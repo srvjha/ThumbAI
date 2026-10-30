@@ -4,7 +4,7 @@ import { WebhookEvent, UserJSON } from '@clerk/nextjs/server';
 import { db } from '@/db';
 import { NextResponse } from 'next/server';
 import { ApiResponse } from '@/utils/ApiResponse';
-import { apiErrorResponse } from '@/utils/ApiError';
+import { apiErrorResponse } from '@/server/errors';
 import { env } from '@/config/env';
 import { Role } from '@prisma/client';
 import { FREE_PLAN } from '@/config/plans';

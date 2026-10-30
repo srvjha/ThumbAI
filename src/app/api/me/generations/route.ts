@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GEN_STATUS, MODEL, type Prisma } from '@prisma/client';
+import { GEN_STATUS, type Prisma } from '@prisma/client';
+import { parseWorkflow } from '@/server/generations/input';
 import { db } from '@/db';
-import { reconcileStaleGenerations } from '@/lib/generationResult';
+import { reconcileStaleGenerations } from '@/server/generations/results';
 import { ApiResponse } from '@/utils/ApiResponse';
-import { ApiError } from '@/utils/ApiError';
+import { ApiError, apiErrorResponse } from '@/server/errors';
 import {
-  errorResponse,
   generationSelect,
-  requireUser,
   toGenerationItem,
-} from './shared';
+} from '@/server/generations/queries';
+import { requireUser } from '@/server/auth';
 
 const DEFAULT_LIMIT = 24;
 const MAX_LIMIT = 60;
@@ -37,22 +37,21 @@ export const GET = async (req: NextRequest) => {
       MAX_LIMIT,
     );
     const cursor = params.get('cursor');
-    const workflow = params.get('workflow');
+    const workflow = parseWorkflow(params.get('workflow'));
     const status = params.get('status');
     const aspectRatio = params.get('aspect_ratio');
     const q = params.get('q')?.trim();
 
-    if (workflow && !(workflow in MODEL)) {
-      throw new ApiError('Unknown workflow', 400);
-    }
-    if (status && !STATUS_FILTERS[status]) {
+    // Own keys only: a bare lookup also matched inherited names like
+    // 'constructor'.
+    if (status && !Object.hasOwn(STATUS_FILTERS, status)) {
       throw new ApiError('Unknown status', 400);
     }
 
     // user_id is always part of the filter; nothing else can widen it.
     const where: Prisma.ThumbnailWhereInput = {
       user_id: user.id,
-      ...(workflow ? { model_used: workflow as MODEL } : {}),
+      ...(workflow ? { model_used: workflow } : {}),
       ...(status ? { status: { in: STATUS_FILTERS[status] } } : {}),
       ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
       ...(q
@@ -86,7 +85,7 @@ export const GET = async (req: NextRequest) => {
       ),
       { status: 200 },
     );
-  } catch (err: any) {
-    return errorResponse(err);
+  } catch (err) {
+    return apiErrorResponse(err);
   }
 };

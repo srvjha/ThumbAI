@@ -1,24 +1,12 @@
 import { db } from '@/db';
-import { ApiError, apiErrorResponse } from '@/utils/ApiError';
+import { apiErrorResponse } from '@/server/errors';
 import { ApiResponse } from '@/utils/ApiResponse';
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
-import { Role } from '@prisma/client';
+import { requireAdmin } from '@/server/auth';
 
 export const GET = async (req: NextRequest) => {
   try {
-    const { userId } = await auth();
-    if (!userId) {
-      throw new ApiError('Unauthorized', 401);
-    }
-
-    const getUserRole = await db.user.findUnique({
-      where: { clerk_id: userId },
-    });
-
-    if (getUserRole?.role !== Role.ADMIN) {
-      throw new ApiError('Forbidden - Admin access required', 403);
-    }
+    await requireAdmin();
 
     // Fetch all users with their thumbnails
     const users = await db.user.findMany({
