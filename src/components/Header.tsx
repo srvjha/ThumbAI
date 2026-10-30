@@ -40,8 +40,13 @@ export const Header = () => {
   // A reload partway down the page starts condensed.
   useEffect(() => setCondensed(scrollY.get() > CONDENSE_AT), [scrollY]);
 
-  // Signed-in screens bring their own navigation in the app shell.
-  if (APP_ROUTE_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+  // Signed-in screens bring their own navigation in the app shell, and the
+  // auth pages have their own slim top row.
+  if (
+    [...APP_ROUTE_PREFIXES, '/sign-in', '/sign-up'].some((prefix) =>
+      pathname.startsWith(prefix),
+    )
+  ) {
     return null;
   }
 

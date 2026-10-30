@@ -31,6 +31,7 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://thumbai.app';
  * they follow light and dark.
  */
 const clerkAppearance = {
+  cssLayerName: 'clerk',
   variables: {
     colorPrimary: 'var(--primary)',
     colorPrimaryForeground: 'var(--primary-foreground)',

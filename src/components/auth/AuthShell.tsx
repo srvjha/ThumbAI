@@ -1,83 +1,180 @@
 import type { ReactNode } from 'react';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 import { Logo } from '@/components/brand/Logo';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import { SAMPLES, type Sample } from '@/components/landing/samples';
 import { FREE_PLAN } from '@/config/plans';
+import { cn } from '@/lib/utils';
 
-interface AuthShellProps {
-  heading: string;
-  subheading: string;
-  children: ReactNode;
-}
+/**
+ * Clerk's form without its own card: no header (the page has one), no box,
+ * no shadow, fields and buttons in the studio's style. Works because Clerk's
+ * styles sit in the `clerk` layer, beneath Tailwind's utilities.
+ */
+export const authAppearance = {
+  elements: {
+    rootBox: 'w-full',
+    cardBox:
+      'w-full max-w-none rounded-none border-0 bg-transparent shadow-none',
+    card: 'gap-6 rounded-none border-0 bg-transparent p-0 shadow-none',
+    header: 'hidden',
+    socialButtonsBlockButton:
+      'h-11 rounded-xl border border-input bg-card text-foreground shadow-none hover:bg-secondary',
+    socialButtonsBlockButtonText: 'text-sm font-medium',
+    dividerLine: 'bg-border',
+    dividerText: 'text-xs text-muted-foreground',
+    formFieldLabel: 'text-sm font-medium text-foreground',
+    formFieldAction: 'text-sm font-medium text-brand hover:text-brand-strong',
+    formFieldInput:
+      'h-11 rounded-xl border border-input bg-card px-3.5 text-[15px] text-foreground shadow-none focus:border-brand focus:ring-[3px] focus:ring-ring/25',
+    formButtonPrimary:
+      'btn-brand h-11 rounded-xl text-sm font-medium normal-case shadow-none after:hidden',
+    footer: 'mt-2 bg-none bg-transparent p-0 [&>div]:border-0',
+    footerAction: 'p-0',
+    footerActionText: 'text-sm text-muted-foreground',
+    footerActionLink: 'text-sm font-medium text-brand hover:text-brand-strong',
+  },
+} as const;
 
-/** Sketch of a 16:9 thumbnail in brand ink, so the panel shows the product. */
-const ThumbnailSketch = () => (
-  <div
-    aria-hidden
-    className='relative aspect-video w-full overflow-hidden rounded-xl border-[1.5px] border-brand/70 bg-card'
-  >
-    <div className='absolute inset-y-0 right-0 w-[42%] border-l border-brand/20 bg-brand-muted'>
-      <div className='absolute bottom-0 left-1/2 h-[70%] w-[62%] -translate-x-1/2 rounded-t-full border-[1.5px] border-b-0 border-brand/60' />
-      <div className='absolute top-[18%] left-1/2 size-[30%] -translate-x-1/2 rounded-full border-[1.5px] border-brand/60 bg-card' />
+// Three columns of real renders, each drifting at its own pace.
+const COLUMNS: { items: Sample[]; seconds: number; offset: string }[] = [
+  {
+    items: [
+      SAMPLES.gaming,
+      SAMPLES.blogOpenSource,
+      SAMPLES.cooking,
+      SAMPLES.shortRice,
+      SAMPLES.finance,
+    ],
+    seconds: 70,
+    offset: '',
+  },
+  {
+    items: [
+      SAMPLES.shortKeyboard,
+      SAMPLES.techApi,
+      SAMPLES.travel,
+      SAMPLES.blogSlowWeb,
+    ],
+    seconds: 90,
+    offset: '-mt-24',
+  },
+  {
+    items: [
+      SAMPLES.review,
+      SAMPLES.fitness,
+      SAMPLES.shortSummit,
+      SAMPLES.podcast,
+    ],
+    seconds: 80,
+    offset: '-mt-10',
+  },
+];
+
+const ratioClass: Record<Sample['kind'], string> = {
+  video: 'aspect-video',
+  short: 'aspect-[9/16]',
+  cover: 'aspect-[1200/630]',
+};
+
+/** The right-hand panel: the product's actual output, slowly scrolling. */
+const SampleWall = () => (
+  <aside className='relative m-3 hidden overflow-hidden rounded-3xl bg-[#0d1020] lg:block'>
+    <div
+      aria-hidden
+      className='absolute inset-0 grid grid-cols-3 gap-3 px-3 [mask-image:linear-gradient(to_bottom,transparent,black_12%,black_88%,transparent)]'
+    >
+      {COLUMNS.map((col, i) => (
+        <div key={i} className={cn('min-w-0', col.offset)}>
+          {/* Listed twice so the loop has no seam. */}
+          <div
+            className='flex animate-[drift-up_80s_linear_infinite] flex-col gap-3 motion-reduce:animate-none'
+            style={{ animationDuration: `${col.seconds}s` }}
+          >
+            {[...col.items, ...col.items].map((sample, j) => (
+              <img
+                key={`${sample.src}-${j}`}
+                src={sample.src}
+                alt=''
+                loading='lazy'
+                className={cn(
+                  'w-full rounded-xl object-cover ring-1 ring-white/10',
+                  ratioClass[sample.kind],
+                )}
+              />
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
-    <div className='absolute top-[16%] left-[7%] w-[46%] space-y-2'>
-      <div className='h-3 w-full rounded-sm bg-foreground' />
-      <div className='h-3 w-4/5 rounded-sm bg-foreground' />
-      <div className='mt-3 h-3 w-2/5 rounded-sm bg-brand' />
+
+    <div className='absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#0d1020] from-35% to-transparent px-10 pt-40 pb-10 text-white'>
+      <p className='max-w-md font-serif text-3xl leading-tight text-balance'>
+        Describe the video. Get a thumbnail you would actually upload.
+      </p>
+      <dl className='mt-6 flex gap-8 text-sm'>
+        <div>
+          <dd className='font-mono text-xl tabular-nums'>
+            {FREE_PLAN.credits}
+          </dd>
+          <dt className='text-white/60'>free credits</dt>
+        </div>
+        <div>
+          <dd className='font-mono text-xl tabular-nums'>16:9 · 9:16</dd>
+          <dt className='text-white/60'>video and Shorts</dt>
+        </div>
+        <div>
+          <dd className='font-mono text-xl tabular-nums'>₹0</dd>
+          <dt className='text-white/60'>no card needed</dt>
+        </div>
+      </dl>
     </div>
-    <div className='absolute bottom-[10%] right-[4%] rounded bg-foreground px-1.5 py-0.5 font-mono text-[10px] text-background'>
-      12:48
-    </div>
-  </div>
+  </aside>
 );
 
 /**
- * Frame for the sign-in and sign-up pages: the form on paper, and on wide
- * screens a quiet blue-ink panel saying what the account is for.
+ * Frame for the sign-in and sign-up pages: the form on the left, centred in
+ * its column, and on wide screens a wall of real renders on the right.
  */
 export const AuthShell = ({
   heading,
   subheading,
   children,
-}: AuthShellProps) => (
-  <main className='min-h-svh bg-background px-4 pt-24 pb-12 sm:px-6 lg:pt-28'>
-    <div className='mx-auto grid w-full max-w-5xl items-start gap-10 lg:grid-cols-[1fr_1fr] lg:gap-14'>
-      <div className='mx-auto flex w-full max-w-[26rem] flex-col items-center lg:items-start'>
-        <Logo className='mb-8' />
-        <h1 className='text-center font-serif text-4xl tracking-tight sm:text-5xl lg:text-left'>
-          {heading}
-        </h1>
-        <p className='mt-2 mb-8 text-center text-sm text-muted-foreground lg:text-left'>
-          {subheading}
-        </p>
-
-        {children}
-
-        <p className='mt-8 text-center text-xs text-muted-foreground lg:text-left'>
-          By continuing you agree to our terms and privacy policy.
-        </p>
+}: {
+  heading: string;
+  subheading: string;
+  children: ReactNode;
+}) => (
+  <main className='grid min-h-svh bg-background lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]'>
+    <div className='flex min-h-svh flex-col px-5 py-5 sm:px-10 sm:py-6'>
+      <div className='flex items-center justify-between'>
+        <Logo />
+        <div className='flex items-center gap-1'>
+          <Link
+            href='/'
+            className='inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground'
+          >
+            <ArrowLeft className='size-4' />
+            Back to site
+          </Link>
+          <ThemeToggle />
+        </div>
       </div>
 
-      <aside className='hidden rounded-2xl border bg-accent p-8 text-accent-foreground lg:block'>
-        <ThumbnailSketch />
-        <p className='mt-8 font-serif text-3xl leading-tight tracking-tight'>
-          Describe the video. Get a thumbnail you would actually upload.
+      <div className='mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-12'>
+        <h1 className='font-serif text-4xl tracking-tight'>{heading}</h1>
+        <p className='mt-2 text-[15px] text-muted-foreground text-pretty'>
+          {subheading}
         </p>
-        <dl className='mt-8 grid grid-cols-3 gap-4 border-t border-brand/20 pt-6'>
-          <div>
-            <dd className='font-mono text-2xl tabular-nums'>
-              {FREE_PLAN.credits}
-            </dd>
-            <dt className='mt-0.5 text-xs opacity-75'>free credits</dt>
-          </div>
-          <div>
-            <dd className='font-mono text-2xl tabular-nums'>16:9</dd>
-            <dt className='mt-0.5 text-xs opacity-75'>and 9:16 sizes</dt>
-          </div>
-          <div>
-            <dd className='font-mono text-2xl tabular-nums'>₹0</dd>
-            <dt className='mt-0.5 text-xs opacity-75'>no card needed</dt>
-          </div>
-        </dl>
-      </aside>
+        <div className='mt-8'>{children}</div>
+      </div>
+
+      <p className='text-center text-xs text-muted-foreground'>
+        By continuing you agree to our terms and privacy policy.
+      </p>
     </div>
+
+    <SampleWall />
   </main>
 );

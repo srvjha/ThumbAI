@@ -1,3 +1,7 @@
+/* Clerk's component styles sit below Tailwind's utilities so its forms
+   can be restyled with classes (see cssLayerName in the root layout). */
+@layer theme, base, clerk, components, utilities;
+
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
@@ -168,6 +172,14 @@
     filter: invert(1) hue-rotate(180deg);
     opacity: 0.55;
   }
+  /* Browser autofill paints inputs light blue; keep the field's own colours. */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px var(--card) inset;
+    -webkit-text-fill-color: var(--foreground);
+    caret-color: var(--foreground);
+  }
   body {
     @apply bg-background text-foreground;
     font-feature-settings: 'cv11', 'ss03';
@@ -231,6 +243,14 @@
   animation: shimmer-text 2.2s linear infinite;
   @media (prefers-reduced-motion: reduce) {
     animation: none;
+  }
+}
+
+/* The auth page's sample wall: each column is listed twice and moves up by
+   one copy (half its height, plus half the gap) so the loop has no seam. */
+@keyframes drift-up {
+  to {
+    transform: translateY(calc(-50% - 0.375rem));
   }
 }
 
