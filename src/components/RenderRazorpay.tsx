@@ -31,7 +31,7 @@ const loadScript = (src: string): Promise<boolean> =>
     document.body.appendChild(script);
   });
 
-// 🔥 Force close Razorpay modal by removing DOM elements
+// Force close Razorpay modal by removing DOM elements
 const forceCloseRazorpay = () => {
   const selectors = [
     '.razorpay-backdrop',
@@ -69,7 +69,7 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
   const paymentMethod = useRef<string | null>(null);
   const razorpayInstance = useRef<any>(null);
 
-  // 🔥 Store user data in a ref to prevent stale closure
+  // Store user data in a ref to prevent stale closure
   const userRef = useRef<any>(null);
 
   const { data: userInfo, isLoading, isError } = useAuth();
@@ -87,7 +87,7 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
       'https://checkout.razorpay.com/v1/checkout.js',
     );
     if (!res) {
-      toast.error('Payment system failed to load ❌');
+      toast.error('Checkout could not load. Check your connection and try again.');
       return;
     }
 
@@ -112,7 +112,7 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
         planName: planDetails.name,
       },
       theme: {
-        color: '#3399cc',
+        color: '#3e63dd',
       },
 
       // Success handler
@@ -122,7 +122,7 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
             razorpayInstance.current.close();
           }
         } catch (e) {
-          console.warn('Standard close failed:', e);
+          console.warn('Could not close checkout after payment:', e);
         }
 
         forceCloseRazorpay();
@@ -143,7 +143,7 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
             });
 
             toast.success(
-              `Payment successful ✅ ${planDetails.credits} credits added`,
+              `Payment received. ${planDetails.credits} credits added.`,
             );
 
             // Refresh the header credit count.
@@ -187,7 +187,7 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
           razorpayInstance.current.close();
         }
       } catch (e) {
-        console.warn('Close on failure failed:', e);
+        console.warn('Could not close checkout after failed payment:', e);
       }
 
       forceCloseRazorpay();
@@ -200,31 +200,40 @@ export const RenderRazorpay: React.FC<RenderRazorpayProps> = ({
     rzp.open();
   };
 
-  // Only initialize Razorpay when user data is available
+  // Open checkout once per mount. Callers remount per order (key={orderId});
+  // re-running on every user refetch reopened checkout for an order that had
+  // just been paid, since verifying the payment refetches the user.
+  const opened = useRef(false);
   useEffect(() => {
-    if (userInfo && !isLoading) {
+    if (userInfo && !isLoading && !opened.current) {
+      opened.current = true;
       displayRazorpay();
     }
+  }, [userInfo, isLoading]);
 
-    return () => {
+  // Close only on unmount; a background refetch must not tear down an open
+  // checkout mid-payment.
+  useEffect(
+    () => () => {
       if (razorpayInstance.current) {
         try {
           razorpayInstance.current.close();
         } catch (e) {
-          console.warn('Cleanup close failed:', e);
+          console.warn('Could not close checkout on unmount:', e);
         }
       }
       forceCloseRazorpay();
-    };
-  }, [userInfo, isLoading]); // Add user and isLoading as dependencies
+    },
+    [],
+  );
 
   // Show loading state while user data is being fetched
   if (isLoading) {
-    return <Loader className='h-10 animate-spin text-center mx-auto w-full' />;
+    return <Loader className='mx-auto size-6 animate-spin text-muted-foreground' />;
   }
 
   if (isError) {
-    return toast.error('Error while loading payment page!');
+    return toast.error('Could not load your account. Refresh and try again.');
   }
 
   return null;

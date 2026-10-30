@@ -4,10 +4,16 @@ import { Copy, Download, Share2 } from 'lucide-react';
 import { Button } from '../ui/button';
 import toast from 'react-hot-toast';
 import { downloadImage, copyToClipboard, shareImage } from './imageUtils';
+import { cn } from '@/lib/utils';
 
 interface ImageActionButtonsProps {
   imageUrl: string;
   aspectRatio?: string;
+  /**
+   * 'overlay' is icon-only for sitting on top of an image on hover;
+   * 'toolbar' is labelled, for a visible row under the canvas.
+   */
+  variant?: 'overlay' | 'toolbar';
 }
 
 /**
@@ -17,6 +23,7 @@ interface ImageActionButtonsProps {
 export const ImageActionButtons: React.FC<ImageActionButtonsProps> = ({
   imageUrl,
   aspectRatio = '16:9',
+  variant = 'overlay',
 }) => {
   const handleDownloadClick = async () => {
     try {
@@ -55,35 +62,34 @@ export const ImageActionButtons: React.FC<ImageActionButtonsProps> = ({
     }
   };
 
+  const toolbar = variant === 'toolbar';
+  const buttonClass = toolbar
+    ? 'cursor-pointer'
+    : 'cursor-pointer bg-card text-foreground shadow-xs hover:bg-accent';
+
+  const actions = [
+    { label: 'Download', icon: Download, onClick: handleDownloadClick },
+    { label: 'Copy link', icon: Copy, onClick: handleCopyClick },
+    { label: 'Share', icon: Share2, onClick: handleShareClick },
+  ];
+
   return (
-    <div className='flex gap-2'>
-      <Button
-        variant='ghost'
-        size='sm'
-        onClick={handleCopyClick}
-        className='cursor-pointer hover:bg-neutral-700 text-neutral-400 hover:text-neutral-200'
-        title='Copy URL'
-      >
-        <Copy className='w-4 h-4' />
-      </Button>
-      <Button
-        variant='ghost'
-        size='sm'
-        onClick={handleDownloadClick}
-        className='cursor-pointer hover:bg-neutral-700 text-neutral-400 hover:text-neutral-200'
-        title='Download'
-      >
-        <Download className='w-4 h-4' />
-      </Button>
-      <Button
-        variant='ghost'
-        size='sm'
-        onClick={handleShareClick}
-        className='cursor-pointer hover:bg-neutral-700 text-neutral-400 hover:text-neutral-200'
-        title='Share'
-      >
-        <Share2 className='w-4 h-4' />
-      </Button>
+    <div className={cn('flex gap-2', toolbar && 'flex-wrap')}>
+      {actions.map(({ label, icon: Icon, onClick }) => (
+        <Button
+          key={label}
+          type='button'
+          variant={toolbar ? 'outline' : 'ghost'}
+          size='sm'
+          onClick={onClick}
+          className={buttonClass}
+          title={label}
+          aria-label={toolbar ? undefined : label}
+        >
+          <Icon className='size-4' />
+          {toolbar && label}
+        </Button>
+      ))}
     </div>
   );
 };

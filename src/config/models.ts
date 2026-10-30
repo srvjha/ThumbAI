@@ -161,6 +161,21 @@ export const EDIT_MODEL: ModelDefinition = {
   }),
 };
 
+/**
+ * Credits charged per image by the endpoint a generation ran on. Keyed by
+ * endpoint rather than workflow because chat edits are recorded under the
+ * workflow they started from but billed at the edit rate. Unknown endpoints
+ * (rows predating the column) fall back to the cheapest rate.
+ */
+export const creditsPerImageForEndpoint = (
+  endpointId: string | null | undefined,
+): number => {
+  const model = [...Object.values(TEXT_TO_IMAGE_MODELS), EDIT_MODEL].find(
+    (candidate) => candidate.endpointId === endpointId,
+  );
+  return model?.creditsPerImage ?? 1;
+};
+
 export const DEFAULT_TIER: ModelTier = 'draft';
 
 export const isModelTier = (value: unknown): value is ModelTier =>

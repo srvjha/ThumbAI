@@ -2,22 +2,8 @@
 
 import { useState, DragEvent, ChangeEvent } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
-import { Wand2, Upload, X } from 'lucide-react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from './ui/select';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from './ui/accordion';
+import { Link2, Upload, X } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useChat } from '@ai-sdk/react';
@@ -30,6 +16,18 @@ import { ImageData } from './shared/imageUtils';
 import { MODEL } from '@prisma/client';
 import { waitForGeneration } from '@/lib/waitForGeneration';
 import { EDIT_MODEL } from '@/config/models';
+import {
+  StudioLayout,
+  ControlsPanel,
+  ControlSection,
+  SegmentedControl,
+  fieldClass,
+} from './studio/StudioLayout';
+import { FixedModelNote } from './studio/TierPicker';
+import { AspectRatioPicker } from './studio/AspectRatioPicker';
+import { AdvancedOptions } from './studio/AdvancedOptions';
+import { GenerateBar } from './studio/GenerateBar';
+import { IMAGE_COUNT_OPTIONS, OUTPUT_FORMAT_OPTIONS } from './studio/options';
 
 type FormValues = {
   prompt: string;
@@ -386,330 +384,280 @@ export const ImageToImage = () => {
     }
   };
 
+  const numImages = watch('numImages');
+  const ratioCount = aspectRatios?.length || 0;
+  const creditCost =
+    (numImages || 1) * Math.max(ratioCount, 1) * EDIT_MODEL.creditsPerImage;
+
   return (
-    <div className='grid lg:grid-cols-2 gap-8'>
-      {/* Left Panel - Input */}
-      <div className='space-y-6'>
-        <Card className='p-1 h-auto bg-transparent'>
-          <CardContent className='p-6'>
-            <h3 className='text-lg font-semibold text-neutral-100 mb-4'>
-              Input
-            </h3>
-
-            <form onSubmit={handleSubmit(onSubmit)} className='space-y-6'>
-              <Controller
-                name='prompt'
-                control={control}
-                rules={{
-                  required: 'Prompt is required',
-                  minLength: {
-                    value: 10,
-                    message: 'Prompt must be at least 10 characters',
-                  },
-                  maxLength: {
-                    value: 300,
-                    message: 'Prompt should have at max 300 characters',
-                  },
-                }}
-                render={({ field }) => (
-                  <div>
-                    <label className='block text-sm font-medium text-neutral-300 mb-2'>
-                      Edit Prompt *
-                    </label>
-                    <textarea
-                      {...field}
-                      placeholder='Describe how you want to edit the uploaded images...'
-                      className={`w-full h-32 bg-neutral-800 border rounded-lg p-4 text-neutral-300 placeholder-neutral-500 focus:outline-none resize-none ${
-                        errors.prompt
-                          ? 'border-red-500 focus:border-red-500'
-                          : 'border-neutral-700 focus:border-blue-500'
-                      }`}
-                    />
-                    {errors.prompt && (
-                      <p className='text-red-400 text-xs mt-1'>
-                        {errors.prompt.message}
-                      </p>
-                    )}
-                  </div>
-                )}
+    <>
+      <StudioLayout
+        controls={
+          <ControlsPanel
+            onSubmit={handleSubmit(onSubmit)}
+            footer={
+              <GenerateBar
+                cost={creditCost}
+                costNote={`${numImages || 1} × ${Math.max(ratioCount, 1)} format${
+                  ratioCount > 1 ? 's' : ''
+                } × ${EDIT_MODEL.creditsPerImage} cr`}
+                balance={userInfo?.credits}
+                isGenerating={isGenerating}
+                busyLabel='Processing…'
+                disabled={
+                  !prompt.trim() ||
+                  isGenerating ||
+                  uploadedFiles.length === 0 ||
+                  ratioCount === 0
+                }
+                label={
+                  ratioCount > 1
+                    ? `Composite ${ratioCount} formats`
+                    : 'Composite'
+                }
+                onReset={handleReset}
               />
-              {/* Questionnaire with choices */}
-              <FormQuestionnaire
-                control={control}
-                choicesFieldName='choices'
-                questionnaireFieldName='questionnaire'
-                errors={errors}
-              />
-
-              {/* Image Upload Section */}
-              <div>
-                <label className='block text-sm font-medium text-neutral-300 mb-2'>
-                  Upload Images *
-                </label>
-
-                {/* URL Input */}
-                <div className='flex space-x-2 mb-3'>
-                  <input
-                    type='url'
-                    value={urlInput}
-                    onChange={(e) => setUrlInput(e.target.value)}
-                    placeholder='Paste image URL'
-                    className='flex-1 bg-neutral-800 border border-neutral-700 rounded-lg p-2 text-neutral-300 placeholder-neutral-500 focus:border-blue-500 focus:outline-none'
-                  />
-                  <Button
-                    type='button'
-                    onClick={handleAddUrl}
-                    variant='outline'
-                    className='cursor-pointer border-neutral-600 text-neutral-300 hover:bg-neutral-800'
-                  >
-                    Add
-                  </Button>
-                </div>
-
-                {/* File Picker + Drag & Drop */}
-                <div
-                  onDrop={handleDrop}
-                  onDragOver={handleDragOver}
-                  className='border-2 border-dashed border-neutral-600 rounded-lg p-6 text-center hover:border-blue-500 transition-colors cursor-pointer bg-neutral-800/30'
+            }
+          >
+            {/* Reference images */}
+            <ControlSection
+              label='Your images'
+              htmlFor='i2i-file-input'
+              aside={
+                uploadedFiles.length > 0 ? (
+                  <span className='font-mono tabular-nums'>
+                    {uploadedFiles.length} added
+                  </span>
+                ) : undefined
+              }
+              hint='A face, a product, a logo. They are fitted to the format you pick when you generate.'
+            >
+              <div
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                className='rounded-xl border-2 border-dashed border-foreground/15 bg-background transition-colors hover:border-brand'
+              >
+                <input
+                  type='file'
+                  accept='image/*'
+                  multiple
+                  onChange={handleFileUpload}
+                  className='hidden'
+                  id='i2i-file-input'
+                />
+                <label
+                  htmlFor='i2i-file-input'
+                  className='flex cursor-pointer flex-col items-center gap-1.5 px-4 py-6 text-center'
                 >
-                  <input
-                    type='file'
-                    accept='image/*'
-                    multiple
-                    onChange={handleFileUpload}
-                    className='hidden'
-                    id='fileInput'
-                  />
-                  <label htmlFor='fileInput' className='cursor-pointer block'>
-                    <Upload className='w-8 h-8 text-neutral-400 mx-auto mb-2' />
-                    <p className='text-neutral-300 text-sm mb-1'>
-                      Choose or Drop Images
-                    </p>
-                    <p className='text-xs text-neutral-500'>
-                      Drag & drop or select files to upload (will be processed
-                      on submit)
-                    </p>
-                  </label>
-                </div>
-
-                {/* Image Previews */}
-                {localPreviews.length > 0 && (
-                  <div className='grid grid-cols-4 gap-2 mt-3'>
-                    {localPreviews.map((src, index) => (
-                      <div key={index} className='relative group '>
-                        <img
-                          src={src}
-                          alt={`Uploaded ${index + 1}`}
-                          className='rounded-lg object-cover w-full h-full  border border-neutral-700'
-                        />
-                        <button
-                          type='button'
-                          onClick={() => handleRemoveImage(index)}
-                          className='absolute top-1 right-1 bg-black/70 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity'
-                        >
-                          <X className='w-3 h-3 text-white' />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                  <span className='flex size-9 items-center justify-center rounded-full bg-accent text-brand'>
+                    <Upload className='size-4' />
+                  </span>
+                  <span className='text-sm font-medium'>
+                    Drop images or browse
+                  </span>
+                  <span className='text-xs text-muted-foreground'>
+                    PNG, JPG or WEBP · several at once is fine
+                  </span>
+                </label>
               </div>
 
-              <Controller
-                name='numImages'
-                control={control}
-                rules={{
-                  required: 'Number of images is required',
-                  min: {
-                    value: 1,
-                    message: 'Must generate at least 1 image',
-                  },
-                  max: {
-                    value: 4,
-                    message: 'Cannot generate more than 4 images',
-                  },
-                }}
-                render={({ field }) => (
-                  <div>
-                    <label className='block text-sm font-medium text-neutral-300 mb-2'>
-                      Number of Images *
-                    </label>
-                    <div className='flex items-center space-x-2'>
-                      <input
-                        type='range'
-                        min='1'
-                        max='4'
-                        value={field.value}
-                        onChange={(e) =>
-                          field.onChange(parseInt(e.target.value))
-                        }
-                        className='flex-1 h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer'
+              {/* Image Previews */}
+              {localPreviews.length > 0 && (
+                <div className='mt-3 grid grid-cols-4 gap-2'>
+                  {localPreviews.map((src, index) => (
+                    <div
+                      key={index}
+                      className='group relative aspect-square overflow-hidden rounded-lg border bg-secondary'
+                    >
+                      <img
+                        src={src}
+                        alt={`Uploaded ${index + 1}`}
+                        className='h-full w-full object-cover'
                       />
-                      <span className='text-neutral-300 min-w-[20px]'>
-                        {field.value}
-                      </span>
+                      <button
+                        type='button'
+                        onClick={() => handleRemoveImage(index)}
+                        aria-label={`Remove image ${index + 1}`}
+                        className='absolute right-1 top-1 rounded-full bg-card/90 p-1 text-foreground shadow-xs transition-opacity hover:bg-card sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100'
+                      >
+                        <X className='size-3' />
+                      </button>
                     </div>
-                    {errors.numImages && (
-                      <p className='text-red-400 text-xs mt-1'>
-                        {errors.numImages.message}
-                      </p>
-                    )}
-                  </div>
-                )}
-              />
+                  ))}
+                </div>
+              )}
 
-              {/* Aspect Ratios */}
-              <Controller
-                name='aspectRatios'
-                control={control}
-                render={({ field }) => {
-                  const ratioOptions = [
-                    { value: '16:9', label: 'YouTube Thumbnail (16:9)' },
-                    { value: '9:16', label: 'Shorts/Reels Cover (9:16)' },
-                  ];
-
-                  return (
-                    <div>
-                      <label className='block text-sm text-neutral-300 mb-2'>
-                        Output Aspect Ratios
-                      </label>
-                      <div className='flex gap-4'>
-                        {ratioOptions.map((option) => (
-                          <label
-                            key={option.value}
-                            className='flex items-center gap-2 text-neutral-300'
-                          >
-                            <input
-                              type='checkbox'
-                              value={option.value}
-                              checked={
-                                field.value?.includes(option.value) || false
-                              }
-                              onChange={(e) => {
-                                const currentValue = field.value || [];
-                                if (e.target.checked) {
-                                  field.onChange([
-                                    ...currentValue,
-                                    option.value,
-                                  ]);
-                                } else {
-                                  field.onChange(
-                                    currentValue.filter(
-                                      (r) => r !== option.value,
-                                    ),
-                                  );
-                                }
-                              }}
-                              className='accent-neutral-300'
-                            />
-                            {option.label}
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                }}
-              />
-
-              <Accordion type='single' collapsible>
-                <AccordionItem value='settings'>
-                  <AccordionTrigger className='text-base font-medium text-neutral-300'>
-                    Additional Settings
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className='space-y-6 mt-4'>
-                      {/* Output Format */}
-                      <Controller
-                        name='outputFormat'
-                        control={control}
-                        rules={{ required: 'Output format is required' }}
-                        render={({ field }) => (
-                          <div>
-                            <label className='block text-sm font-medium text-neutral-300 mb-2'>
-                              Output Format *
-                            </label>
-                            <Select
-                              value={field.value}
-                              onValueChange={field.onChange}
-                            >
-                              <SelectTrigger
-                                className={`w-[180px] bg-neutral-800 text-neutral-300 ${
-                                  errors.outputFormat
-                                    ? 'border-red-500'
-                                    : 'border-neutral-700'
-                                }`}
-                              >
-                                <SelectValue placeholder='Select format' />
-                              </SelectTrigger>
-                              <SelectContent className='bg-neutral-800 text-neutral-300 border-neutral-700'>
-                                <SelectItem value='jpeg'>JPEG</SelectItem>
-                                <SelectItem value='png'>PNG</SelectItem>
-                                <SelectItem value='webp'>WEBP</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            {errors.outputFormat && (
-                              <p className='text-red-400 text-xs mt-1'>
-                                {errors.outputFormat.message}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      />
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-
-              <div className='flex space-x-3 pt-2'>
+              {/* URL Input */}
+              <div className='mt-3 flex gap-2'>
+                <input
+                  type='url'
+                  value={urlInput}
+                  onChange={(e) => setUrlInput(e.target.value)}
+                  placeholder='Or paste an image URL'
+                  aria-label='Image URL'
+                  className={`${fieldClass()} py-2`}
+                />
                 <Button
                   type='button'
+                  onClick={handleAddUrl}
                   variant='outline'
-                  className='cursor-pointer border-neutral-600 text-neutral-300 hover:bg-neutral-800'
-                  onClick={handleReset}
+                  className='h-auto cursor-pointer rounded-xl'
                 >
-                  Reset
-                </Button>
-                <Button
-                  type='submit'
-                  disabled={
-                    !prompt.trim() ||
-                    isGenerating ||
-                    uploadedFiles.length === 0 ||
-                    (aspectRatios?.length || 0) === 0
-                  }
-                  className=' cursor-pointer flex-1 bg-gradient-to-r from-neutral-200 to-neutral-300 text-neutral-900 hover:from-neutral-300 hover:to-neutral-400 font-semibold disabled:opacity-50 disabled:cursor-not-allowed'
-                >
-                  {isGenerating ? (
-                    <>Processing...</>
-                  ) : (
-                    <>
-                      <Wand2 className='w-4 h-4 mr-2' />
-                      Edit{' '}
-                      {(aspectRatios?.length || 0) > 1
-                        ? `${aspectRatios?.length} Formats`
-                        : 'Image'}
-                    </>
-                  )}
+                  <Link2 className='size-4' />
+                  Add
                 </Button>
               </div>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
+            </ControlSection>
 
-      {/* Right Panel - Result */}
-      <div>
-        <ResultPanel
-          status={status}
-          displayImages={displayImages}
-          isGenerating={isGenerating}
-          outputFormat={watch('outputFormat')}
-          onCustomize={
-            displayImages.length > 0 ? () => setIsChatOpen(true) : undefined
-          }
-          hasChatMessages={messages.length > 0}
-        />
-      </div>
+            <Controller
+              name='prompt'
+              control={control}
+              rules={{
+                required: 'Prompt is required',
+                minLength: {
+                  value: 10,
+                  message: 'Prompt must be at least 10 characters',
+                },
+                maxLength: {
+                  value: 300,
+                  message: 'Prompt should have at max 300 characters',
+                },
+              }}
+              render={({ field }) => (
+                <ControlSection
+                  label='What to make'
+                  htmlFor='i2i-prompt'
+                  aside={
+                    <span
+                      className={`font-mono tabular-nums ${
+                        field.value.length > 300 ? 'text-destructive' : ''
+                      }`}
+                    >
+                      {field.value.length}/300
+                    </span>
+                  }
+                  hint='Say where your subject goes and what the thumbnail is for.'
+                  error={errors.prompt?.message}
+                >
+                  <textarea
+                    {...field}
+                    id='i2i-prompt'
+                    placeholder='e.g. Put me on the right looking shocked, a burning laptop on the left, headline “I broke prod”'
+                    className={`${fieldClass(!!errors.prompt)} h-32 resize-none`}
+                  />
+                </ControlSection>
+              )}
+            />
+
+            {/* Questionnaire with choices */}
+            <FormQuestionnaire
+              control={control}
+              choicesFieldName='choices'
+              questionnaireFieldName='questionnaire'
+              errors={errors}
+            />
+
+            <ControlSection label='Model'>
+              <FixedModelNote model={EDIT_MODEL} />
+            </ControlSection>
+
+            <Controller
+              name='aspectRatios'
+              control={control}
+              render={({ field }) => (
+                <ControlSection
+                  label='Format'
+                  hint={
+                    ratioCount === 0
+                      ? 'Pick at least one format.'
+                      : 'Pick both to get a thumbnail and a Shorts cover.'
+                  }
+                >
+                  <AspectRatioPicker
+                    value={field.value}
+                    onChange={field.onChange}
+                  />
+                </ControlSection>
+              )}
+            />
+
+            <Controller
+              name='numImages'
+              control={control}
+              rules={{
+                required: 'Number of images is required',
+                min: {
+                  value: 1,
+                  message: 'Must generate at least 1 image',
+                },
+                max: {
+                  value: 4,
+                  message: 'Cannot generate more than 4 images',
+                },
+              }}
+              render={({ field }) => (
+                <ControlSection
+                  label='Images per format'
+                  error={errors.numImages?.message}
+                >
+                  <SegmentedControl
+                    ariaLabel='Images per format'
+                    options={IMAGE_COUNT_OPTIONS}
+                    value={field.value}
+                    onChange={field.onChange}
+                  />
+                </ControlSection>
+              )}
+            />
+
+            <AdvancedOptions
+              summary={(watch('outputFormat') ?? '').toUpperCase()}
+            >
+              <Controller
+                name='outputFormat'
+                control={control}
+                rules={{ required: 'Output format is required' }}
+                render={({ field }) => (
+                  <ControlSection
+                    label='Output format'
+                    error={errors.outputFormat?.message}
+                  >
+                    <SegmentedControl
+                      ariaLabel='Output format'
+                      options={OUTPUT_FORMAT_OPTIONS}
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
+                  </ControlSection>
+                )}
+              />
+            </AdvancedOptions>
+          </ControlsPanel>
+        }
+        canvas={
+          <ResultPanel
+            status={status}
+            displayImages={displayImages}
+            isGenerating={isGenerating}
+            outputFormat={watch('outputFormat')}
+            onCustomize={
+              displayImages.length > 0 ? () => setIsChatOpen(true) : undefined
+            }
+            hasChatMessages={messages.length > 0}
+            ratios={aspectRatios}
+            empty={{
+              title: 'Your composite appears here',
+              description:
+                'Add a photo of yourself or your product, say what the thumbnail is about, and ThumbAI builds the scene around your subject.',
+              steps: [
+                'Add your images',
+                'Describe the scene',
+                'Refine it with chat',
+              ],
+            }}
+          />
+        }
+      />
 
       <CustomizeDialog
         isOpen={isChatOpen}
@@ -724,6 +672,6 @@ export const ImageToImage = () => {
         isGenerating={isGenerating}
         creditCost={EDIT_MODEL.creditsPerImage}
       />
-    </div>
+    </>
   );
 };

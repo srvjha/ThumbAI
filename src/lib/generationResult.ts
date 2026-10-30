@@ -2,6 +2,7 @@ import { fal } from '@fal-ai/client';
 import { db } from '@/db';
 import { GEN_STATUS } from '@prisma/client';
 import { refundCredits } from '@/lib/credits';
+import { creditsPerImageForEndpoint } from '@/config/models';
 
 /**
  * Recording generation results.
@@ -47,17 +48,26 @@ export const markGenerationFailed = async (
     where: { request_id: requestId },
   });
 
-  if (!thumbnail || thumbnail.status === GEN_STATUS.FAILED) {
-    // Already recorded; don't refund twice.
-    return;
-  }
+  if (!thumbnail) return;
 
-  await db.thumbnail.update({
-    where: { request_id: requestId },
+  // Conditional on the row still being open, so the webhook and the sync
+  // path racing on the same request cannot both refund it.
+  const claimed = await db.thumbnail.updateMany({
+    where: {
+      request_id: requestId,
+      status: { notIn: [GEN_STATUS.FAILED, GEN_STATUS.COMPLETED] },
+    },
     data: { status: GEN_STATUS.FAILED },
   });
 
-  await refundCredits(thumbnail.user_id, thumbnail.num_of_images ?? 1);
+  if (claimed.count === 0) return;
+
+  // Refund what was charged: a Quality image or an edit costs more than one
+  // credit, so refunding num_of_images alone under-paid those.
+  const cost =
+    (thumbnail.num_of_images ?? 1) *
+    creditsPerImageForEndpoint(thumbnail.model_endpoint);
+  await refundCredits(thumbnail.user_id, cost);
 };
 
 export type SyncOutcome =

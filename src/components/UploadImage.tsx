@@ -64,8 +64,7 @@ export const UploadImage = () => {
 
   return (
     <div className='relative max-w-5xl mx-auto'>
-      <div className='absolute inset-0 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 blur-3xl'></div>
-      <Card className='relative bg-gray-900/50 border-gray-800 overflow-hidden'>
+      <Card className='relative overflow-hidden bg-card'>
         <CardContent className='p-8'>
           <div className='grid lg:grid-cols-2 gap-8'>
             {imageFile ? (
@@ -76,7 +75,7 @@ export const UploadImage = () => {
                   alt={imageDetails.name}
                 />
                 {/* Image details section */}
-                <div className='flex gap-4 mt-2 text-neutral-500 text-sm flex-wrap'>
+                <div className='flex gap-4 mt-2 text-muted-foreground text-sm flex-wrap'>
                   <p>
                     <span className='font-semibold'>Name:</span>{' '}
                     {imageDetails.name}
@@ -93,7 +92,7 @@ export const UploadImage = () => {
               </div>
             ) : (
               <div className='space-y-4'>
-                <h3 className='text-xl font-semibold text-white mb-4'>
+                <h3 className='text-xl font-semibold text-foreground mb-4'>
                   Upload Your Image
                 </h3>
                 <div
@@ -107,25 +106,26 @@ export const UploadImage = () => {
                     }
                   }}
                   className={`border-2 border-dashed ${
-                    isDragging ? 'border-gray-600 ' : 'border-blue-500'
-                  } rounded-lg p-8 text-center transition-colors bg-gray-800/30`}
+                    isDragging
+                      ? 'border-brand bg-accent'
+                      : 'border-foreground/15'
+                  } rounded-lg p-8 text-center transition-colors bg-background`}
                 >
-                  <Upload className='w-12 h-12 text-gray-400 mx-auto mb-4' />
-                  <p className='text-gray-300 mb-2'>
+                  <Upload className='w-12 h-12 text-muted-foreground mx-auto mb-4' />
+                  <p className='text-foreground mb-2'>
                     Drag & drop your image here
                   </p>
-                  <p className='text-sm text-gray-500 mb-4'>
+                  <p className='text-sm text-muted-foreground mb-4'>
                     or click to browse files
                   </p>
                   <Button
                     variant='outline'
-                    className='border-gray-600 text-gray-300 hover:bg-gray-700'
                     onClick={() => fileInputRef.current?.click()}
                   >
                     Choose File
                   </Button>
                 </div>
-                <p className='text-xs text-gray-500 text-center'>
+                <p className='text-xs text-muted-foreground text-center'>
                   Supports JPG, PNG, WEBP up to 10MB
                 </p>
 
@@ -145,7 +145,7 @@ export const UploadImage = () => {
 
             {/* Prompt Section */}
             <div className='space-y-4'>
-              <h3 className='text-xl font-semibold text-white mb-4'>
+              <h3 className='text-xl font-semibold text-foreground mb-4'>
                 Describe Your Vision
               </h3>
               <div className='space-y-4'>
@@ -153,7 +153,7 @@ export const UploadImage = () => {
                   value={userQuery}
                   onChange={(e) => setUserQuery(e.target.value)}
                   placeholder="Tell our AI what you want... e.g., 'Make it gaming-style with bold text and neon effects' or 'Create a professional business thumbnail with clean typography'"
-                  className='w-full h-32 bg-gray-800 border border-gray-700 rounded-lg p-4 text-gray-300 placeholder-gray-500 focus:border-blue-500 focus:outline-none resize-none'
+                  className='w-full h-32 bg-background border rounded-lg p-4 text-foreground placeholder:text-muted-foreground focus:border-brand focus:outline-none resize-none'
                 />
                 <Link
                   href={{
@@ -167,19 +167,19 @@ export const UploadImage = () => {
                     },
                   }}
                 >
-                  <Button className='w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-lg py-4 font-semibold shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all'>
+                  <Button variant='brand' size='xl' className='w-full'>
                     <Wand2 className='w-5 h-5 mr-2' />
                     Generate Thumbnail
                   </Button>
                 </Link>
               </div>
-              <div className='flex items-center justify-center space-x-4 text-sm text-gray-500'>
+              <div className='flex items-center justify-center space-x-4 text-sm text-muted-foreground'>
                 <div className='flex items-center'>
-                  <Zap className='w-4 h-4 mr-1 text-yellow-400' />
+                  <Zap className='w-4 h-4 mr-1 text-brand' />
                   Fast Generation
                 </div>
                 <div className='flex items-center'>
-                  <Sparkles className='w-4 h-4 mr-1 text-blue-400' />
+                  <Sparkles className='w-4 h-4 mr-1 text-brand' />
                   AI Powered
                 </div>
               </div>

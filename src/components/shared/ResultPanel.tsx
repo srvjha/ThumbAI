@@ -1,28 +1,20 @@
 'use client';
 
-import { Card, CardContent } from '../ui/card';
-import { Loader2, ImageIcon, Download } from 'lucide-react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { ArrowUpRight, Download } from 'lucide-react';
 import { Button } from '../ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../ui/select';
 import toast from 'react-hot-toast';
-import {
-  ImageData,
-  getImageContainerStyle,
-  getGridLayout,
-  downloadImagesAsZip,
-} from './imageUtils';
+import { ImageData, downloadImagesAsZip } from './imageUtils';
 import { ImageActionButtons } from './ImageActionButtons';
 import { CustomizeButton } from '../CustomizeDialog';
-import { ReactNode } from 'react';
+import { CanvasEmptyState, CanvasGenerating } from '../studio/CanvasStates';
+import { RatioGlyph } from '../studio/AspectRatioPicker';
+import { cn } from '@/lib/utils';
+
+type Status = 'idle' | 'generating' | 'in-progress' | 'completed';
 
 interface ResultPanelProps {
-  status: 'idle' | 'generating' | 'in-progress' | 'completed';
+  status: Status;
   displayImages: ImageData[];
   isGenerating: boolean;
   outputFormat: string;
@@ -31,50 +23,36 @@ interface ResultPanelProps {
   /** Opens the conversational editor. Rendered beside the other actions. */
   onCustomize?: () => void;
   hasChatMessages?: boolean;
+  /** Ratios currently selected, used to shape the empty and loading frames. */
+  ratios?: string[];
+  /** Copy for the empty canvas. */
+  empty?: { title: string; description: string; steps?: string[] };
 }
 
-const StatusBadge: React.FC<{ status: string }> = ({ status }) => (
-  <div className='flex items-center gap-2 px-3 py-1.5 rounded-lg border border-neutral-700 bg-transparent text-white text-sm'>
+const STATUS_LABEL: Record<Status, string> = {
+  idle: 'Ready',
+  generating: 'Preparing',
+  'in-progress': 'Rendering',
+  completed: 'Done',
+};
+
+const StatusBadge: React.FC<{ status: Status }> = ({ status }) => (
+  <span className='flex items-center gap-2 rounded-full border bg-background px-2.5 py-1 text-xs text-muted-foreground'>
     <span
-      className={`w-2.5 h-2.5 rounded-full ${
+      className={cn(
+        'size-2 rounded-full',
         status === 'completed'
-          ? 'bg-green-500'
-          : status === 'generating'
-            ? 'bg-amber-400'
-            : status === 'in-progress'
-              ? 'bg-blue-400'
-              : 'bg-neutral-500'
-      }`}
+          ? 'bg-emerald-500'
+          : status === 'idle'
+            ? 'bg-muted-foreground/40'
+            : 'animate-pulse bg-brand',
+      )}
     />
-    <span>
-      {status === 'completed'
-        ? 'Completed'
-        : status === 'generating'
-          ? 'Generating'
-          : status === 'in-progress'
-            ? 'In Progress'
-            : ''}
-    </span>
-  </div>
+    {STATUS_LABEL[status]}
+  </span>
 );
 
-const LoadingState: React.FC<{ status: string }> = ({ status }) => (
-  <div className='flex flex-col items-center justify-center gap-3 h-full min-h-[400px]'>
-    <Loader2 className='w-16 h-16 animate-spin text-neutral-400' />
-    <p className='text-neutral-400'>
-      {status === 'generating' ? 'Generating...' : 'Processing your image...'}
-    </p>
-  </div>
-);
-
-const EmptyState: React.FC = () => (
-  <div className='flex flex-col items-center justify-center gap-3 text-neutral-400 h-full min-h-[400px]'>
-    <ImageIcon className='w-16 h-16' />
-    <p className='text-lg mb-1'>No images generated yet</p>
-    <p className='text-sm text-center'>Enter a prompt to start generating</p>
-  </div>
-);
-
+/** The studio canvas: empty frame, shaped skeleton, then results. */
 export const ResultPanel: React.FC<ResultPanelProps> = ({
   status,
   displayImages,
@@ -83,7 +61,29 @@ export const ResultPanel: React.FC<ResultPanelProps> = ({
   renderCustomContent,
   onCustomize,
   hasChatMessages = false,
+  ratios = ['16:9'],
+  empty = {
+    title: 'Your thumbnail appears here',
+    description:
+      'Fill in the panel on the left and press Generate. Each version you make stays here so you can compare them.',
+  },
 }) => {
+  const [selected, setSelected] = useState(0);
+  const prevCount = useRef(displayImages.length);
+
+  // Jump to the first new image when results arrive or a refinement lands.
+  useEffect(() => {
+    const prev = prevCount.current;
+    const count = displayImages.length;
+    if (count > prev) setSelected(prev);
+    else if (count < prev) setSelected(0);
+    prevCount.current = count;
+  }, [displayImages.length]);
+
+  const active =
+    displayImages[Math.min(selected, displayImages.length - 1)] ?? null;
+  const activeIndex = Math.min(selected, displayImages.length - 1);
+
   const handleDownloadAll = async () => {
     if (displayImages.length === 0) return;
 
@@ -98,107 +98,136 @@ export const ResultPanel: React.FC<ResultPanelProps> = ({
     }
   };
 
+  const busy = status === 'generating' || status === 'in-progress';
+
   return (
-    <Card className='bg-transparent border-2 border-dotted border-neutral-600 h-auto overflow-y-auto p-1'>
-      <CardContent className='p-6'>
-        <div className='flex items-center justify-between mb-4'>
-          <h3 className='text-lg font-semibold text-neutral-100'>Result</h3>
-
-          {status !== 'idle' && <StatusBadge status={status} />}
-        </div>
-
-        <div className='min-h-auto bg-neutral-950 rounded-lg border-none p-4 flex flex-col'>
-          {status === 'generating' || status === 'in-progress' ? (
-            <LoadingState status={status} />
-          ) : displayImages.length > 0 ? (
-            <div className='flex flex-col h-full'>
-              <div className='flex-1'>
-                {displayImages.length === 1 ? (
-                  <div className='flex justify-center items-start h-full'>
-                    <div className='relative group'>
-                      <img
-                        src={displayImages[0].url}
-                        alt='Generated'
-                        className={`rounded-lg border border-neutral-700 ${getImageContainerStyle(
-                          displayImages[0].aspectRatio,
-                        )}`}
-                      />
-                      <div className='absolute inset-0 rounded-lg bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2'>
-                        <ImageActionButtons
-                          imageUrl={displayImages[0].url}
-                          aspectRatio={displayImages[0].aspectRatio}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className={`grid ${getGridLayout(displayImages)}`}>
-                    {displayImages.map((img, idx) => (
-                      <div key={idx} className='relative group'>
-                        <img
-                          src={img.url}
-                          alt={`Generated ${idx + 1}`}
-                          className={`rounded-lg border border-neutral-700 ${getImageContainerStyle(
-                            img.aspectRatio,
-                          )}`}
-                        />
-                        <div className='absolute inset-0 rounded-lg bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2'>
-                          <ImageActionButtons
-                            imageUrl={img.url}
-                            aspectRatio={img.aspectRatio}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className='flex items-center justify-center gap-4 mt-6 pt-4 border-t border-neutral-800'>
-                {onEdit && (
-                  <Select onValueChange={(value) => onEdit(parseInt(value))}>
-                    <SelectTrigger className='w-[200px] border-neutral-600 text-neutral-300'>
-                      <SelectValue placeholder='Edit Image' />
-                    </SelectTrigger>
-                    <SelectContent className='bg-neutral-900 border-neutral-700'>
-                      {displayImages.map((_, idx) => (
-                        <SelectItem
-                          key={idx}
-                          value={idx.toString()}
-                          className='text-neutral-300'
-                        >
-                          Edit Image {idx + 1}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-
-                {onCustomize && (
-                  <CustomizeButton
-                    onClick={onCustomize}
-                    hasMessages={hasChatMessages}
-                  />
-                )}
-
-                <Button
-                  variant='outline'
-                  size='lg'
-                  onClick={handleDownloadAll}
-                  className='border-neutral-600 cursor-pointer text-neutral-300 hover:bg-neutral-800'
-                >
-                  <Download className='w-4 h-4 mr-2' />
-                  Download All as ZIP
-                </Button>
-              </div>
-            </div>
-          ) : renderCustomContent ? (
-            renderCustomContent()
-          ) : (
-            <EmptyState />
+    <div className='rounded-2xl border bg-card shadow-xs'>
+      <div className='flex items-center justify-between gap-3 border-b px-5 py-3'>
+        <div className='flex items-baseline gap-2'>
+          <h2 className='text-sm font-medium'>Canvas</h2>
+          {displayImages.length > 0 && !busy && (
+            <span className='font-mono text-xs tabular-nums text-muted-foreground'>
+              {displayImages.length}{' '}
+              {displayImages.length === 1 ? 'image' : 'images'}
+            </span>
           )}
         </div>
-      </CardContent>
-    </Card>
+        <StatusBadge status={status} />
+      </div>
+
+      <div className='rounded-b-2xl bg-background/60 p-4 sm:p-6'>
+        {busy ? (
+          <CanvasGenerating
+            ratios={ratios}
+            status={status as 'generating' | 'in-progress'}
+          />
+        ) : active ? (
+          <div className='flex flex-col gap-5'>
+            {/* Stage */}
+            <div className='flex justify-center'>
+              <img
+                src={active.url}
+                alt={`Generated image ${activeIndex + 1}`}
+                className={cn(
+                  'rounded-xl border bg-card object-contain shadow-sm',
+                  active.aspectRatio === '9:16'
+                    ? 'aspect-[9/16] h-[min(68vh,640px)] w-auto max-w-full'
+                    : 'aspect-video w-full max-w-4xl',
+                )}
+              />
+            </div>
+
+            {/* Actions for the image on stage */}
+            <div className='mx-auto flex w-full max-w-4xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+              <span className='flex items-center gap-2 text-xs text-muted-foreground'>
+                <RatioGlyph ratio={active.aspectRatio} active />
+                <span className='font-mono tabular-nums'>
+                  v{activeIndex + 1} · {active.aspectRatio}
+                </span>
+              </span>
+              <ImageActionButtons
+                imageUrl={active.url}
+                aspectRatio={active.aspectRatio}
+                variant='toolbar'
+              />
+            </div>
+
+            <div className='mx-auto flex w-full max-w-4xl flex-wrap gap-2 border-t pt-4'>
+              {onCustomize && (
+                <CustomizeButton
+                  onClick={onCustomize}
+                  hasMessages={hasChatMessages}
+                />
+              )}
+              {onEdit && (
+                <Button
+                  type='button'
+                  variant='outline'
+                  onClick={() => onEdit(activeIndex)}
+                  className='cursor-pointer'
+                >
+                  <ArrowUpRight className='size-4' />
+                  Edit in Image to Image
+                </Button>
+              )}
+              <Button
+                type='button'
+                variant='outline'
+                onClick={handleDownloadAll}
+                className='cursor-pointer sm:ml-auto'
+              >
+                <Download className='size-4' />
+                Download all (ZIP)
+              </Button>
+            </div>
+
+            {/* Version history */}
+            {displayImages.length > 1 && (
+              <div className='mx-auto w-full max-w-4xl'>
+                <p className='mb-2 text-xs text-muted-foreground'>Versions</p>
+                <div className='flex gap-2 overflow-x-auto pb-1'>
+                  {displayImages.map((img, idx) => {
+                    const isActive = idx === activeIndex;
+                    return (
+                      <button
+                        key={`${img.url}-${idx}`}
+                        type='button'
+                        onClick={() => setSelected(idx)}
+                        aria-label={`Show version ${idx + 1}`}
+                        aria-pressed={isActive}
+                        className={cn(
+                          'relative shrink-0 overflow-hidden rounded-lg border-2 bg-card transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
+                          isActive
+                            ? 'border-brand'
+                            : 'border-transparent ring-1 ring-border hover:ring-foreground/20',
+                        )}
+                      >
+                        <img
+                          src={img.url}
+                          alt=''
+                          className={cn(
+                            'object-cover',
+                            img.aspectRatio === '9:16'
+                              ? 'h-20 w-[45px]'
+                              : 'h-20 w-[142px]',
+                          )}
+                        />
+                        <span className='absolute bottom-1 right-1 rounded bg-card/90 px-1 font-mono text-[10px] leading-4 text-foreground'>
+                          v{idx + 1}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : renderCustomContent ? (
+          renderCustomContent()
+        ) : (
+          <CanvasEmptyState ratios={ratios} {...empty} />
+        )}
+      </div>
+    </div>
   );
 };

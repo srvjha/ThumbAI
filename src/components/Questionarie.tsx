@@ -6,7 +6,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from './ui/dialog';
-import { Card, CardContent } from './ui/card';
 import { FileText, ChevronRight, ChevronLeft, Check } from 'lucide-react';
 import { useQuestionnaireStore } from '@/store/questionnaireStore';
 import { useEffect } from 'react';
@@ -16,11 +15,14 @@ type QuestionnaireData = Record<string, string[]>;
 type QuestionnaireProps = {
   type?: 'blog' | 'youtube';
   onComplete: (data: QuestionnaireData) => void;
+  /** Whether answers were already submitted; only changes the button copy. */
+  hasAnswers?: boolean;
 };
 
 export const Questionnaire = ({
   type = 'youtube',
   onComplete,
+  hasAnswers = false,
 }: QuestionnaireProps) => {
   // store
   const {
@@ -57,113 +59,106 @@ export const Questionnaire = ({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button
-          variant='outline'
-          className='cursor-pointer border-neutral-600 text-neutral-300 hover:bg-neutral-800 w-full'
-        >
-          <FileText className='w-4 h-4 mr-2' />
-          Smart Fill with Questionnaire
+        <Button variant='outline' className='w-full cursor-pointer'>
+          <FileText className='size-4' />
+          {hasAnswers
+            ? 'Redo the style questions'
+            : 'Answer the style questions'}
         </Button>
       </DialogTrigger>
 
-      <DialogContent className='bg-neutral-900 border-neutral-700 text-neutral-100 min-w-6xl max-h-[90vh] overflow-y-auto'>
-        <DialogHeader>
-          <DialogTitle className='text-xl font-semibold'>
-            {type === 'blog' ? 'Blog' : 'YouTube'} Thumbnail Questionnaire
+      <DialogContent className='flex max-h-[90vh] w-full flex-col gap-0 overflow-hidden bg-card p-0 sm:max-w-4xl'>
+        <DialogHeader className='shrink-0 border-b px-6 pb-5 pt-6'>
+          <p className='font-mono text-xs tabular-nums text-muted-foreground'>
+            {type === 'blog' ? 'Blog cover' : 'YouTube thumbnail'} · Question{' '}
+            {currentStep + 1} of {questions.length}
+          </p>
+          <DialogTitle className='font-serif text-2xl font-normal tracking-tight'>
+            {currentQuestion?.title}
           </DialogTitle>
-          <div className='w-full bg-neutral-800 rounded-full h-2 mt-4'>
+          <div className='mt-3 h-1 w-full rounded-full bg-secondary'>
             <div
-              className='bg-gradient-to-r from-green-500 to-orange-500 h-2 rounded-full transition-all duration-300'
+              className='h-1 rounded-full bg-brand transition-all duration-300'
               style={{ width: `${progress}%` }}
             />
           </div>
-          <p className='text-sm text-neutral-400 mt-2'>
-            Question {currentStep + 1} of {questions.length}
-          </p>
         </DialogHeader>
 
-        <div className='-mt-10 '>
-          <Card className='bg-transparent border-none'>
-            <CardContent className='p-6'>
-              <h3 className='text-lg font-medium mb-4 text-neutral-100'>
-                {currentQuestion?.title}
-              </h3>
+        <div className='min-h-0 flex-1 overflow-y-auto px-6 py-5'>
+          <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-3'>
+            {currentQuestion?.options.map((option) => {
+              const isSelected = answers[currentQuestionId]?.includes(
+                option.value,
+              );
 
-              <div className='space-y-3 flex flex-wrap gap-4'>
-                {currentQuestion?.options.map((option) => {
-                  const isSelected = answers[currentQuestionId]?.includes(
-                    option.value,
-                  );
-
-                  return (
-                    <div
-                      key={option.value}
-                      onClick={() =>
-                        toggleOption(currentQuestionId, option.value)
-                      }
-                      className={`relative w-full sm:w-[280px] md:w-[300px] lg:w-[320px] h-[120px]  p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
-                        isSelected
-                          ? 'border-blue-500 bg-blue-500/10'
-                          : 'border-neutral-600 hover:border-neutral-500 bg-neutral-750'
-                      }`}
-                    >
-                      <div className='flex items-start justify-between'>
-                        <div className='flex-1'>
-                          <h4 className='font-medium text-neutral-100 mb-1'>
-                            {option.label}
-                          </h4>
-                          <p className='text-sm text-neutral-400'>
-                            {option.description}
-                          </p>
-                        </div>
-                        <div
-                          className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ml-3 ${
-                            isSelected
-                              ? 'border-blue-500 bg-blue-500'
-                              : 'border-neutral-500'
-                          }`}
-                        >
-                          {isSelected && (
-                            <Check className='w-4 h-4 text-white' />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+              return (
+                <button
+                  key={option.value}
+                  type='button'
+                  aria-pressed={isSelected}
+                  onClick={() => toggleOption(currentQuestionId, option.value)}
+                  className={`flex items-start justify-between gap-3 rounded-xl border p-4 text-left transition-colors focus:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30 ${
+                    isSelected
+                      ? 'border-brand bg-accent'
+                      : 'bg-background hover:border-foreground/20'
+                  }`}
+                >
+                  <span className='flex-1'>
+                    <span className='mb-1 block text-sm font-medium text-foreground'>
+                      {option.label}
+                    </span>
+                    <span className='block text-xs leading-snug text-muted-foreground'>
+                      {option.description}
+                    </span>
+                  </span>
+                  <span
+                    className={`flex size-5 shrink-0 items-center justify-center rounded-full border ${
+                      isSelected
+                        ? 'border-brand bg-brand text-brand-foreground'
+                        : 'bg-card'
+                    }`}
+                  >
+                    {isSelected && <Check className='size-3' strokeWidth={3} />}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        <div className='flex justify-between -mt-6'>
+        <div className='flex shrink-0 justify-between border-t px-6 py-4'>
           <Button
+            type='button'
             variant='outline'
             onClick={previousStep}
             disabled={currentStep === 0}
-            className='cursor-pointer border-neutral-600 text-neutral-300 hover:bg-neutral-800 disabled:opacity-50'
+            className='cursor-pointer'
           >
-            <ChevronLeft className='w-4 h-4 mr-0' />
+            <ChevronLeft className='size-4' />
             Previous
           </Button>
 
           {currentStep === questions.length - 1 ? (
             <Button
+              type='button'
+              variant='brand'
               onClick={handleComplete}
               disabled={!isStepValid()}
-              className='cursor-pointer bg-gradient-to-r from-neutral-100 to-neutral-200 text-neutral-900 hover:from-neutral-600 hover:to-neutral-700 hover:text-white disabled:opacity-50'
+              className='cursor-pointer'
             >
-              Complete & Fill Form
-              <Check className='w-4 h-4 ml-0' />
+              Use these answers
+              <Check className='size-4' />
             </Button>
           ) : (
             <Button
+              type='button'
+              variant='brand'
               onClick={nextStep}
               disabled={!isStepValid()}
-              className='cursor-pointer bg-gradient-to-r from-neutral-200 to-neutral-300 text-neutral-900 hover:from-neutral-300 hover:to-neutral-400 disabled:opacity-50'
+              className='cursor-pointer'
             >
               Next
-              <ChevronRight className='w-4 h-4 ml-2' />
+              <ChevronRight className='size-4' />
             </Button>
           )}
         </div>

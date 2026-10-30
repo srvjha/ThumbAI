@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server';
 import { ApiResponse } from '@/utils/ApiResponse';
 import { env } from '@/config/env';
 import { Role } from '@prisma/client';
+import { FREE_PLAN } from '@/config/plans';
 
 export const POST = async (req: Request): Promise<NextResponse> => {
   const WEBHOOK_SECRET = env.NEXT_CLERK_WEBHOOK_SECRET;
@@ -87,7 +88,7 @@ export const POST = async (req: Request): Promise<NextResponse> => {
           fullName,
           profile_img,
           clerk_id: id,
-          credits: 3,
+          credits: FREE_PLAN.credits,
           plan: 'FREE',
           role: Role.USER,
           last_active_at: lastActiveAt,

@@ -26,7 +26,7 @@ const FeatureCard: React.FC<ModelCardProps> = ({
 }) => {
   return (
     <Card
-      className='bg-neutral-900 border-neutral-800 hover:border-neutral-700 transition-all group overflow-hidden relative p-0'
+      className='group relative gap-0 overflow-hidden border bg-card p-0 transition-colors hover:border-foreground/20'
       onClick={onClick}
     >
       {/* Background Image */}
@@ -39,25 +39,24 @@ const FeatureCard: React.FC<ModelCardProps> = ({
             backgroundPosition: 'center',
           }}
         />
-        <div className='absolute inset-0 bg-gradient-to-t from-neutral-900 via-neutral-900/60 to-transparent'></div>
       </div>
 
       {/* Content */}
-      <CardContent className='p-6'>
+      <CardContent className='border-t p-6'>
         <div className='space-y-3'>
           <div className='flex items-center space-x-2'>
-            <div className='flex items-center space-x-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded px-2 py-1 text-xs'>
+            <div className='flex items-center gap-1.5 text-sm font-medium text-foreground [&_svg]:size-4 [&_svg]:text-brand'>
               {icon}
               <span>{subtitle}</span>
             </div>
           </div>
 
-          <p className='text-gray-400 text-left text-sm leading-relaxed'>
+          <p className='text-left text-sm leading-relaxed text-muted-foreground'>
             {description}
           </p>
 
           <Link href={`${navigate}`}>
-            <Button className='w-full mt-4 cursor-pointer  bg-neutral-300  border border-black/10 text-neutral-900 hover:bg-neutral-400 hover:border-neutral-600 transition-all'>
+            <Button variant='brand' className='mt-4 w-full cursor-pointer'>
               Try Now
               <ArrowRight className='w-4 h-4 ml-1' />
             </Button>
