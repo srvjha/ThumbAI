@@ -1,7 +1,8 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import { Linkedin, Mail, Twitter } from 'lucide-react';
 import { Logo } from '@/components/brand/Logo';
+import { Reveal, RevealItem } from '@/components/motion/Reveal';
+import { FooterArt } from './FooterArt';
 
 const CONTACT_EMAIL = 'jhasaurav0209001@gmail.com';
 
@@ -52,8 +53,8 @@ export const Footer = () => {
   return (
     <footer className='relative isolate overflow-hidden bg-background'>
       <div className='mx-auto max-w-6xl px-4 pt-20 sm:px-6 md:pt-28 lg:px-8'>
-        <div className='grid gap-12 md:grid-cols-[1.3fr_2fr]'>
-          <div>
+        <Reveal stagger={0.07} className='grid gap-12 md:grid-cols-[1.3fr_2fr]'>
+          <RevealItem>
             <Logo />
             <p className='mt-4 max-w-xs leading-relaxed'>
               Thumbnails, Shorts covers and blog headers, made from a line of
@@ -75,14 +76,14 @@ export const Footer = () => {
                 </li>
               ))}
             </ul>
-          </div>
+          </RevealItem>
 
           <nav
             aria-label='Footer'
             className='grid grid-cols-2 gap-10 sm:grid-cols-3'
           >
             {COLUMNS.map((col) => (
-              <div key={col.title}>
+              <RevealItem key={col.title}>
                 <h2 className='text-sm text-muted-foreground'>{col.title}</h2>
                 <ul className='mt-4 space-y-3'>
                   {col.links.map((link) => (
@@ -96,29 +97,17 @@ export const Footer = () => {
                     </li>
                   ))}
                 </ul>
-              </div>
+              </RevealItem>
             ))}
           </nav>
-        </div>
+        </Reveal>
 
         <p className='mt-14 text-sm text-muted-foreground'>
           &copy; {currentYear} ThumbAI. All rights reserved.
         </p>
       </div>
 
-      {/* The art's top quarter is blank paper, pulled up under the text. */}
-      <div
-        aria-hidden
-        className='relative -z-10 -mt-[6vw] aspect-[2200/890] min-h-56 w-full'
-      >
-        <Image
-          src='/art/footer-engraving.webp'
-          alt=''
-          fill
-          sizes='100vw'
-          className='object-cover object-bottom'
-        />
-      </div>
+      <FooterArt />
     </footer>
   );
 };

@@ -1,3 +1,7 @@
+import { Reveal, RevealItem } from '@/components/motion/Reveal';
+import { StepConnector } from './StepConnector';
+import { H2 } from './type';
+
 const STEPS = [
   {
     title: 'Say what the video is',
@@ -16,17 +20,34 @@ const STEPS = [
 export const HowItWorks = () => (
   <section className='bg-accent py-24 text-accent-foreground md:py-36'>
     <div className='mx-auto max-w-6xl px-4 sm:px-6 lg:px-8'>
-      <h2 className='max-w-2xl font-serif text-[clamp(2.25rem,5vw,4rem)] leading-[1] tracking-[-0.02em] text-balance'>
+      <Reveal as='h2' className={`max-w-2xl ${H2}`}>
         From idea to upload in three moves.
-      </h2>
-      <ol className='mt-14 grid gap-10 md:grid-cols-3 md:gap-8'>
+      </Reveal>
+      {/* A real sequence: the steps arrive in order while the line joining
+          their markers draws across. */}
+      <Reveal
+        as='ol'
+        stagger={0.28}
+        delay={0.1}
+        amount={0.3}
+        className='relative mt-14 grid gap-10 md:grid-cols-3 md:gap-8'
+      >
+        <StepConnector />
         {STEPS.map((step) => (
-          <li key={step.title} className='rounded-2xl bg-card p-6 text-foreground'>
-            <h3 className='font-serif text-3xl leading-tight'>{step.title}</h3>
-            <p className='mt-3 leading-relaxed'>{step.body}</p>
-          </li>
+          <RevealItem as='li' key={step.title} className='relative'>
+            <span
+              aria-hidden
+              className='ml-6 block size-3 rounded-full bg-brand ring-4 ring-accent'
+            />
+            <div className='mt-5 rounded-2xl bg-card p-6 text-foreground'>
+              <h3 className='font-serif text-2xl leading-[1.1]'>
+                {step.title}
+              </h3>
+              <p className='mt-3 leading-relaxed'>{step.body}</p>
+            </div>
+          </RevealItem>
         ))}
-      </ol>
+      </Reveal>
     </div>
   </section>
 );

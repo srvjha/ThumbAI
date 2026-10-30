@@ -1,4 +1,6 @@
+import { Reveal, RevealItem } from '@/components/motion/Reveal';
 import { FeedSizePreview } from './FeedSizePreview';
+import { H2 } from './type';
 
 const POINTS = [
   {
@@ -18,29 +20,28 @@ const POINTS = [
 export const WhySection = () => (
   <section className='py-24 md:py-40'>
     <div className='mx-auto grid max-w-6xl gap-12 px-4 sm:px-6 lg:grid-cols-[1fr_1.15fr] lg:gap-20 lg:px-8'>
-      <div>
-        <h2 className='font-serif text-[clamp(2.25rem,5vw,4rem)] leading-[1] tracking-[-0.02em] text-balance'>
+      <Reveal stagger={0.08}>
+        <RevealItem as='h2' className={H2}>
           Most people decide at 168 pixels wide.
-        </h2>
-        <p className='mt-6 max-w-lg text-lg leading-relaxed'>
+        </RevealItem>
+        <RevealItem as='p' className='mt-6 max-w-lg text-lg leading-relaxed'>
           On a phone, a thumbnail is about the width of a thumb. ThumbAI
-          composes for that size first, then gives you the full-resolution
-          file.
-        </p>
+          composes for that size first, then gives you the full-resolution file.
+        </RevealItem>
         <dl className='mt-10 space-y-7'>
           {POINTS.map((p) => (
-            <div key={p.title}>
+            <RevealItem key={p.title}>
               <dt className='font-medium'>{p.title}</dt>
               <dd className='mt-1 max-w-md leading-relaxed text-muted-foreground'>
                 {p.body}
               </dd>
-            </div>
+            </RevealItem>
           ))}
         </dl>
-      </div>
-      <div className='lg:pt-4'>
+      </Reveal>
+      <Reveal delay={0.15} className='lg:pt-4'>
         <FeedSizePreview />
-      </div>
+      </Reveal>
     </div>
   </section>
 );

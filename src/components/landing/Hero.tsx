@@ -1,65 +1,38 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { FREE_PLAN } from '@/config/plans';
+import { CSS_ENTER, CSS_RISE } from '@/components/motion/tokens';
+import { HeroParallax } from './HeroParallax';
 import { StudioMockup } from './StudioMockup';
 
-const HERO_ART = '/art/hero-engraving.webp';
-
-// Taller than the section and pinned to its bottom, so the coastline rises
-// to meet the top of the studio window instead of hiding behind it. Only
-// blank sky is clipped off the top.
-const ART_BOX = 'absolute inset-x-0 bottom-0 h-[125%]';
-
 /*
- * The engraving is drawn twice at identical geometry: once behind everything,
- * and once above the studio mockup, masked to its bottom band, so the engraved
- * foreground appears to grow over the product's lower edge. The mask is not a
- * visible gradient; it only decides where the top copy shows.
+ * The load sequence is CSS, not JS: it starts with the first paint, so the
+ * headline is readable within ~300ms even before hydration. Order: the two
+ * headline lines, the subline, the actions, then the studio rising.
  */
-const FOREGROUND_MASK =
-  '[mask-image:linear-gradient(to_bottom,transparent_calc(100%-9rem),black_calc(100%-5rem))] md:[mask-image:linear-gradient(to_bottom,transparent_calc(100%-12rem),black_calc(100%-8rem))]'; // taste-skill-ignore
-
-const ForegroundBand = () => (
-  <div
-    aria-hidden
-    className={`pointer-events-none z-20 ${ART_BOX} ${FOREGROUND_MASK}`}
-  >
-    <Image
-      src={HERO_ART}
-      alt=''
-      fill
-      sizes='100vw'
-      className='object-cover object-bottom'
-    />
-  </div>
-);
-
 export const Hero = () => (
-  <section className='relative isolate overflow-hidden pt-32 pb-28 md:pt-40 md:pb-40'>
-    <div aria-hidden className={`-z-10 ${ART_BOX}`}>
-      <Image
-        src={HERO_ART}
-        alt=''
-        fill
-        priority
-        sizes='100vw'
-        className='object-cover object-bottom'
-      />
-    </div>
-
+  <HeroParallax>
     <div className='relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8'>
       <div className='mx-auto max-w-4xl text-center'>
-        <h1 className='font-serif text-[clamp(2.75rem,9vw,7.25rem)] leading-[0.95] tracking-[-0.02em] text-balance'>
-          Thumbnails that earn the click.
+        <h1 className='font-serif text-[clamp(2.5rem,7.4vw,5.5rem)] leading-[1] text-balance'>
+          <span className={`inline-block ${CSS_ENTER}`}>Thumbnails that</span>{' '}
+          <span
+            className={`inline-block ${CSS_ENTER} [--tw-animation-delay:90ms]`}
+          >
+            earn the click.
+          </span>
         </h1>
-        <p className='mx-auto mt-8 max-w-xl text-lg leading-relaxed text-pretty'>
+        <p
+          className={`mx-auto mt-8 max-w-xl text-lg leading-relaxed text-pretty ${CSS_ENTER} [--tw-animation-delay:220ms]`}
+        >
           Describe the video, upload your face, or paste a blog link. ThumbAI
-          renders a YouTube thumbnail, a Shorts cover or a blog header, with
-          the title spelled right.
+          renders a YouTube thumbnail, a Shorts cover or a blog header, with the
+          title spelled right.
         </p>
-        <div className='mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-6'>
+        <div
+          className={`mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-6 ${CSS_ENTER} [--tw-animation-delay:320ms]`}
+        >
           <Button asChild variant='brand' size='xl'>
             <Link href='/studio/text-to-image'>
               Open the studio <ArrowRight />
@@ -72,16 +45,19 @@ export const Hero = () => (
             See what it makes
           </Link>
         </div>
-        <p className='mt-5 text-sm text-foreground/75'>
+        <p
+          className={`mt-5 text-sm text-foreground/75 ${CSS_ENTER} [--tw-animation-delay:360ms]`}
+        >
           {FREE_PLAN.credits} free credits on signup. No card.
         </p>
       </div>
 
-      <div className='relative z-10 mx-auto mt-16 max-w-5xl md:mt-24'>
+      {/* Rises out of the landscape: 60px of travel and a 0.97 scale. */}
+      <div
+        className={`relative z-10 mx-auto mt-16 max-w-5xl md:mt-24 ${CSS_RISE} [--tw-animation-delay:420ms]`}
+      >
         <StudioMockup />
       </div>
     </div>
-
-    <ForegroundBand />
-  </section>
+  </HeroParallax>
 );
