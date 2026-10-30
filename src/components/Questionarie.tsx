@@ -69,16 +69,16 @@ export const Questionnaire = ({
 
       <DialogContent className='flex max-h-[90vh] w-full flex-col gap-0 overflow-hidden bg-card p-0 sm:max-w-4xl'>
         <DialogHeader className='shrink-0 border-b px-6 pb-5 pt-6'>
-          <p className='font-mono text-xs tabular-nums text-muted-foreground'>
+          <p className='text-xs tabular-nums text-muted-foreground'>
             {type === 'blog' ? 'Blog cover' : 'YouTube thumbnail'} · Question{' '}
             {currentStep + 1} of {questions.length}
           </p>
-          <DialogTitle className='font-serif text-2xl font-normal tracking-tight'>
+          <DialogTitle className='font-serif text-2xl tracking-tight'>
             {currentQuestion?.title}
           </DialogTitle>
           <div className='mt-3 h-1 w-full rounded-full bg-secondary'>
             <div
-              className='h-1 rounded-full bg-brand transition-all duration-300'
+              className='h-1 rounded-full bg-brand transition-[width] duration-300'
               style={{ width: `${progress}%` }}
             />
           </div>

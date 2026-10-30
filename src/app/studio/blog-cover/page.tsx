@@ -1,14 +1,11 @@
-import { AppPageHeader } from '@/components/app/AppShell';
+import { Suspense } from 'react';
 import { UrlToImageGenerator } from '@/components/UrlToImage';
 
+// The studio reads ?from= and hand-off params, so it renders under Suspense.
 export default function UrlToImagePage() {
   return (
-    <>
-      <AppPageHeader
-        title='Blog cover'
-        description='A cover poster for your blog post. Paste the URL and get an editorial cover back.'
-      />
+    <Suspense>
       <UrlToImageGenerator />
-    </>
+    </Suspense>
   );
 }

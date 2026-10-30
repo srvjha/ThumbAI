@@ -1,14 +1,11 @@
-import { AppPageHeader } from '@/components/app/AppShell';
+import { Suspense } from 'react';
 import { ImageToImage } from '@/components/ImageToImage';
 
-export default async function ImageEditorPage() {
+// The studio reads ?from= and hand-off params, so it renders under Suspense.
+export default function ImageEditorPage() {
   return (
-    <>
-      <AppPageHeader
-        title='Image to thumbnail'
-        description='Bring your face, product or logo. ThumbAI composites it into a finished thumbnail.'
-      />
+    <Suspense>
       <ImageToImage />
-    </>
+    </Suspense>
   );
 }

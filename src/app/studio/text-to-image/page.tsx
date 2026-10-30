@@ -1,14 +1,11 @@
-import { AppPageHeader } from '@/components/app/AppShell';
+import { Suspense } from 'react';
 import { TextToImageGenerator } from '@/components/TextToImage';
 
+// The studio reads ?from= and hand-off params, so it renders under Suspense.
 export default function TextToImagePage() {
   return (
-    <>
-      <AppPageHeader
-        title='Text to thumbnail'
-        description='Describe the video. Get a YouTube thumbnail or Shorts cover that reads at a glance.'
-      />
+    <Suspense>
       <TextToImageGenerator />
-    </>
+    </Suspense>
   );
 }

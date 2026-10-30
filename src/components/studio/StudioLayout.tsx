@@ -3,28 +3,18 @@
 import type { FormEventHandler, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
-/**
- * Two-pane studio: a controls column on the left that scrolls on its own and
- * a canvas on the right. Stacks (controls, then canvas) below lg.
- */
-export const StudioLayout = ({
-  controls,
-  canvas,
-}: {
-  controls: ReactNode;
-  canvas: ReactNode;
-}) => (
-  <div className='grid gap-6 lg:grid-cols-[400px_minmax(0,1fr)] lg:items-start xl:gap-8'>
-    {controls}
-    <section aria-label='Canvas' className='min-w-0'>
-      {canvas}
-    </section>
-  </div>
-);
+/** The form the generate bar and ⌘↵ submit; also used by the palette. */
+export const STUDIO_FORM_ID = 'studio-form';
+
+export const submitStudioForm = () =>
+  (
+    document.getElementById(STUDIO_FORM_ID) as HTMLFormElement | null
+  )?.requestSubmit();
 
 /**
  * The controls column. It is the <form>, so the generate bar in `footer` can
- * submit it; on desktop the body scrolls while the footer stays put.
+ * submit it; on desktop the body scrolls inside its pane while the footer
+ * stays put. ⌘/Ctrl+Enter submits from any field.
  */
 export const ControlsPanel = ({
   onSubmit,
@@ -36,8 +26,16 @@ export const ControlsPanel = ({
   footer: ReactNode;
 }) => (
   <form
+    id={STUDIO_FORM_ID}
     onSubmit={onSubmit}
-    className='flex flex-col rounded-2xl border bg-card shadow-xs lg:sticky lg:top-8 lg:max-h-[calc(100svh-4rem)]'
+    onKeyDown={(e) => {
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        e.currentTarget.requestSubmit();
+      }
+    }}
+    aria-label='Generation settings'
+    className='flex flex-col bg-card lg:h-full'
   >
     <div className='flex-1 space-y-6 p-5 lg:min-h-0 lg:overflow-y-auto'>
       {children}

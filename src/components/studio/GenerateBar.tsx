@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { Loader2, RotateCcw, Wand2 } from 'lucide-react';
 import { Button } from '../ui/button';
+import { Kbd } from '../ui/kbd';
+import { useModKey } from './useMediaQuery';
 import { cn } from '@/lib/utils';
 
 /**
@@ -30,8 +32,9 @@ export const GenerateBar = ({
   onReset: () => void;
 }) => {
   const short = balance !== undefined && balance < cost;
+  const mod = useModKey();
   return (
-    <div className='sticky bottom-0 z-10 rounded-b-2xl border-t bg-card/95 p-4 backdrop-blur lg:static lg:bg-card'>
+    <div className='sticky bottom-0 z-10 border-t bg-card p-4 lg:static'>
       <div className='mb-3 flex items-end justify-between gap-3 text-xs'>
         <div>
           <p className='text-muted-foreground'>This run</p>
@@ -96,6 +99,9 @@ export const GenerateBar = ({
             <>
               <Wand2 className='size-4' />
               {label}
+              <Kbd className='ml-1 hidden bg-white/20 text-white sm:inline-flex'>
+                {mod}↵
+              </Kbd>
             </>
           )}
         </Button>

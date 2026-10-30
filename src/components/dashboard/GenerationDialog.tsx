@@ -252,7 +252,9 @@ export const GenerationDialog = ({
                   Copy link
                 </Button>
                 <Button variant='brand' asChild className='sm:col-span-2'>
-                  <Link href={studioRouteFor(current.model_used)}>
+                  <Link
+                    href={`${studioRouteFor(current.model_used)}?from=${current.id}`}
+                  >
                     <Wand2 />
                     Open in studio
                   </Link>

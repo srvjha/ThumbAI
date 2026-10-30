@@ -1,20 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
-import { CustomizeDialog } from './CustomizeDialog';
 import { useChat } from '@ai-sdk/react';
 import { useAuth } from '@/hooks/user/auth';
-import { ResultPanel } from './shared/ResultPanel';
 import { FormQuestionnaire } from './shared/FormQuestionnaire';
 import { ImageData } from './shared/imageUtils';
 import { MODEL } from '@prisma/client';
 import { waitForGeneration } from '@/lib/waitForGeneration';
 import {
-  StudioLayout,
   ControlsPanel,
   ControlSection,
   SegmentedControl,
@@ -25,6 +22,10 @@ import { AspectRatioPicker } from './studio/AspectRatioPicker';
 import { AdvancedOptions } from './studio/AdvancedOptions';
 import { GenerateBar } from './studio/GenerateBar';
 import { IMAGE_COUNT_OPTIONS, OUTPUT_FORMAT_OPTIONS } from './studio/options';
+import { StudioWorkspace } from './studio/StudioWorkspace';
+import { StylePresetPicker } from './studio/StylePresetPicker';
+import { composePrompt } from './studio/presets';
+import type { GenerationDetail } from './dashboard/types';
 import {
   TEXT_TO_IMAGE_MODELS,
   EDIT_MODEL,
@@ -41,6 +42,9 @@ type FormValues = {
   imagesUrl?: string[];
   questionnaire?: string[];
   tier: ModelTier;
+  /** Words to set on the thumbnail; folded into the prompt on submit. */
+  overlayText: string;
+  stylePreset: string;
 };
 
 export const TextToImageGenerator = () => {
@@ -54,6 +58,7 @@ export const TextToImageGenerator = () => {
     handleSubmit,
     reset,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<FormValues>({
     defaultValues: {
@@ -64,6 +69,8 @@ export const TextToImageGenerator = () => {
       aspectRatios: ['16:9'],
       imagesUrl: [''],
       tier: DEFAULT_TIER,
+      overlayText: '',
+      stylePreset: '',
     },
     mode: 'onChange',
   });
@@ -73,8 +80,6 @@ export const TextToImageGenerator = () => {
   const prompt = watch('prompt');
   const aspectRatios = watch('aspectRatios');
   const tier = watch('tier');
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const [activeVersion, setActiveVersion] = useState(0);
   const { data: userInfo, refetch: refetchUser } = useAuth();
 
   const numImages = watch('numImages');
@@ -83,7 +88,11 @@ export const TextToImageGenerator = () => {
     (aspectRatios?.length || 1) *
     TEXT_TO_IMAGE_MODELS[tier ?? DEFAULT_TIER].creditsPerImage;
 
+  // The last request sent, so Vary can send it again with a fresh seed.
+  const lastRequest = useRef<FormValues | null>(null);
+
   const onSubmit = async (data: FormValues) => {
+    lastRequest.current = data;
     const perImage = TEXT_TO_IMAGE_MODELS[data.tier].creditsPerImage;
     const totalCost = data.numImages * data.aspectRatios.length * perImage;
 
@@ -105,7 +114,11 @@ export const TextToImageGenerator = () => {
       const perRatio = await Promise.all(
         data.aspectRatios.map(async (aspectRatio) => {
           const res = await axios.post('/api/generate', {
-            prompt: data.prompt,
+            prompt: composePrompt(
+              data.prompt,
+              data.overlayText,
+              data.stylePreset,
+            ),
             numImages: data.numImages,
             outputFormat: data.outputFormat,
             userChoices: data.questionnaire ?? '',
@@ -133,7 +146,6 @@ export const TextToImageGenerator = () => {
       }
 
       setGeneratedImages(results);
-      setActiveVersion(0);
       setStatus('completed');
       toast.success('Images generated successfully!', { id: 'generation' });
       refetchUser();
@@ -160,10 +172,7 @@ export const TextToImageGenerator = () => {
 
   const router = useRouter();
 
-  const handleEdit = (selectedIdx: number) => {
-    const img = displayImages[selectedIdx];
-    if (!img) return;
-
+  const handleEdit = (img: ImageData) => {
     router.push(
       `/studio/image-to-image?url=${encodeURIComponent(img.url)}&aspectRatio=${
         img.aspectRatio
@@ -228,7 +237,6 @@ export const TextToImageGenerator = () => {
             aspectRatio: aspectRatios[0] || '16:9',
           })),
         ];
-        setActiveVersion(next.length - 1);
         return next;
       });
 
@@ -271,187 +279,227 @@ export const TextToImageGenerator = () => {
 
   const perImage = TEXT_TO_IMAGE_MODELS[tier ?? DEFAULT_TIER].creditsPerImage;
   const ratioCount = aspectRatios?.length || 0;
+  const overlayText = watch('overlayText');
+
+  // Same request again; the server picks a new seed. Earlier results stay on
+  // the canvas ahead of the new ones so they can be compared.
+  const handleVary = async () => {
+    if (!lastRequest.current || isGenerating) return;
+    const before = generatedImages;
+    await onSubmit(lastRequest.current);
+    const kept = new Set(before.map((img) => img.url));
+    setGeneratedImages((prev) => [
+      ...before,
+      ...prev.filter((img) => !kept.has(img.url)),
+    ]);
+  };
+
+  const handleLoadImages = useCallback((images: ImageData[]) => {
+    setGeneratedImages(images);
+    setStatus(images.length > 0 ? 'completed' : 'idle');
+  }, []);
+
+  const handleRestoreInputs = useCallback(
+    (gen: GenerationDetail) => {
+      setValue('prompt', gen.prompt, { shouldValidate: true });
+      if (gen.aspect_ratio) setValue('aspectRatios', [gen.aspect_ratio]);
+      if (gen.model_tier === 'QUALITY') setValue('tier', 'quality');
+      if (gen.model_tier === 'DRAFT') setValue('tier', 'draft');
+      if (gen.num_of_images) {
+        setValue('numImages', Math.min(Math.max(gen.num_of_images, 1), 4));
+      }
+    },
+    [setValue],
+  );
+
+  const controls = (
+    <ControlsPanel
+      onSubmit={handleSubmit(onSubmit)}
+      footer={
+        <GenerateBar
+          cost={creditCost}
+          costNote={`${numImages || 1} × ${Math.max(ratioCount, 1)} format${
+            ratioCount > 1 ? 's' : ''
+          } × ${perImage} cr`}
+          balance={userInfo?.credits}
+          isGenerating={isGenerating}
+          disabled={!prompt.trim() || isGenerating || ratioCount === 0}
+          label={ratioCount > 1 ? `Generate ${ratioCount} formats` : 'Generate'}
+          onReset={handleReset}
+        />
+      }
+    >
+      <Controller
+        name='prompt'
+        control={control}
+        rules={{
+          required: 'Prompt is required',
+          minLength: {
+            value: 10,
+            message: 'Prompt must be at least 10 characters',
+          },
+        }}
+        render={({ field }) => (
+          <ControlSection
+            label='Prompt'
+            htmlFor='t2i-prompt'
+            aside={<span className='tabular-nums'>{field.value.length}</span>}
+            hint='What is the video about, and what should the viewer feel?'
+            error={errors.prompt?.message}
+          >
+            <textarea
+              {...field}
+              id='t2i-prompt'
+              placeholder='e.g. I tried every budget mechanical keyboard so you don’t have to'
+              className={`${fieldClass(!!errors.prompt)} h-32 resize-none`}
+            />
+          </ControlSection>
+        )}
+      />
+
+      <Controller
+        name='overlayText'
+        control={control}
+        render={({ field }) => (
+          <ControlSection
+            label='Text on thumbnail'
+            htmlFor='t2i-overlay'
+            aside='Optional'
+            hint='Two to four words read best at feed size.'
+          >
+            <input
+              {...field}
+              id='t2i-overlay'
+              autoComplete='off'
+              placeholder='e.g. WORTH IT?…'
+              className={fieldClass()}
+            />
+          </ControlSection>
+        )}
+      />
+
+      <Controller
+        name='stylePreset'
+        control={control}
+        render={({ field }) => (
+          <ControlSection label='Look'>
+            <StylePresetPicker value={field.value} onChange={field.onChange} />
+          </ControlSection>
+        )}
+      />
+
+      <FormQuestionnaire
+        control={control}
+        choicesFieldName='choices'
+        questionnaireFieldName='questionnaire'
+        errors={errors}
+      />
+
+      {/* Model tier */}
+      <Controller
+        name='tier'
+        control={control}
+        render={({ field }) => (
+          <ControlSection label='Model'>
+            <TierPicker
+              models={TEXT_TO_IMAGE_MODELS}
+              value={field.value}
+              onChange={field.onChange}
+            />
+          </ControlSection>
+        )}
+      />
+
+      <Controller
+        name='aspectRatios'
+        control={control}
+        render={({ field }) => (
+          <ControlSection
+            label='Format'
+            hint='Pick both to get a thumbnail and a Shorts cover from one prompt.'
+          >
+            <AspectRatioPicker value={field.value} onChange={field.onChange} />
+          </ControlSection>
+        )}
+      />
+
+      <Controller
+        name='numImages'
+        control={control}
+        rules={{
+          required: 'Number of images is required',
+          min: { value: 1, message: 'Must generate at least 1 image' },
+          max: {
+            value: 4,
+            message: 'Cannot generate more than 4 images',
+          },
+        }}
+        render={({ field }) => (
+          <ControlSection
+            label='Images per format'
+            error={errors.numImages?.message}
+          >
+            <SegmentedControl
+              ariaLabel='Images per format'
+              options={IMAGE_COUNT_OPTIONS}
+              value={field.value}
+              onChange={field.onChange}
+            />
+          </ControlSection>
+        )}
+      />
+
+      <AdvancedOptions summary={(watch('outputFormat') ?? '').toUpperCase()}>
+        <Controller
+          name='outputFormat'
+          control={control}
+          rules={{ required: 'Output format is required' }}
+          render={({ field }) => (
+            <ControlSection
+              label='Output format'
+              error={errors.outputFormat?.message}
+            >
+              <SegmentedControl
+                ariaLabel='Output format'
+                options={OUTPUT_FORMAT_OPTIONS}
+                value={field.value}
+                onChange={field.onChange}
+              />
+            </ControlSection>
+          )}
+        />
+      </AdvancedOptions>
+    </ControlsPanel>
+  );
 
   return (
-    <>
-      <StudioLayout
-        controls={
-          <ControlsPanel
-            onSubmit={handleSubmit(onSubmit)}
-            footer={
-              <GenerateBar
-                cost={creditCost}
-                costNote={`${numImages || 1} × ${Math.max(ratioCount, 1)} format${
-                  ratioCount > 1 ? 's' : ''
-                } × ${perImage} cr`}
-                balance={userInfo?.credits}
-                isGenerating={isGenerating}
-                disabled={!prompt.trim() || isGenerating || ratioCount === 0}
-                label={
-                  ratioCount > 1 ? `Generate ${ratioCount} formats` : 'Generate'
-                }
-                onReset={handleReset}
-              />
-            }
-          >
-            <Controller
-              name='prompt'
-              control={control}
-              rules={{
-                required: 'Prompt is required',
-                minLength: {
-                  value: 10,
-                  message: 'Prompt must be at least 10 characters',
-                },
-              }}
-              render={({ field }) => (
-                <ControlSection
-                  label='Prompt'
-                  htmlFor='t2i-prompt'
-                  aside={
-                    <span className='font-mono tabular-nums'>
-                      {field.value.length}
-                    </span>
-                  }
-                  hint='What is the video about, and what should the viewer feel? Include any headline text you want on it.'
-                  error={errors.prompt?.message}
-                >
-                  <textarea
-                    {...field}
-                    id='t2i-prompt'
-                    placeholder='e.g. I tried every budget mechanical keyboard so you don’t have to. Headline: “Worth it?”'
-                    className={`${fieldClass(!!errors.prompt)} h-36 resize-none`}
-                  />
-                </ControlSection>
-              )}
-            />
-
-            <FormQuestionnaire
-              control={control}
-              choicesFieldName='choices'
-              questionnaireFieldName='questionnaire'
-              errors={errors}
-            />
-
-            {/* Model tier */}
-            <Controller
-              name='tier'
-              control={control}
-              render={({ field }) => (
-                <ControlSection label='Model'>
-                  <TierPicker
-                    models={TEXT_TO_IMAGE_MODELS}
-                    value={field.value}
-                    onChange={field.onChange}
-                  />
-                </ControlSection>
-              )}
-            />
-
-            <Controller
-              name='aspectRatios'
-              control={control}
-              render={({ field }) => (
-                <ControlSection
-                  label='Format'
-                  hint='Pick both to get a thumbnail and a Shorts cover from one prompt.'
-                >
-                  <AspectRatioPicker
-                    value={field.value}
-                    onChange={field.onChange}
-                  />
-                </ControlSection>
-              )}
-            />
-
-            <Controller
-              name='numImages'
-              control={control}
-              rules={{
-                required: 'Number of images is required',
-                min: { value: 1, message: 'Must generate at least 1 image' },
-                max: {
-                  value: 4,
-                  message: 'Cannot generate more than 4 images',
-                },
-              }}
-              render={({ field }) => (
-                <ControlSection
-                  label='Images per format'
-                  error={errors.numImages?.message}
-                >
-                  <SegmentedControl
-                    ariaLabel='Images per format'
-                    options={IMAGE_COUNT_OPTIONS}
-                    value={field.value}
-                    onChange={field.onChange}
-                  />
-                </ControlSection>
-              )}
-            />
-
-            <AdvancedOptions
-              summary={(watch('outputFormat') ?? '').toUpperCase()}
-            >
-              <Controller
-                name='outputFormat'
-                control={control}
-                rules={{ required: 'Output format is required' }}
-                render={({ field }) => (
-                  <ControlSection
-                    label='Output format'
-                    error={errors.outputFormat?.message}
-                  >
-                    <SegmentedControl
-                      ariaLabel='Output format'
-                      options={OUTPUT_FORMAT_OPTIONS}
-                      value={field.value}
-                      onChange={field.onChange}
-                    />
-                  </ControlSection>
-                )}
-              />
-            </AdvancedOptions>
-          </ControlsPanel>
-        }
-        canvas={
-          <ResultPanel
-            status={status}
-            displayImages={displayImages}
-            isGenerating={isGenerating}
-            outputFormat={watch('outputFormat')}
-            onEdit={handleEdit}
-            onCustomize={
-              displayImages.length > 0 ? () => setIsChatOpen(true) : undefined
-            }
-            hasChatMessages={messages.length > 0}
-            ratios={aspectRatios}
-            empty={{
-              title: 'Your thumbnail appears here',
-              description:
-                'Describe the video and pick a format. ThumbAI writes a design brief from it, then renders the image into this frame.',
-              steps: [
-                'Describe the video',
-                'Pick format and model',
-                'Refine it with chat',
-              ],
-            }}
-          />
-        }
-      />
-      <CustomizeDialog
-        isOpen={isChatOpen}
-        onClose={() => setIsChatOpen(false)}
-        versions={displayImages}
-        activeIndex={activeVersion}
-        onSelectVersion={setActiveVersion}
-        messages={messages}
-        onSendMessage={handleChatSubmit}
-        onRegenerate={regenerate}
-        chatStatus={chatStatus}
-        isGenerating={isGenerating}
-        creditCost={EDIT_MODEL.creditsPerImage}
-      />
-    </>
+    <StudioWorkspace
+      mode='text'
+      description='Describe the video. Get a YouTube thumbnail or Shorts cover that reads at a glance.'
+      controls={controls}
+      status={status}
+      images={displayImages}
+      ratios={aspectRatios}
+      outputFormat={watch('outputFormat')}
+      isGenerating={isGenerating}
+      canGenerate={!!prompt.trim() && !isGenerating && ratioCount > 0}
+      onVary={lastRequest.current ? handleVary : undefined}
+      onEdit={handleEdit}
+      refine={{
+        onSend: handleChatSubmit,
+        onRetry: regenerate,
+        messages,
+        creditCost: (numImages || 1) * EDIT_MODEL.creditsPerImage,
+      }}
+      onLoadImages={handleLoadImages}
+      onRestoreInputs={handleRestoreInputs}
+      previewTitle={overlayText?.trim() || prompt.trim() || undefined}
+      empty={{
+        title: 'Your thumbnail appears here',
+        description:
+          'Describe the video and pick a format. ThumbAI writes a design brief from it, then renders into this frame.',
+        steps: ['Describe the video', 'Pick format and model', 'Refine it'],
+      }}
+    />
   );
 };
