@@ -22,13 +22,9 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import {
-  ACCOUNT_NAV,
-  AppSidebar,
-  STUDIO_NAV,
-  isNavActive,
-} from './AppSidebar';
+import { ACCOUNT_NAV, AppSidebar, STUDIO_NAV, isNavActive } from './AppSidebar';
 import { SidebarResizeRail } from './SidebarResizeRail';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import {
   SIDEBAR_DEFAULT_WIDTH,
   SIDEBAR_WIDTH_COOKIE,
@@ -37,7 +33,12 @@ import {
 } from './sidebar-config';
 
 /** Routes that render inside the app shell instead of the marketing header. */
-export const APP_ROUTE_PREFIXES = ['/studio', '/dashboard', '/billing'];
+export const APP_ROUTE_PREFIXES = [
+  '/studio',
+  '/dashboard',
+  '/billing',
+  '/profile',
+];
 
 const ALL_NAV = [...STUDIO_NAV, ...ACCOUNT_NAV];
 
@@ -69,6 +70,7 @@ const TopBar = ({ pathname }: { pathname: string }) => {
           <span className='truncate text-sm font-medium'>{current.label}</span>
         </>
       ) : null}
+      <ThemeToggle className='ml-auto' />
     </header>
   );
 };

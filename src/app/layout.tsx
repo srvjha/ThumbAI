@@ -5,6 +5,7 @@ import { Header } from '@/components/Header';
 import { Toaster } from 'react-hot-toast';
 import { ClerkProvider } from '@clerk/nextjs';
 import { QueryProvider } from '@/components/providers/query';
+import { ThemeProvider } from '@/components/providers/theme';
 
 // One family for the whole interface. The optical-size axis tightens Inter's
 // letterforms at display sizes, so headlines need no second typeface.
@@ -26,20 +27,23 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://thumbai.app';
 
 /**
  * Clerk renders its own components, so it needs telling about the theme once
- * here rather than per page. Values track the tokens in globals.css.
+ * here rather than per page. Values point at the tokens in globals.css, so
+ * they follow light and dark.
  */
 const clerkAppearance = {
   variables: {
-    colorPrimary: '#3e63dd',
-    colorPrimaryForeground: '#ffffff',
-    colorBackground: '#ffffff',
-    colorForeground: '#12172b',
-    colorMutedForeground: '#5c6275',
-    colorInput: '#ffffff',
-    colorInputForeground: '#12172b',
-    colorNeutral: '#12172b',
-    colorBorder: '#e4e1d8',
-    colorDanger: '#d93f3f',
+    colorPrimary: 'var(--primary)',
+    colorPrimaryForeground: 'var(--primary-foreground)',
+    colorBackground: 'var(--card)',
+    colorForeground: 'var(--foreground)',
+    colorMutedForeground: 'var(--muted-foreground)',
+    colorMuted: 'var(--muted)',
+    colorInput: 'var(--card)',
+    colorInputForeground: 'var(--foreground)',
+    colorNeutral: 'var(--foreground)',
+    colorBorder: 'var(--border)',
+    colorRing: 'var(--ring)',
+    colorDanger: 'var(--destructive)',
     borderRadius: '0.75rem',
     fontFamily: 'var(--font-inter)',
   },
@@ -72,8 +76,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#3e63dd',
-  colorScheme: 'light',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f7f6f2' },
+    { media: '(prefers-color-scheme: dark)', color: '#0c0f19' },
+  ],
+  colorScheme: 'light dark',
 };
 
 export default function RootLayout({
@@ -85,14 +92,26 @@ export default function RootLayout({
     <ClerkProvider appearance={clerkAppearance}>
       <html
         lang='en'
+        // next-themes sets the class before hydration.
+        suppressHydrationWarning
         className={`${inter.variable} ${geistMono.variable}`}
       >
         <body className='bg-background text-foreground font-sans antialiased'>
-          <QueryProvider>
-            <Toaster />
-            <Header />
-            {children}
-          </QueryProvider>
+          <ThemeProvider>
+            <QueryProvider>
+              <Toaster
+                toastOptions={{
+                  style: {
+                    background: 'var(--popover)',
+                    color: 'var(--popover-foreground)',
+                    border: '1px solid var(--border)',
+                  },
+                }}
+              />
+              <Header />
+              {children}
+            </QueryProvider>
+          </ThemeProvider>
         </body>
       </html>
     </ClerkProvider>

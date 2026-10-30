@@ -30,7 +30,7 @@ export const FooterArt = () => {
           alt=''
           fill
           sizes='100vw'
-          className='object-cover object-bottom'
+          className='engraving object-cover object-bottom'
         />
       </m.div>
     </div>

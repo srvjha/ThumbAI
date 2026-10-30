@@ -52,7 +52,7 @@ export const HeroParallax = ({ children }: { children: ReactNode }) => {
           fill
           priority
           sizes='100vw'
-          className='object-cover object-bottom'
+          className='engraving object-cover object-bottom'
         />
       </m.div>
 
@@ -68,7 +68,7 @@ export const HeroParallax = ({ children }: { children: ReactNode }) => {
           alt=''
           fill
           sizes='100vw'
-          className='object-cover object-bottom'
+          className='engraving object-cover object-bottom'
         />
       </m.div>
     </section>

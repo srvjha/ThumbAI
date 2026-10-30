@@ -10,6 +10,7 @@ import {
   LayoutGrid,
   Shield,
   Type,
+  UserRound,
   type LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/user/auth';
@@ -41,6 +42,7 @@ export const ACCOUNT_NAV: NavItem[] = [
   { label: 'Library', href: '/dashboard', icon: LayoutGrid },
   { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
   { label: 'Credits & billing', href: '/billing', icon: CreditCard },
+  { label: 'Profile', href: '/profile', icon: UserRound },
 ];
 
 const ADMIN_NAV: NavItem[] = [{ label: 'Admin', href: '/admin', icon: Shield }];
@@ -71,7 +73,9 @@ const NavGroup = ({
   const { isMobile, setOpenMobile } = useSidebar();
   return (
     <SidebarGroup>
-      <SidebarGroupLabel className='whitespace-nowrap'>{title}</SidebarGroupLabel>
+      <SidebarGroupLabel className='whitespace-nowrap'>
+        {title}
+      </SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu>
           {items.map(({ label, href, icon: Icon }) => (
@@ -167,9 +171,12 @@ export const AppSidebar = ({
           <span className='flex size-7 shrink-0 items-center justify-center'>
             <UserButton />
           </span>
-          <span className='truncate text-sm text-muted-foreground transition-opacity duration-200 group-data-[collapsible=icon]:opacity-0'>
+          <Link
+            href='/profile'
+            className='truncate text-sm text-muted-foreground transition-opacity duration-200 hover:text-foreground group-data-[collapsible=icon]:opacity-0'
+          >
             {data?.email}
-          </span>
+          </Link>
         </div>
       </SidebarFooter>
 

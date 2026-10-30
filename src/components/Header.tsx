@@ -7,6 +7,7 @@ import { Menu, X } from 'lucide-react';
 import { UserButton, useUser } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
 import { Button } from './ui/button';
+import { ThemeToggle } from './theme/ThemeToggle';
 import { Skeleton } from './ui/skeleton';
 import { Logo } from './brand/Logo';
 import { useAuth } from '@/hooks/user/auth';
@@ -110,7 +111,8 @@ export const Header = () => {
                 </Link>
               )}
 
-              <div className='ml-3 flex items-center gap-3'>
+              <ThemeToggle className='ml-1' />
+              <div className='ml-2 flex items-center gap-3'>
                 {!isLoaded && <Skeleton className='h-9 w-36 rounded-lg' />}
                 {isLoaded && !isSignedIn && (
                   <>
@@ -137,8 +139,9 @@ export const Header = () => {
             <m.div
               layout='position'
               transition={SPRING}
-              className='flex items-center gap-3 md:hidden'
+              className='flex items-center gap-2 md:hidden'
             >
+              <ThemeToggle />
               {authEnabled && <UserButton />}
               <button
                 type='button'
