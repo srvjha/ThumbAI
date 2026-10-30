@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { Reveal, RevealItem } from '@/components/motion/Reveal';
-import { H2 } from './type';
+import { H2, H2_ONE_LINE } from './type';
 import {
   BlogCoverDemo,
   ImageToImageDemo,
@@ -21,16 +21,12 @@ const StudioLink = ({ href, label }: { href: string; label: string }) => (
 export const Workflows = () => (
   <section className='bg-secondary py-24 md:py-36'>
     <div className='mx-auto max-w-6xl px-4 sm:px-6 lg:px-8'>
-      <Reveal stagger={0.08} className='grid gap-6 md:grid-cols-2 md:items-end'>
-        <RevealItem as='h2' className={H2}>
+      <Reveal stagger={0.08}>
+        <RevealItem as='h2' className={`${H2} ${H2_ONE_LINE}`}>
           Three ways in, one studio.
         </RevealItem>
-        <RevealItem
-          as='p'
-          className='max-w-md text-lg leading-relaxed md:justify-self-end'
-        >
-          Start from words, from a photo of you or your product, or from a post
-          you already wrote.
+        <RevealItem as='p' className='mt-5 text-lg leading-relaxed'>
+          Start from words, a photo, or a post you already wrote.
         </RevealItem>
       </Reveal>
 
@@ -41,9 +37,8 @@ export const Workflows = () => (
           className='flex flex-col rounded-2xl bg-card p-5 sm:p-7 lg:col-span-7'
         >
           <h3 className='text-xl font-medium'>Text to image</h3>
-          <p className='mt-2 max-w-md leading-relaxed text-muted-foreground'>
-            Describe the video and the words you want on it. Draft costs one
-            credit, Quality costs three.
+          <p className='mt-1.5 text-muted-foreground'>
+            Describe the video, name the title, get the thumbnail.
           </p>
           <TextToImageDemo />
           <div className='mt-6'>
@@ -56,9 +51,8 @@ export const Workflows = () => (
           className='flex flex-col rounded-2xl bg-card p-5 sm:p-7 lg:col-span-5'
         >
           <h3 className='text-xl font-medium'>Image to image</h3>
-          <p className='mt-2 leading-relaxed text-muted-foreground'>
-            Upload a face or a product shot. It keeps the likeness and builds
-            the thumbnail around it. Two credits per edit.
+          <p className='mt-1.5 text-muted-foreground'>
+            Your face or product, built into the frame.
           </p>
           <ImageToImageDemo />
           <div className='mt-auto pt-6'>
@@ -74,9 +68,8 @@ export const Workflows = () => (
             intro={
               <>
                 <h3 className='text-xl font-medium'>Blog cover from a URL</h3>
-                <p className='mt-2 max-w-sm leading-relaxed text-muted-foreground'>
-                  Paste a link to your post. ThumbAI reads it, pulls out the
-                  argument and sets an editorial cover with the title.
+                <p className='mt-1.5 text-muted-foreground'>
+                  Paste a post, get an editorial cover.
                 </p>
               </>
             }

@@ -103,18 +103,22 @@ export const SAMPLES = {
   },
 } satisfies Record<string, Sample>;
 
-/** The 16:9 grid in the samples section. */
-export const GALLERY_VIDEOS: Sample[] = [
+/** The marquee wall: 16:9 thumbnails on top, Shorts and blog covers below. */
+export const WALL_VIDEOS: Sample[] = [
   SAMPLES.gaming,
   SAMPLES.cooking,
   SAMPLES.travel,
   SAMPLES.review,
+  SAMPLES.techApi,
   SAMPLES.fitness,
+  SAMPLES.finance,
   SAMPLES.podcast,
 ];
 
-export const GALLERY_SHORTS: Sample[] = [
+export const WALL_MIXED: Sample[] = [
   SAMPLES.shortRice,
+  SAMPLES.blogOpenSource,
   SAMPLES.shortKeyboard,
+  SAMPLES.blogSlowWeb,
   SAMPLES.shortSummit,
 ];
