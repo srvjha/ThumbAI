@@ -5,6 +5,7 @@ import { EDIT_MODEL } from '@/config/models';
 import { chargeGeneration } from '@/server/credits';
 import {
   markGenerationFailed,
+  reconcileStaleGenerations,
   storeGenerationResult,
 } from '@/server/generations/results';
 import {
@@ -88,5 +89,43 @@ describe('storeGenerationResult', () => {
     expect(saved.status).toBe(GEN_STATUS.FAILED);
     expect(saved.image_url).toEqual([]);
     expect(await creditsOf(user.id)).toBe(5);
+  });
+});
+
+describe('reconcileStaleGenerations', () => {
+  it('fails and refunds a row whose submit never reached Fal', async () => {
+    const user = await createUser({ credits: 5 });
+    const gen = await db.thumbnail.create({
+      data: {
+        user_id: user.id,
+        num_of_images: 1,
+        image_url: [],
+        createdAt: new Date(Date.now() - 5 * 60 * 1000),
+      },
+    });
+    await chargeGeneration(user.id, gen.id, 2);
+
+    await reconcileStaleGenerations(user.id);
+
+    const saved = await db.thumbnail.findUniqueOrThrow({
+      where: { id: gen.id },
+    });
+    expect(saved.status).toBe(GEN_STATUS.FAILED);
+    expect(await creditsOf(user.id)).toBe(5);
+    await expectLedgerBalanced(user.id);
+  });
+
+  it('leaves a fresh row alone', async () => {
+    const user = await createUser({ credits: 5 });
+    const gen = await db.thumbnail.create({
+      data: { user_id: user.id, num_of_images: 1, image_url: [] },
+    });
+
+    await reconcileStaleGenerations(user.id);
+
+    const saved = await db.thumbnail.findUniqueOrThrow({
+      where: { id: gen.id },
+    });
+    expect(saved.status).toBe(GEN_STATUS.PENDING);
   });
 });

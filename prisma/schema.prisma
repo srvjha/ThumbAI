@@ -56,6 +56,10 @@ model Thumbnail {
 
   user              User                @relation(fields: [user_id], references: [id])
   CreditTransaction CreditTransaction[]
+
+  // The library, detail, analytics and stale-sweep queries all filter by
+  // user and order or range by time.
+  @@index([user_id, createdAt])
 }
 
 enum MODEL {

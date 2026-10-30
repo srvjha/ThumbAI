@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GEN_STATUS } from '@prisma/client';
 import { db } from '@/db';
-import { reconcileStaleGenerations } from '@/server/generations/results';
+import { scheduleStaleReconcile } from '@/server/generations/results';
 import { EDIT_MODEL } from '@/config/models';
 import { ApiResponse } from '@/utils/ApiResponse';
 import type {
@@ -60,8 +60,8 @@ const sorted = (map: Map<string, BreakdownRow>) =>
 export const GET = async (req: NextRequest) => {
   try {
     const user = await requireUser();
-    // Settle jobs whose webhook never arrived so they don't count as pending.
-    await reconcileStaleGenerations(user.id);
+    // Settle jobs whose webhook never arrived, for the next read.
+    scheduleStaleReconcile(user.id);
     const params = req.nextUrl.searchParams;
 
     const rangeParam = params.get('range') ?? '30d';

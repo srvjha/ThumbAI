@@ -5,7 +5,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/user/auth';
-import { waitForGeneration } from '@/lib/waitForGeneration';
+import { waitForGeneration } from '@/hooks/user/generations';
 import { uploadFile } from '@/config/falClient';
 import {
   DEFAULT_TIER,
@@ -235,7 +235,10 @@ export const useStudioChat = (mode: StudioMode) => {
               throw new Error(res.data.data.response ?? 'Invalid prompt');
             }
             patch(id, { phase: 'rendering' });
-            const urls = await waitForGeneration(res.data.data.requestId);
+            const urls = await waitForGeneration(
+              queryClient,
+              res.data.data.generationId,
+            );
             return urls.map((url) => ({ url, aspectRatio }));
           }),
         );

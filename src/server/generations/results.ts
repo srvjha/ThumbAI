@@ -1,8 +1,10 @@
 import 'server-only';
+import { after } from 'next/server';
 import { fal } from '@fal-ai/client';
 import { db } from '@/db';
 import { GEN_STATUS } from '@prisma/client';
 import { refundGeneration } from '@/server/credits';
+import { claimWindow } from '@/server/redis';
 
 /**
  * Recording generation results.
@@ -26,7 +28,7 @@ export const extractImageUrls = (payload: unknown): string[] => {
     .filter((url): url is string => typeof url === 'string' && url.length > 0);
 };
 
-const OPEN = [GEN_STATUS.PENDING, GEN_STATUS.IN_PROGRESS];
+const OPEN: GEN_STATUS[] = [GEN_STATUS.PENDING, GEN_STATUS.IN_PROGRESS];
 
 export const storeGenerationResult = async (
   requestId: string,
@@ -187,4 +189,49 @@ export const reconcileStaleGenerations = async (userId: string) => {
   } catch (err) {
     console.error('Failed to reconcile stale generations', { userId, err });
   }
+};
+
+/** How often one user's stale generations are swept. */
+const RECONCILE_EVERY_SECONDS = 120;
+/** How often one open generation is checked against Fal while polled. */
+const SYNC_EVERY_SECONDS = 5;
+/** A job younger than this is left to the webhook. */
+const SYNC_AFTER_MS = 10_000;
+
+/**
+ * Sweeps the user's stale generations after the response is sent, at most
+ * once per RECONCILE_EVERY_SECONDS. Reads never wait on Fal.
+ *
+ * Runs here rather than in a cron because the Hobby plan only allows daily
+ * crons, which is far too slow to settle a job the user is looking at.
+ */
+export const scheduleStaleReconcile = (userId: string) => {
+  after(async () => {
+    if (await claimWindow(`reconcile:${userId}`, RECONCILE_EVERY_SECONDS)) {
+      await reconcileStaleGenerations(userId);
+    }
+  });
+};
+
+/**
+ * While a client polls an open generation, checks it against Fal after the
+ * response, at most once per SYNC_EVERY_SECONDS. Covers a webhook that never
+ * arrives — always the case in local development, where Fal can't reach
+ * localhost.
+ */
+export const scheduleGenerationSync = (row: {
+  id: string;
+  request_id: string | null;
+  status: GEN_STATUS;
+  createdAt: Date;
+}) => {
+  if (!row.request_id || !OPEN.includes(row.status)) return;
+  if (Date.now() - row.createdAt.getTime() < SYNC_AFTER_MS) return;
+
+  const requestId = row.request_id;
+  after(async () => {
+    if (await claimWindow(`sync:${row.id}`, SYNC_EVERY_SECONDS)) {
+      await syncGenerationFromFal(requestId);
+    }
+  });
 };

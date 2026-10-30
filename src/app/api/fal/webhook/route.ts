@@ -79,7 +79,7 @@ export const POST = async (req: NextRequest) => {
     }
 
     // Anything else: reconcile against the queue, using the endpoint that
-    // actually served this request. Shared with /api/result-stream so both
+    // actually served this request. Shared with the read-path sync so both
     // paths record results identically.
     const outcome = await syncGenerationFromFal(requestId);
 
