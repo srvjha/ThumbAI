@@ -1,113 +1,68 @@
 import { Webhook } from 'svix';
-import { headers } from 'next/headers';
-import { WebhookEvent, UserJSON } from '@clerk/nextjs/server';
-import { createUserWithSignupGrant } from '@/server/credits';
 import { NextResponse } from 'next/server';
+import type {
+  DeletedObjectJSON,
+  UserJSON,
+  WebhookEvent,
+} from '@clerk/nextjs/server';
+import { env } from '@/config/env';
 import { ApiResponse } from '@/utils/ApiResponse';
 import { apiErrorResponse } from '@/server/errors';
-import { env } from '@/config/env';
-import { Role } from '@prisma/client';
-import { FREE_PLAN } from '@/config/plans';
+import { softDeleteUser, upsertUserFromClerk } from '@/server/users';
 
-export const POST = async (req: Request): Promise<NextResponse> => {
-  const WEBHOOK_SECRET = env.NEXT_CLERK_WEBHOOK_SECRET;
-  if (!WEBHOOK_SECRET) {
-    return NextResponse.json(
-      new ApiResponse(404, null, 'webhook secret required'),
-      { status: 404 },
-    );
-  }
+const respond = (status: number, message: string) =>
+  NextResponse.json(new ApiResponse(status, null, message), { status });
 
-  const headerPayload = await headers();
-  const svixId = headerPayload.get('svix-id');
-  const svixTimestamp = headerPayload.get('svix-timestamp');
-  const svixSignature = headerPayload.get('svix-signature');
+/**
+ * Clerk user lifecycle webhook (delivered by Svix).
+ *
+ * Every handler is idempotent, because Svix retries until it sees a 2xx. The
+ * free signup credits are not granted here: that happens on the user's first
+ * request, where their IP is known (see server/signupCredits.ts).
+ */
+export const POST = async (req: Request) => {
+  const svixId = req.headers.get('svix-id');
+  const svixTimestamp = req.headers.get('svix-timestamp');
+  const svixSignature = req.headers.get('svix-signature');
 
   if (!svixId || !svixTimestamp || !svixSignature) {
-    return NextResponse.json(
-      new ApiResponse(400, null, 'Error Occured - No Svix Details Found'),
-      { status: 400 },
-    );
+    return respond(400, 'Missing Svix headers');
   }
 
-  const payload = await req.json();
-  const body = JSON.stringify(payload);
-
-  const wh = new Webhook(WEBHOOK_SECRET);
+  // Verify the exact bytes Svix signed. Re-serialising a parsed body can
+  // change them and fail the check.
+  const rawBody = await req.text();
 
   let evt: WebhookEvent;
   try {
-    evt = wh.verify(body, {
+    evt = new Webhook(env.NEXT_CLERK_WEBHOOK_SECRET).verify(rawBody, {
       'svix-id': svixId,
       'svix-timestamp': svixTimestamp,
       'svix-signature': svixSignature,
     }) as WebhookEvent;
-  } catch (error: any) {
-    return NextResponse.json(
-      new ApiResponse(400, null, `Error verifying webhook: ${error.message}`),
-      { status: 400 },
-    );
+  } catch {
+    return respond(400, 'Invalid signature');
   }
 
-  const eventType = evt.type;
-
-  if (eventType === 'user.created') {
-    const data = evt.data as UserJSON;
-    const {
-      id,
-      email_addresses,
-      primary_email_address_id,
-      first_name,
-      last_name,
-      last_active_at,
-      image_url,
-      created_at,
-    } = data;
-
-    const primaryEmail = email_addresses.find(
-      (email) => email.id === primary_email_address_id,
-    )?.email_address;
-
-    if (!primaryEmail || !id) {
-      return NextResponse.json(
-        new ApiResponse(400, null, 'Email and Clerk ID are required'),
-        { status: 400 },
-      );
+  try {
+    switch (evt.type) {
+      case 'user.created':
+      case 'user.updated': {
+        const synced = await upsertUserFromClerk(evt.data as UserJSON);
+        return synced
+          ? respond(200, `Processed ${evt.type}`)
+          : respond(400, 'User has no primary email');
+      }
+      case 'user.deleted': {
+        const { id } = evt.data as DeletedObjectJSON;
+        if (id) await softDeleteUser(id);
+        return respond(200, 'Processed user.deleted');
+      }
+      default:
+        return respond(200, `Unhandled event type: ${evt.type}`);
     }
-
-    const fullName =
-      `${first_name ?? ''} ${last_name ?? ''}`.trim() || 'No FullName';
-    const profile_img = image_url;
-    const lastActiveAt = last_active_at
-      ? new Date(last_active_at)
-      : new Date(created_at);
-
-    try {
-      const newUser = await createUserWithSignupGrant(
-        {
-          email: primaryEmail,
-          fullName,
-          profile_img,
-          clerk_id: id,
-          plan: 'FREE',
-          role: Role.USER,
-          last_active_at: lastActiveAt,
-        },
-        FREE_PLAN.credits,
-      );
-
-      return NextResponse.json(
-        new ApiResponse(201, newUser, 'User created successfully'),
-        { status: 201 },
-      );
-    } catch (err) {
-      return apiErrorResponse(err);
-    }
+  } catch (err) {
+    // 500 so Svix retries; every handler is safe to run again.
+    return apiErrorResponse(err);
   }
-
-  // ✅ Handle other event types (so we don't return undefined)
-  return NextResponse.json(
-    new ApiResponse(200, null, `Unhandled event type: ${eventType}`),
-    { status: 200 },
-  );
 };

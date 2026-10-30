@@ -1,8 +1,10 @@
 import 'server-only';
 import { auth } from '@clerk/nextjs/server';
+import { headers } from 'next/headers';
 import { Role, type User } from '@prisma/client';
 import { db } from '@/db';
 import { ApiError } from '@/server/errors';
+import { ensureSignupCredits } from '@/server/signupCredits';
 
 /**
  * Resolves the Clerk session to the local User row.
@@ -21,8 +23,8 @@ export const requireUser = async (): Promise<User> => {
 
   if (!user) {
     // Authenticated with Clerk but no local row yet — the register webhook
-    // has not landed. Treated as unauthorized rather than auto-provisioned so
-    // credits can only ever originate from the webhook.
+    // has not landed. Treated as unauthorized rather than auto-provisioned,
+    // so every account is one Clerk has confirmed.
     //
     // In development that webhook cannot reach localhost, so this is the
     // common cause of a "signed in but everything 401s" loop. Name the id, or
@@ -34,6 +36,20 @@ export const requireUser = async (): Promise<User> => {
       );
     }
     throw new ApiError('Unauthorized', 401);
+  }
+
+  if (user.deleted_at) {
+    // The Clerk account is gone; a lingering session must not revive it.
+    throw new ApiError('Unauthorized', 401);
+  }
+
+  if (!user.signup_checked_at) {
+    try {
+      return await ensureSignupCredits(user, await headers());
+    } catch (err) {
+      // Never block a request on the grant. It is retried next request.
+      console.error('[auth] signup credit check failed', err);
+    }
   }
 
   return user;

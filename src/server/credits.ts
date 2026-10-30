@@ -37,8 +37,14 @@ interface CreditChange {
 const isUniqueViolation = (err: unknown) =>
   err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002';
 
-/** Applies one change inside an existing transaction. Returns the new balance. */
-const applyChange = async (tx: Tx, change: CreditChange): Promise<number> => {
+/**
+ * Applies one change inside an existing transaction. Returns the new balance.
+ * Prefer recordCreditChange unless the change must commit with other writes.
+ */
+export const applyCreditChange = async (
+  tx: Tx,
+  change: CreditChange,
+): Promise<number> => {
   const { userId, amount, requireBalance } = change;
 
   if (requireBalance && amount < 0) {
@@ -88,7 +94,7 @@ export const recordCreditChange = async (
   change: CreditChange,
 ): Promise<number | null> => {
   try {
-    return await db.$transaction((tx) => applyChange(tx, change));
+    return await db.$transaction((tx) => applyCreditChange(tx, change));
   } catch (err) {
     if (isUniqueViolation(err)) return null;
     throw err;
@@ -187,7 +193,7 @@ export const grantCreditsForOrder = async (
 
   try {
     await db.$transaction(async (tx) => {
-      await applyChange(tx, {
+      await applyCreditChange(tx, {
         userId,
         type: CREDIT_TX_TYPE.PURCHASE,
         amount: order.credits,
@@ -216,7 +222,7 @@ export const clawBackOrder = async (orderId: string): Promise<boolean> => {
 
   try {
     await db.$transaction(async (tx) => {
-      await applyChange(tx, {
+      await applyCreditChange(tx, {
         userId,
         type: CREDIT_TX_TYPE.ORDER_REFUND_CLAWBACK,
         amount: -order.credits,
@@ -236,18 +242,3 @@ export const clawBackOrder = async (orderId: string): Promise<boolean> => {
     throw err;
   }
 };
-
-/** Creates a user and records their free signup credits in one transaction. */
-export const createUserWithSignupGrant = (
-  data: Omit<Prisma.UserCreateInput, 'credits'>,
-  signupCredits: number,
-) =>
-  db.$transaction(async (tx) => {
-    const user = await tx.user.create({ data: { ...data, credits: 0 } });
-    const credits = await applyChange(tx, {
-      userId: user.id,
-      type: CREDIT_TX_TYPE.SIGNUP_GRANT,
-      amount: signupCredits,
-    });
-    return { ...user, credits };
-  });

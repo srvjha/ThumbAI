@@ -18,4 +18,5 @@ Object.assign(process.env, {
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: 'pk_test',
   NEXT_PUBLIC_RAZORPAY_KEY_ID: 'rzp_test',
   NEXT_PUBLIC_FAL_WEBHOOK_URL: 'https://example.test',
+  SIGNUP_IP_SALT: 'signup-ip-salt-for-tests',
 });
