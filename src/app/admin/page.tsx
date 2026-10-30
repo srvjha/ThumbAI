@@ -1,8 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
+import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -29,8 +27,9 @@ import {
 import { useAuth } from '@/hooks/user/auth';
 import { useRouter } from 'next/navigation';
 import { useAdmin } from '@/hooks/user/admin';
+import type { AdminUserSort } from '@/types/admin';
 
-type SortField = 'email' | 'credits' | 'thumbnails' | 'createdAt';
+type SortField = AdminUserSort;
 type SortOrder = 'asc' | 'desc';
 
 export default function AdminDashboard() {
@@ -41,79 +40,43 @@ export default function AdminDashboard() {
   const [planFilter, setPlanFilter] = useState<string>('all');
   const [sortField, setSortField] = useState<SortField>('createdAt');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [page, setPage] = useState(1);
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedQuery(searchQuery.trim()), 300);
+    return () => clearTimeout(id);
+  }, [searchQuery]);
+
+  // Any change to the filters starts again from the first page.
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedQuery, roleFilter, planFilter, sortField, sortOrder]);
 
   // Check if user is admin
   const isAdmin = useMemo(() => {
     return userData?.role === 'ADMIN';
   }, [userData]);
 
-  const { data: users, isLoading } = useAdmin(isAdmin);
+  // Filtering, sorting and paging happen on the server.
+  const { data, isLoading, isFetching } = useAdmin(isAdmin, {
+    q: debouncedQuery || undefined,
+    role: roleFilter === 'all' ? undefined : roleFilter,
+    plan: planFilter === 'all' ? undefined : planFilter,
+    sort: sortField,
+    order: sortOrder,
+    page,
+  });
+  const users = data?.users ?? [];
+  const pageCount = data
+    ? Math.max(1, Math.ceil(data.total / data.pageSize))
+    : 1;
 
   // Redirect if not admin
   if (userData && !isAdmin) {
     router.push('/');
     return null;
   }
-
-  // Filter and sort users
-  const filteredAndSortedUsers = useMemo(() => {
-    if (!users) return [];
-
-    let filtered = [...users];
-
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (user) =>
-          user.email.toLowerCase().includes(query) ||
-          user.id.toLowerCase().includes(query),
-      );
-    }
-
-    // Role filter
-    if (roleFilter !== 'all') {
-      filtered = filtered.filter((user) => user.role === roleFilter);
-    }
-
-    // Plan filter
-    if (planFilter !== 'all') {
-      filtered = filtered.filter((user) => user.plan === planFilter);
-    }
-
-    // Sort
-    filtered.sort((a, b) => {
-      let aValue: any;
-      let bValue: any;
-
-      switch (sortField) {
-        case 'email':
-          aValue = a.email.toLowerCase();
-          bValue = b.email.toLowerCase();
-          break;
-        case 'credits':
-          aValue = a.credits;
-          bValue = b.credits;
-          break;
-        case 'thumbnails':
-          aValue = a.thumbnailCount;
-          bValue = b.thumbnailCount;
-          break;
-        case 'createdAt':
-          aValue = new Date(a.createdAt).getTime();
-          bValue = new Date(b.createdAt).getTime();
-          break;
-        default:
-          return 0;
-      }
-
-      if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
-      return 0;
-    });
-
-    return filtered;
-  }, [users, searchQuery, roleFilter, planFilter, sortField, sortOrder]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -168,7 +131,7 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className='text-3xl font-bold text-neutral-50'>
-                {users?.length || 0}
+                {data?.stats.users ?? 0}
               </div>
             </CardContent>
           </Card>
@@ -182,8 +145,7 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className='text-3xl font-bold text-neutral-50'>
-                {users?.reduce((acc, user) => acc + user.thumbnailCount, 0) ||
-                  0}
+                {data?.stats.thumbnails ?? 0}
               </div>
             </CardContent>
           </Card>
@@ -197,7 +159,7 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className='text-3xl font-bold text-neutral-50'>
-                {users?.reduce((acc, user) => acc + user.credits, 0) || 0}
+                {data?.stats.credits ?? 0}
               </div>
             </CardContent>
           </Card>
@@ -251,7 +213,7 @@ export default function AdminDashboard() {
         <Card className='bg-transparent border-neutral-800 border-dotted border-2'>
           <CardHeader>
             <CardTitle className='text-neutral-50'>
-              Users ({filteredAndSortedUsers.length})
+              Users ({data?.total ?? 0})
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -307,7 +269,7 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredAndSortedUsers.map((user) => (
+                  {users.map((user) => (
                     <tr
                       key={user.id}
                       className='border-b border-neutral-800 hover:bg-neutral-800/50 transition-colors cursor-pointer'
@@ -378,7 +340,7 @@ export default function AdminDashboard() {
                 </tbody>
               </table>
 
-              {filteredAndSortedUsers.length === 0 && (
+              {users.length === 0 && (
                 <div className='text-center py-12 text-neutral-400'>
                   {searchQuery || roleFilter !== 'all' || planFilter !== 'all'
                     ? 'No users found matching your filters'
@@ -386,6 +348,32 @@ export default function AdminDashboard() {
                 </div>
               )}
             </div>
+
+            {pageCount > 1 && (
+              <div className='mt-4 flex items-center justify-end gap-3 text-sm text-neutral-400'>
+                <span>
+                  Page {page} of {pageCount}
+                </span>
+                <Button
+                  variant='outline'
+                  size='sm'
+                  disabled={page <= 1 || isFetching}
+                  onClick={() => setPage((p) => p - 1)}
+                  className='border-neutral-700 hover:bg-neutral-800'
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant='outline'
+                  size='sm'
+                  disabled={page >= pageCount || isFetching}
+                  onClick={() => setPage((p) => p + 1)}
+                  className='border-neutral-700 hover:bg-neutral-800'
+                >
+                  Next
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

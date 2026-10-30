@@ -97,9 +97,6 @@ model Order {
   // Credits this purchase grants, resolved from the server-side plan
   // catalogue at creation time so the amount can never be set by a client.
   credits           Int         @default(0)
-  // Superseded by the PURCHASE ledger row and no longer read. Kept for one
-  // release so code still running mid-deploy doesn't break; drop afterwards.
-  credits_granted   Boolean     @default(false)
   currency          String      @default("INR")
   razorpayOrderId   String?     @unique
   razorpayPaymentId String?

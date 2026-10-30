@@ -197,7 +197,7 @@ export default function UserDetailPage() {
           <CardHeader>
             <CardTitle className='text-neutral-50 flex items-center gap-2'>
               <ImageIcon className='w-5 h-5' />
-              Thumbnails ({user.thumbnails.length})
+              Thumbnails ({user.thumbnailCount})
             </CardTitle>
           </CardHeader>
           <CardContent>
