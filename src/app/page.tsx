@@ -1,7 +1,7 @@
 import { Footer } from '@/components/ui/Footer';
 import { MotionRoot } from '@/components/motion/MotionRoot';
 import { Hero } from '@/components/landing/Hero';
-import { WhySection } from '@/components/landing/WhySection';
+import { YouTubeSection } from '@/components/landing/YouTubeSection';
 import { Workflows } from '@/components/landing/Workflows';
 import { SamplesGallery } from '@/components/landing/SamplesGallery';
 import { HowItWorks } from '@/components/landing/HowItWorks';
@@ -14,7 +14,7 @@ const Home = () => (
   <MotionRoot>
     <main className='overflow-x-clip'>
       <Hero />
-      <WhySection />
+      <YouTubeSection />
       <Workflows />
       <SamplesGallery />
       <HowItWorks />
