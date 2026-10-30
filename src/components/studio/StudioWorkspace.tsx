@@ -14,17 +14,15 @@ import toast from 'react-hot-toast';
 import {
   Command as CommandIcon,
   FileText,
+  History as HistoryIcon,
   ImagePlus,
   Type,
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Kbd } from '../ui/kbd';
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from '../ui/resizable';
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from '../ui/sheet';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import type { ImageData } from '../shared/imageUtils';
 import type {
   GenerationDetail,
@@ -37,8 +35,8 @@ import { CommandPalette } from './CommandPalette';
 import { CompareSet, previewable } from './CompareSet';
 import { HistoryRail } from './HistoryRail';
 import { STUDIO_MODES, modeById, type StudioMode } from './modes';
-import { submitStudioForm } from './StudioLayout';
-import { useMediaQuery, useModKey } from './useMediaQuery';
+import { submitStudioForm } from './Composer';
+import { useModKey } from './useModKey';
 
 // The feed mock is only needed once someone opens it.
 const FeedPreview = dynamic(
@@ -80,7 +78,7 @@ const ModeSwitcher = ({ mode }: { mode: StudioMode }) => {
         }
       }}
       aria-label='Studio mode'
-      className='rounded-xl bg-secondary p-1'
+      className='h-9 rounded-lg bg-secondary p-0.5'
     >
       {STUDIO_MODES.map((m) => {
         const Icon = MODE_ICONS[m.id];
@@ -88,10 +86,10 @@ const ModeSwitcher = ({ mode }: { mode: StudioMode }) => {
           <ToggleGroupItem
             key={m.id}
             value={m.id}
-            className='h-8 gap-1.5 rounded-lg px-3 text-sm text-muted-foreground data-[state=on]:bg-card data-[state=on]:text-foreground data-[state=on]:shadow-xs'
+            className='h-8 gap-1.5 rounded-md px-3 text-[13px] font-medium text-muted-foreground data-[state=on]:bg-card data-[state=on]:text-foreground data-[state=on]:shadow-xs'
           >
             <Icon className='size-4' />
-            {m.label}
+            <span className='max-sm:sr-only'>{m.label}</span>
           </ToggleGroupItem>
         );
       })}
@@ -101,18 +99,17 @@ const ModeSwitcher = ({ mode }: { mode: StudioMode }) => {
 
 export interface StudioWorkspaceProps {
   mode: StudioMode;
-  /** One line under the mode switcher saying what this mode makes. */
-  description: string;
-  /** The workflow's <ControlsPanel> form. */
-  controls: ReactNode;
+  /** The workflow's <Composer> form. */
+  composer: ReactNode;
   status: CanvasProps['status'];
   images: ImageData[];
   ratios: string[];
   outputFormat: string;
-  empty: CanvasProps['empty'];
   isGenerating: boolean;
   /** Whether the form can be submitted right now (palette's Generate). */
   canGenerate: boolean;
+  suggestions?: string[];
+  onSuggest?: (text: string) => void;
   onVary?: () => void;
   onEdit?: (image: ImageData) => void;
   editLabel?: string;
@@ -126,21 +123,21 @@ export interface StudioWorkspaceProps {
 }
 
 /**
- * The studio frame shared by all three workflows: mode switcher and compare
- * set on top; Controls | Canvas | History as resizable panes on desktop,
- * stacked on smaller screens.
+ * The studio frame shared by all three workflows. Canvas-first: a slim top
+ * bar (mode on the left, History, Compare and Commands on the right), one
+ * prompt bar, and the canvas filling the rest. History lives in a sheet.
  */
 export const StudioWorkspace = ({
   mode,
-  description,
-  controls,
+  composer,
   status,
   images,
   ratios,
   outputFormat,
-  empty,
   isGenerating,
   canGenerate,
+  suggestions,
+  onSuggest,
   onVary,
   onEdit,
   editLabel,
@@ -152,7 +149,6 @@ export const StudioWorkspace = ({
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
-  const isDesktop = useMediaQuery('(min-width: 1024px)');
   const mod = useModKey();
 
   const shortlist = useStudioStore((s) => s.shortlist);
@@ -161,6 +157,8 @@ export const StudioWorkspace = ({
   const setPreviewOpen = useStudioStore((s) => s.setPreviewOpen);
   const paletteOpen = useStudioStore((s) => s.paletteOpen);
   const setPaletteOpen = useStudioStore((s) => s.setPaletteOpen);
+  const historyOpen = useStudioStore((s) => s.historyOpen);
+  const setHistoryOpen = useStudioStore((s) => s.setHistoryOpen);
 
   const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
   const [refining, setRefining] = useState<string | null>(null);
@@ -205,17 +203,23 @@ export const StudioWorkspace = ({
     }
   }, [status, refining, queryClient]);
 
-  // ⌘K / Ctrl+K toggles the palette from anywhere in the studio.
+  // ⌘K toggles the palette; ⌘H (or ⇧⌘H, since macOS takes ⌘H to hide the
+  // browser) toggles history.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() === 'k' && (e.metaKey || e.ctrlKey)) {
+      if (!(e.metaKey || e.ctrlKey)) return;
+      const key = e.key.toLowerCase();
+      if (key === 'k') {
         e.preventDefault();
         setPaletteOpen(!useStudioStore.getState().paletteOpen);
+      } else if (key === 'h') {
+        e.preventDefault();
+        setHistoryOpen(!useStudioStore.getState().historyOpen);
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [setPaletteOpen]);
+  }, [setPaletteOpen, setHistoryOpen]);
 
   const loadGeneration = useCallback(
     (item: GenerationItem) => {
@@ -291,98 +295,97 @@ export const StudioWorkspace = ({
     },
   };
 
-  const canvas = (
-    <Canvas
-      status={status}
-      images={images}
-      selectedUrl={selectedUrl}
-      onSelect={setSelectedUrl}
-      ratios={ratios}
-      outputFormat={outputFormat}
-      empty={empty}
-      isGenerating={isGenerating}
-      refining={refining}
-      onVary={onVary}
-      onEdit={onEdit}
-      editLabel={editLabel}
-      refine={refineWithFeedback}
-      shortlist={shortlist}
-      onTogglePin={handleTogglePin}
-      loadedFrom={
-        loadedFrom && { label: loadedFrom.label, onClear: clearLoaded }
-      }
-    />
-  );
-
-  const history = (
-    <HistoryRail
-      workflow={modeById(mode).workflow}
-      activeId={loadedFrom?.id ?? null}
-      onSelect={loadGeneration}
-    />
-  );
-
   return (
-    <div className='flex flex-col lg:h-[calc(100svh-4rem)]'>
-      <header className='mb-4 flex flex-wrap items-center gap-x-4 gap-y-3'>
-        <div className='mr-auto flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2'>
-          <h1 className='font-serif text-3xl tracking-tight'>Studio</h1>
-          <ModeSwitcher mode={mode} />
-          <p className='basis-full text-sm text-muted-foreground xl:basis-auto'>
-            {description}
-          </p>
-        </div>
-        <div className='flex items-center gap-2'>
+    <div className='flex flex-col md:h-[calc(100svh-3rem)]'>
+      {/* Top bar */}
+      <div className='flex h-14 shrink-0 items-center justify-between gap-3 px-4 md:px-6'>
+        <ModeSwitcher mode={mode} />
+        <div className='flex items-center gap-1'>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type='button'
+                variant='ghost'
+                size='icon'
+                onClick={() => setHistoryOpen(true)}
+                aria-label='History'
+                className='size-9'
+              >
+                <HistoryIcon className='size-4' />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              History <Kbd className='ml-1'>⇧{mod}H</Kbd>
+            </TooltipContent>
+          </Tooltip>
           <CompareSet onPreview={() => setPreviewOpen(true)} />
-          <Button
-            type='button'
-            variant='outline'
-            size='sm'
-            onClick={() => setPaletteOpen(true)}
-            aria-label='Open command palette'
-          >
-            <CommandIcon className='size-4' />
-            <span className='hidden sm:inline'>Commands</span>
-            <Kbd className='hidden sm:inline-flex'>{mod} K</Kbd>
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type='button'
+                variant='ghost'
+                size='icon'
+                onClick={() => setPaletteOpen(true)}
+                aria-label='Commands'
+                className='size-9'
+              >
+                <CommandIcon className='size-4' />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              Commands <Kbd className='ml-1'>{mod}K</Kbd>
+            </TooltipContent>
+          </Tooltip>
         </div>
-      </header>
+      </div>
 
-      {isDesktop ? (
-        <div className='min-h-0 flex-1 overflow-hidden rounded-2xl border bg-card'>
-          <ResizablePanelGroup orientation='horizontal'>
-            <ResizablePanel
-              id='controls'
-              defaultSize='30'
-              minSize={320}
-              maxSize='42'
-            >
-              {controls}
-            </ResizablePanel>
-            <ResizableHandle withHandle />
-            <ResizablePanel id='canvas' minSize='36'>
-              {canvas}
-            </ResizablePanel>
-            <ResizableHandle withHandle />
-            <ResizablePanel
-              id='history'
-              defaultSize='18'
-              minSize={200}
-              maxSize='28'
-            >
-              {history}
-            </ResizablePanel>
-          </ResizablePanelGroup>
+      {/* Prompt bar, then the canvas filling what is left. */}
+      <div className='min-h-0 flex-1 overflow-y-auto'>
+        <div className='mx-auto flex min-h-full w-full max-w-[1240px] flex-col gap-6 px-4 pb-28 pt-2 md:px-8 md:pb-8'>
+          <div className='mx-auto w-full max-w-[880px]'>{composer}</div>
+          <Canvas
+            status={status}
+            images={images}
+            selectedUrl={selectedUrl}
+            onSelect={setSelectedUrl}
+            ratios={ratios}
+            outputFormat={outputFormat}
+            suggestions={suggestions}
+            onSuggest={onSuggest}
+            isGenerating={isGenerating}
+            refining={refining}
+            onVary={onVary}
+            onEdit={onEdit}
+            editLabel={editLabel}
+            refine={refineWithFeedback}
+            shortlist={shortlist}
+            onTogglePin={handleTogglePin}
+            onPreview={() => setPreviewOpen(true)}
+            previewDisabledReason={previewDisabledReason}
+            loadedFrom={
+              loadedFrom && { label: loadedFrom.label, onClear: clearLoaded }
+            }
+          />
         </div>
-      ) : (
-        <div className='flex flex-col gap-4'>
-          <div className='overflow-clip rounded-2xl border'>{controls}</div>
-          <div className='overflow-hidden rounded-2xl border'>{canvas}</div>
-          <div className='h-[22rem] overflow-hidden rounded-2xl border bg-card'>
-            {history}
-          </div>
-        </div>
-      )}
+      </div>
+
+      <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
+        <SheetContent side='right' className='w-full gap-0 p-0 sm:max-w-sm'>
+          <SheetTitle className='sr-only'>History</SheetTitle>
+          <SheetDescription className='sr-only'>
+            Your recent generations. Pick one to open it on the canvas.
+          </SheetDescription>
+          <HistoryRail
+            workflow={modeById(mode).workflow}
+            activeId={loadedFrom?.id ?? null}
+            onSelect={(item) => {
+              loadGeneration(item);
+              setHistoryOpen(false);
+            }}
+            headerClassName='pr-12'
+          />
+        </SheetContent>
+      </Sheet>
 
       <CommandPalette
         open={paletteOpen}
@@ -395,6 +398,7 @@ export const StudioWorkspace = ({
         onVary={onVary}
         onTogglePin={() => active && handleTogglePin(active)}
         onOpenPreview={() => setPreviewOpen(true)}
+        onOpenHistory={() => setHistoryOpen(true)}
         previewDisabledReason={previewDisabledReason}
       />
 

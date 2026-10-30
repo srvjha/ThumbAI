@@ -5,6 +5,7 @@ import {
   Eye,
   FileDown,
   FileText,
+  History,
   ImagePlus,
   LayoutGrid,
   Pin,
@@ -44,6 +45,7 @@ export const CommandPalette = ({
   onVary,
   onTogglePin,
   onOpenPreview,
+  onOpenHistory,
   previewDisabledReason,
 }: {
   open: boolean;
@@ -56,6 +58,7 @@ export const CommandPalette = ({
   onVary?: () => void;
   onTogglePin: () => void;
   onOpenPreview: () => void;
+  onOpenHistory: () => void;
   previewDisabledReason: string | null;
 }) => {
   const router = useRouter();
@@ -146,6 +149,10 @@ export const CommandPalette = ({
               </CommandItem>
             );
           })}
+          <CommandItem onSelect={run(onOpenHistory)}>
+            <History />
+            Open history
+          </CommandItem>
           <CommandItem onSelect={run(() => router.push('/dashboard'))}>
             <LayoutGrid />
             Open library

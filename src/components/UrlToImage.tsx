@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { Globe } from 'lucide-react';
+import { Link2 } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
@@ -12,16 +12,16 @@ import { ImageData } from './shared/imageUtils';
 import { MODEL } from '@prisma/client';
 import { waitForGeneration } from '@/lib/waitForGeneration';
 import {
-  ControlsPanel,
-  ControlSection,
-  SegmentedControl,
-  fieldClass,
-} from './studio/StudioLayout';
-import { TierPicker } from './studio/TierPicker';
+  AdvancedPopover,
+  Composer,
+  CountSelect,
+  ModelSelect,
+  StylePopover,
+  chipClass,
+  useStylePopover,
+} from './studio/Composer';
 import { RatioGlyph } from './studio/AspectRatioPicker';
-import { AdvancedOptions } from './studio/AdvancedOptions';
-import { GenerateBar } from './studio/GenerateBar';
-import { IMAGE_COUNT_OPTIONS, OUTPUT_FORMAT_OPTIONS } from './studio/options';
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { StudioWorkspace } from './studio/StudioWorkspace';
 import type { GenerationDetail } from './dashboard/types';
 import {
@@ -42,6 +42,7 @@ type FormValues = {
 };
 
 export const UrlToImageGenerator = () => {
+  const style = useStylePopover();
   const [generatedImages, setGeneratedImages] = useState<ImageData[]>([]);
   const [status, setStatus] = useState<
     'idle' | 'generating' | 'in-progress' | 'completed'
@@ -203,21 +204,90 @@ export const UrlToImageGenerator = () => {
     [setValue],
   );
 
-  const controls = (
-    <ControlsPanel
-      onSubmit={handleSubmit(onSubmit)}
-      footer={
-        <GenerateBar
-          cost={creditCost}
-          costNote={`${numImages || 1} × ${perImage} cr`}
-          balance={userInfo?.credits}
-          isGenerating={isGenerating}
-          disabled={
-            !url.trim() || isGenerating || (aspectRatios?.length || 0) === 0
-          }
-          label={(numImages || 1) > 1 ? 'Design covers' : 'Design cover'}
-          onReset={handleReset}
-        />
+  const choices = watch('choices');
+
+  const composer = (
+    <Composer
+      onSubmit={handleSubmit(onSubmit, style.onInvalid)}
+      error={errors.url?.message}
+      cost={creditCost}
+      costNote={`${numImages || 1} cover${(numImages || 1) > 1 ? 's' : ''} × ${perImage} cr`}
+      balance={userInfo?.credits}
+      isGenerating={isGenerating}
+      disabled={
+        !url.trim() || isGenerating || (aspectRatios?.length || 0) === 0
+      }
+      label='Design cover'
+      controls={
+        <>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span tabIndex={0} className={`${chipClass()} cursor-default`}>
+                <RatioGlyph ratio='16:9' />
+                <span className='tabular-nums'>16:9</span>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              Covers are 16:9: a blog header and a social card
+            </TooltipContent>
+          </Tooltip>
+          <Controller
+            name='tier'
+            control={control}
+            render={({ field }) => (
+              <ModelSelect
+                models={TEXT_TO_IMAGE_MODELS}
+                value={field.value}
+                onChange={field.onChange}
+              />
+            )}
+          />
+          <Controller
+            name='numImages'
+            control={control}
+            rules={{
+              required: 'Number of images is required',
+              min: { value: 1, message: 'Must generate at least 1 image' },
+              max: {
+                value: 4,
+                message: 'Cannot generate more than 4 images',
+              },
+            }}
+            render={({ field }) => (
+              <CountSelect
+                value={field.value}
+                onChange={field.onChange}
+                noun='cover'
+              />
+            )}
+          />
+          <StylePopover
+            open={style.open}
+            onOpenChange={style.setOpen}
+            answered={!!choices}
+            invalid={!!errors.choices || !!errors.questionnaire}
+          >
+            <FormQuestionnaire
+              control={control}
+              choicesFieldName='choices'
+              questionnaireFieldName='questionnaire'
+              questionnaireType='blog'
+              errors={errors}
+            />
+          </StylePopover>
+          <Controller
+            name='outputFormat'
+            control={control}
+            rules={{ required: 'Output format is required' }}
+            render={({ field }) => (
+              <AdvancedPopover
+                format={field.value}
+                onFormatChange={field.onChange}
+                onReset={handleReset}
+              />
+            )}
+          />
+        </>
       }
     >
       <Controller
@@ -231,115 +301,35 @@ export const UrlToImageGenerator = () => {
           },
         }}
         render={({ field }) => (
-          <ControlSection
-            label='Blog post URL'
-            htmlFor='blog-url'
-            hint='We read the article, find its core idea and design a cover poster around it.'
-            error={errors.url?.message}
-          >
-            <div className='relative'>
-              <Globe className='pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground' />
-              <input
-                {...field}
-                id='blog-url'
-                inputMode='url'
-                autoComplete='url'
-                placeholder='https://yourblog.com/post-title'
-                className={`${fieldClass(!!errors.url)} pl-10`}
-              />
-            </div>
-          </ControlSection>
-        )}
-      />
-
-      <FormQuestionnaire
-        control={control}
-        choicesFieldName='choices'
-        questionnaireFieldName='questionnaire'
-        questionnaireType='blog'
-        errors={errors}
-      />
-
-      {/* Model tier */}
-      <Controller
-        name='tier'
-        control={control}
-        render={({ field }) => (
-          <ControlSection label='Model'>
-            <TierPicker
-              models={TEXT_TO_IMAGE_MODELS}
-              value={field.value}
-              onChange={field.onChange}
+          <div className='flex items-center gap-3'>
+            <Link2
+              className='size-5 shrink-0 text-muted-foreground'
+              aria-hidden
             />
-          </ControlSection>
-        )}
-      />
-
-      <ControlSection label='Format'>
-        <div className='flex items-center gap-3 rounded-xl border bg-background p-3'>
-          <span className='flex size-6 items-center justify-center'>
-            <RatioGlyph ratio='16:9' active />
-          </span>
-          <span>
-            <span className='block text-sm font-medium'>Editorial cover</span>
-            <span className='block font-mono text-[11px] tabular-nums text-muted-foreground'>
-              16:9 · works as a blog header and social card
-            </span>
-          </span>
-        </div>
-      </ControlSection>
-
-      <Controller
-        name='numImages'
-        control={control}
-        rules={{
-          required: 'Number of images is required',
-          min: { value: 1, message: 'Must generate at least 1 image' },
-          max: {
-            value: 4,
-            message: 'Cannot generate more than 4 images',
-          },
-        }}
-        render={({ field }) => (
-          <ControlSection label='Variations' error={errors.numImages?.message}>
-            <SegmentedControl
-              ariaLabel='Variations'
-              options={IMAGE_COUNT_OPTIONS}
-              value={field.value}
-              onChange={field.onChange}
+            <label htmlFor='composer-input' className='sr-only'>
+              Blog post URL
+            </label>
+            <input
+              {...field}
+              id='composer-input'
+              type='text'
+              inputMode='url'
+              autoComplete='url'
+              spellCheck={false}
+              aria-invalid={!!errors.url || undefined}
+              placeholder='Paste a blog post URL to get an editorial cover poster for it…'
+              className='h-8 min-w-0 flex-1 bg-transparent text-base text-foreground placeholder:text-muted-foreground/70 focus:outline-none'
             />
-          </ControlSection>
+          </div>
         )}
       />
-
-      <AdvancedOptions summary={(watch('outputFormat') ?? '').toUpperCase()}>
-        <Controller
-          name='outputFormat'
-          control={control}
-          rules={{ required: 'Output format is required' }}
-          render={({ field }) => (
-            <ControlSection
-              label='Output format'
-              error={errors.outputFormat?.message}
-            >
-              <SegmentedControl
-                ariaLabel='Output format'
-                options={OUTPUT_FORMAT_OPTIONS}
-                value={field.value}
-                onChange={field.onChange}
-              />
-            </ControlSection>
-          )}
-        />
-      </AdvancedOptions>
-    </ControlsPanel>
+    </Composer>
   );
 
   return (
     <StudioWorkspace
       mode='blog'
-      description='A cover poster for your blog post. Paste the URL and get an editorial cover back.'
-      controls={controls}
+      composer={composer}
       status={status}
       images={displayImages}
       ratios={['16:9']}
@@ -352,16 +342,6 @@ export const UrlToImageGenerator = () => {
       onEdit={handleEdit}
       onLoadImages={handleLoadImages}
       onRestoreInputs={handleRestoreInputs}
-      empty={{
-        title: 'Your blog cover appears here',
-        description:
-          'Paste a link to a post. ThumbAI reads the article, pulls out its core idea and designs an editorial cover poster for it.',
-        steps: [
-          'Paste the post URL',
-          'We read the article',
-          'Get an editorial cover',
-        ],
-      }}
     />
   );
 };

@@ -96,10 +96,12 @@ export const HistoryRail = ({
   workflow,
   activeId,
   onSelect,
+  headerClassName,
 }: {
   workflow: Workflow;
   activeId: string | null;
   onSelect: (item: GenerationItem) => void;
+  headerClassName?: string;
 }) => {
   const [scope, setScope] = useState<'mode' | 'all'>('mode');
   const query = useGenerations(scope === 'mode' ? { workflow } : {});
@@ -107,7 +109,12 @@ export const HistoryRail = ({
 
   return (
     <div className='flex h-full min-h-0 flex-col'>
-      <div className='flex items-center justify-between gap-2 border-b px-3 py-2.5'>
+      <div
+        className={cn(
+          'flex items-center justify-between gap-2 border-b px-4 py-3',
+          headerClassName,
+        )}
+      >
         <h2 className='text-sm font-medium'>History</h2>
         <ToggleGroup
           type='single'
@@ -132,7 +139,7 @@ export const HistoryRail = ({
         </ToggleGroup>
       </div>
 
-      <div className='min-h-0 flex-1 overflow-y-auto p-1.5'>
+      <div className='min-h-0 flex-1 overflow-y-auto p-2'>
         {query.isLoading ? (
           <ul className='space-y-1' aria-label='Loading history'>
             {Array.from({ length: 6 }, (_, i) => (
@@ -189,7 +196,7 @@ export const HistoryRail = ({
         )}
       </div>
 
-      <div className='border-t px-3 py-2'>
+      <div className='border-t px-4 py-3'>
         <Link
           href='/dashboard'
           className='text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline'

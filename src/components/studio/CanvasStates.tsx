@@ -34,14 +34,17 @@ export const Stage = ({
 export const CanvasFrames = ({
   ratios,
   children,
+  maxWidth = 720,
 }: {
   ratios: string[];
   children: (ratio: string) => ReactNode;
+  /** Cap on the row's total width, in px. */
+  maxWidth?: number;
 }) => {
   const list = ratios.length > 0 ? ratios : ['16:9'];
   const sum = list.reduce((total, r) => total + ratioValue(r), 0);
   const gap = list.length > 1 ? '1rem' : '0px';
-  const height = `min(100cqh, calc((100cqw - ${gap}) / ${sum.toFixed(4)}))`;
+  const height = `min(100cqh, calc((min(100cqw, ${maxWidth}px) - ${gap}) / ${sum.toFixed(4)}))`;
 
   return (
     <div className='flex items-center gap-4'>
@@ -70,42 +73,14 @@ const ratioDetail = (ratio: string) =>
 export const EmptyFrames = ({ ratios }: { ratios: string[] }) => (
   <CanvasFrames ratios={ratios}>
     {(ratio) => (
-      <div className='absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-foreground/15 bg-card/60'>
-        <RatioGlyph ratio={ratio} active />
-        <span className='text-xs tabular-nums text-muted-foreground'>
+      <div className='absolute inset-0 flex items-end justify-start rounded-xl border border-dashed border-foreground/15 bg-card/50 p-3'>
+        <span className='flex items-center gap-1.5 text-xs tabular-nums text-muted-foreground'>
+          <RatioGlyph ratio={ratio} />
           {ratioDetail(ratio)}
         </span>
       </div>
     )}
   </CanvasFrames>
-);
-
-/** Copy under the empty frames: what will appear and how to get there. */
-export const CanvasEmptyCopy = ({
-  title,
-  description,
-  steps,
-}: {
-  title: string;
-  description: string;
-  steps?: string[];
-}) => (
-  <div className='mx-auto max-w-lg text-center'>
-    <h2 className='font-serif text-2xl tracking-tight'>{title}</h2>
-    <p className='mt-1.5 text-sm text-muted-foreground'>{description}</p>
-    {steps && steps.length > 0 && (
-      <ol className='mt-4 flex flex-wrap justify-center gap-x-5 gap-y-1 text-xs text-muted-foreground'>
-        {steps.map((step, i) => (
-          <li key={step} className='flex items-center gap-1.5'>
-            <span className='flex size-4 items-center justify-center rounded-full bg-accent text-[10px] font-medium text-accent-foreground tabular-nums'>
-              {i + 1}
-            </span>
-            {step}
-          </li>
-        ))}
-      </ol>
-    )}
-  </div>
 );
 
 /** Shaped skeleton in the ratio being rendered. */

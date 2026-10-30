@@ -61,7 +61,7 @@ export const RefineDock = ({
   };
 
   return (
-    <div className='border-t bg-card px-4 py-3'>
+    <div className='rounded-2xl border bg-card px-4 py-3'>
       <motion.div
         initial={false}
         animate={{ height: recent.length > 0 ? 'auto' : 0 }}

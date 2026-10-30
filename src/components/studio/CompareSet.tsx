@@ -3,6 +3,7 @@
 import { Eye, Pin, X } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import {
   SHORTLIST_LIMIT,
   useStudioStore,
@@ -26,31 +27,25 @@ export const CompareSet = ({ onPreview }: { onPreview: () => void }) => {
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button type='button' variant='outline' size='sm' className='gap-2'>
-          {shortlist.length > 0 ? (
-            <span className='flex -space-x-2' aria-hidden>
-              {shortlist.map((p) => (
-                <img
-                  key={p.url}
-                  src={p.url}
-                  alt=''
-                  className={cn(
-                    'h-5 rounded-[3px] object-cover ring-2 ring-card',
-                    p.aspectRatio === '9:16' ? 'w-3' : 'w-9',
-                  )}
-                />
-              ))}
-            </span>
-          ) : (
-            <Pin className='size-4' />
-          )}
-          Compare
-          <span className='tabular-nums text-muted-foreground'>
-            {shortlist.length}/{SHORTLIST_LIMIT}
-          </span>
-        </Button>
-      </PopoverTrigger>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <PopoverTrigger asChild>
+            <Button
+              type='button'
+              variant='ghost'
+              size='sm'
+              aria-label={`Compare set, ${shortlist.length} of ${SHORTLIST_LIMIT}`}
+              className='h-9 gap-1.5 px-2.5 text-[13px]'
+            >
+              <Pin className='size-4' />
+              <span className='tabular-nums'>
+                {shortlist.length}/{SHORTLIST_LIMIT}
+              </span>
+            </Button>
+          </PopoverTrigger>
+        </TooltipTrigger>
+        <TooltipContent>Compare set</TooltipContent>
+      </Tooltip>
       <PopoverContent align='end' className='w-80 p-3'>
         <div className='mb-2 flex items-baseline justify-between'>
           <p className='text-sm font-medium'>Compare set</p>

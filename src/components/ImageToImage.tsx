@@ -11,7 +11,7 @@ import {
 import { useSearchParams } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import { Button } from './ui/button';
-import { Link2, Upload, X } from 'lucide-react';
+import { Link2, Plus, X } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useChat } from '@ai-sdk/react';
@@ -23,16 +23,19 @@ import { MODEL } from '@prisma/client';
 import { waitForGeneration } from '@/lib/waitForGeneration';
 import { EDIT_MODEL, isAspectRatio, isOutputFormat } from '@/config/models';
 import {
-  ControlsPanel,
-  ControlSection,
-  SegmentedControl,
-  fieldClass,
-} from './studio/StudioLayout';
-import { FixedModelNote } from './studio/TierPicker';
-import { AspectRatioPicker } from './studio/AspectRatioPicker';
-import { AdvancedOptions } from './studio/AdvancedOptions';
-import { GenerateBar } from './studio/GenerateBar';
-import { IMAGE_COUNT_OPTIONS, OUTPUT_FORMAT_OPTIONS } from './studio/options';
+  AdvancedPopover,
+  AspectToggle,
+  AutoTextarea,
+  Composer,
+  CountSelect,
+  FixedModelChip,
+  OverlayTextPopover,
+  StylePopover,
+  focusComposer,
+  useStylePopover,
+} from './studio/Composer';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { StudioWorkspace } from './studio/StudioWorkspace';
 import { StylePresetPicker } from './studio/StylePresetPicker';
 import { composePrompt } from './studio/presets';
@@ -51,7 +54,14 @@ type FormValues = {
   stylePreset: string;
 };
 
+const IMAGE_SUGGESTIONS = [
+  'Put me on the right looking shocked, a laptop on fire on the left',
+  'Me holding the product up to camera on a clean teal backdrop',
+  'Me on a mountain ridge at sunrise, arms raised, huge headline',
+];
+
 export const ImageToImage = () => {
+  const style = useStylePopover();
   const {
     control,
     handleSubmit,
@@ -484,118 +494,201 @@ export const ImageToImage = () => {
     }
   };
 
-  const controls = (
-    <ControlsPanel
-      onSubmit={handleSubmit(onSubmit)}
-      footer={
-        <GenerateBar
-          cost={creditCost}
-          costNote={`${numImages || 1} × ${Math.max(ratioCount, 1)} format${
-            ratioCount > 1 ? 's' : ''
-          } × ${EDIT_MODEL.creditsPerImage} cr`}
-          balance={userInfo?.credits}
-          isGenerating={isGenerating}
-          busyLabel='Processing…'
-          disabled={
-            !prompt.trim() ||
-            isGenerating ||
-            uploadedFiles.length === 0 ||
-            ratioCount === 0
-          }
-          label={
-            ratioCount > 1 ? `Composite ${ratioCount} formats` : 'Composite'
-          }
-          onReset={handleReset}
-        />
+  const choices = watch('choices');
+
+  const composer = (
+    <Composer
+      onSubmit={handleSubmit(onSubmit, style.onInvalid)}
+      onDropFiles={(e) => handleDrop(e as unknown as DragEvent<HTMLDivElement>)}
+      error={errors.prompt?.message}
+      cost={creditCost}
+      costNote={`${numImages || 1} image${(numImages || 1) > 1 ? 's' : ''} × ${Math.max(ratioCount, 1)} format${
+        ratioCount > 1 ? 's' : ''
+      } × ${EDIT_MODEL.creditsPerImage} cr`}
+      balance={userInfo?.credits}
+      isGenerating={isGenerating}
+      busyLabel='Processing…'
+      disabled={
+        !prompt.trim() ||
+        isGenerating ||
+        uploadedFiles.length === 0 ||
+        ratioCount === 0
+      }
+      label={ratioCount > 1 ? `Composite ${ratioCount}` : 'Composite'}
+      controls={
+        <>
+          <Controller
+            name='aspectRatios'
+            control={control}
+            render={({ field }) => (
+              <AspectToggle value={field.value} onChange={field.onChange} />
+            )}
+          />
+          <FixedModelChip model={EDIT_MODEL} />
+          <Controller
+            name='numImages'
+            control={control}
+            rules={{
+              required: 'Number of images is required',
+              min: { value: 1, message: 'Must generate at least 1 image' },
+              max: {
+                value: 4,
+                message: 'Cannot generate more than 4 images',
+              },
+            }}
+            render={({ field }) => (
+              <CountSelect value={field.value} onChange={field.onChange} />
+            )}
+          />
+          <Controller
+            name='stylePreset'
+            control={control}
+            render={({ field }) => (
+              <StylePresetPicker
+                value={field.value}
+                onChange={field.onChange}
+              />
+            )}
+          />
+          <Controller
+            name='overlayText'
+            control={control}
+            render={({ field }) => (
+              <OverlayTextPopover
+                value={field.value}
+                onChange={field.onChange}
+              />
+            )}
+          />
+          <StylePopover
+            open={style.open}
+            onOpenChange={style.setOpen}
+            answered={!!choices}
+            invalid={!!errors.choices || !!errors.questionnaire}
+          >
+            <FormQuestionnaire
+              control={control}
+              choicesFieldName='choices'
+              questionnaireFieldName='questionnaire'
+              errors={errors}
+            />
+          </StylePopover>
+          <Controller
+            name='outputFormat'
+            control={control}
+            rules={{ required: 'Output format is required' }}
+            render={({ field }) => (
+              <AdvancedPopover
+                format={field.value}
+                onFormatChange={field.onChange}
+                onReset={handleReset}
+              />
+            )}
+          />
+        </>
       }
     >
-      {/* Reference images */}
-      <ControlSection
-        label='Your images'
-        htmlFor='i2i-file-input'
-        aside={
-          uploadedFiles.length > 0 ? (
-            <span className='font-mono tabular-nums'>
-              {uploadedFiles.length} added
-            </span>
-          ) : undefined
-        }
-        hint='A face, a product, a logo. They are fitted to the format you pick when you generate.'
-      >
-        <div
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          className='rounded-xl border-2 border-dashed border-foreground/15 bg-background transition-colors hover:border-brand'
-        >
-          <input
-            type='file'
-            accept='image/*'
-            multiple
-            onChange={handleFileUpload}
-            className='hidden'
-            id='i2i-file-input'
-          />
-          <label
-            htmlFor='i2i-file-input'
-            className='flex cursor-pointer flex-col items-center gap-1.5 px-4 py-6 text-center'
+      {/* Attachments, like a chat composer. */}
+      <div className='mb-3 flex flex-wrap items-center gap-2'>
+        {localPreviews.map((src, index) => (
+          <div
+            key={`${src}-${index}`}
+            className='group relative size-14 overflow-hidden rounded-lg border bg-secondary'
           >
-            <span className='flex size-9 items-center justify-center rounded-full bg-accent text-brand'>
-              <Upload className='size-4' />
-            </span>
-            <span className='text-sm font-medium'>Drop images or browse</span>
-            <span className='text-xs text-muted-foreground'>
-              PNG, JPG or WEBP · several at once is fine
-            </span>
-          </label>
-        </div>
-
-        {/* Image Previews */}
-        {localPreviews.length > 0 && (
-          <div className='mt-3 grid grid-cols-4 gap-2'>
-            {localPreviews.map((src, index) => (
-              <div
-                key={index}
-                className='group relative aspect-square overflow-hidden rounded-lg border bg-secondary'
-              >
-                <img
-                  src={src}
-                  alt={`Uploaded ${index + 1}`}
-                  className='h-full w-full object-cover'
-                />
+            <img
+              src={src}
+              alt={`Your image ${index + 1}`}
+              width={56}
+              height={56}
+              className='size-full object-cover'
+            />
+            <button
+              type='button'
+              onClick={() => handleRemoveImage(index)}
+              aria-label={`Remove image ${index + 1}`}
+              className='absolute right-0.5 top-0.5 flex size-5 items-center justify-center rounded-full bg-card/95 text-foreground shadow-xs transition-opacity focus:outline-none focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/50 md:opacity-0 md:group-hover:opacity-100'
+            >
+              <X className='size-3' />
+            </button>
+          </div>
+        ))}
+        <input
+          type='file'
+          accept='image/*'
+          multiple
+          onChange={handleFileUpload}
+          className='sr-only'
+          id='i2i-file-input'
+        />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <label
+              htmlFor='i2i-file-input'
+              className='flex size-14 cursor-pointer items-center justify-center rounded-lg border border-dashed border-foreground/20 text-muted-foreground transition-colors hover:border-brand hover:bg-accent hover:text-brand has-[:focus-visible]:ring-2'
+            >
+              <Plus className='size-5' />
+              <span className='sr-only'>Add images</span>
+            </label>
+          </TooltipTrigger>
+          <TooltipContent>
+            Add a face, product or logo. You can also drop files here.
+          </TooltipContent>
+        </Tooltip>
+        <Popover>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <PopoverTrigger asChild>
                 <button
                   type='button'
-                  onClick={() => handleRemoveImage(index)}
-                  aria-label={`Remove image ${index + 1}`}
-                  className='absolute right-1 top-1 rounded-full bg-card/90 p-1 text-foreground shadow-xs transition-opacity hover:bg-card sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100'
+                  aria-label='Add an image from a link'
+                  className='flex size-14 items-center justify-center rounded-lg border border-dashed border-foreground/20 text-muted-foreground transition-colors hover:border-brand hover:bg-accent hover:text-brand focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/50'
                 >
-                  <X className='size-3' />
+                  <Link2 className='size-5' />
                 </button>
-              </div>
-            ))}
-          </div>
+              </PopoverTrigger>
+            </TooltipTrigger>
+            <TooltipContent>Add from a link</TooltipContent>
+          </Tooltip>
+          <PopoverContent align='start' className='w-80 p-3'>
+            <label
+              htmlFor='i2i-url'
+              className='mb-1.5 block text-[13px] font-medium'
+            >
+              Image link
+            </label>
+            <div className='flex gap-2'>
+              <input
+                id='i2i-url'
+                type='url'
+                inputMode='url'
+                value={urlInput}
+                onChange={(e) => setUrlInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddUrl();
+                  }
+                }}
+                placeholder='https://…'
+                className='h-9 min-w-0 flex-1 rounded-lg border border-input bg-background px-3 text-sm focus:border-brand focus:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30'
+              />
+              <Button
+                type='button'
+                onClick={handleAddUrl}
+                variant='outline'
+                className='h-9'
+              >
+                Add
+              </Button>
+            </div>
+          </PopoverContent>
+        </Popover>
+        {localPreviews.length === 0 && (
+          <span className='text-[13px] text-muted-foreground'>
+            Add your face, product or logo
+          </span>
         )}
-
-        {/* URL Input */}
-        <div className='mt-3 flex gap-2'>
-          <input
-            type='url'
-            value={urlInput}
-            onChange={(e) => setUrlInput(e.target.value)}
-            placeholder='Or paste an image URL'
-            aria-label='Image URL'
-            className={`${fieldClass()} py-2`}
-          />
-          <Button
-            type='button'
-            onClick={handleAddUrl}
-            variant='outline'
-            className='h-auto cursor-pointer rounded-xl'
-          >
-            <Link2 className='size-4' />
-            Add
-          </Button>
-        </div>
-      </ControlSection>
+      </div>
 
       <Controller
         name='prompt'
@@ -612,148 +705,37 @@ export const ImageToImage = () => {
           },
         }}
         render={({ field }) => (
-          <ControlSection
-            label='What to make'
-            htmlFor='i2i-prompt'
-            aside={
-              <span
-                className={`font-mono tabular-nums ${
-                  field.value.length > 300 ? 'text-destructive' : ''
+          <>
+            <label htmlFor='composer-input' className='sr-only'>
+              Describe the thumbnail
+            </label>
+            <AutoTextarea
+              {...field}
+              id='composer-input'
+              aria-invalid={!!errors.prompt || undefined}
+              placeholder='Say where your subject goes and what the thumbnail is for…'
+            />
+            {field.value.length > 240 && (
+              <p
+                className={`mt-1 text-right text-xs tabular-nums ${
+                  field.value.length > 300
+                    ? 'text-destructive'
+                    : 'text-muted-foreground'
                 }`}
               >
                 {field.value.length}/300
-              </span>
-            }
-            hint='Say where your subject goes and what the thumbnail is for.'
-            error={errors.prompt?.message}
-          >
-            <textarea
-              {...field}
-              id='i2i-prompt'
-              placeholder='e.g. Put me on the right looking shocked, a burning laptop on the left, headline “I broke prod”'
-              className={`${fieldClass(!!errors.prompt)} h-32 resize-none`}
-            />
-          </ControlSection>
+              </p>
+            )}
+          </>
         )}
       />
-
-      <Controller
-        name='overlayText'
-        control={control}
-        render={({ field }) => (
-          <ControlSection
-            label='Text on thumbnail'
-            htmlFor='i2i-overlay'
-            aside='Optional'
-            hint='Two to four words read best at feed size.'
-          >
-            <input
-              {...field}
-              id='i2i-overlay'
-              autoComplete='off'
-              placeholder='e.g. I BROKE PROD'
-              className={fieldClass()}
-            />
-          </ControlSection>
-        )}
-      />
-
-      <Controller
-        name='stylePreset'
-        control={control}
-        render={({ field }) => (
-          <ControlSection label='Look'>
-            <StylePresetPicker value={field.value} onChange={field.onChange} />
-          </ControlSection>
-        )}
-      />
-
-      {/* Questionnaire with choices */}
-      <FormQuestionnaire
-        control={control}
-        choicesFieldName='choices'
-        questionnaireFieldName='questionnaire'
-        errors={errors}
-      />
-
-      <ControlSection label='Model'>
-        <FixedModelNote model={EDIT_MODEL} />
-      </ControlSection>
-
-      <Controller
-        name='aspectRatios'
-        control={control}
-        render={({ field }) => (
-          <ControlSection
-            label='Format'
-            hint={
-              ratioCount === 0
-                ? 'Pick at least one format.'
-                : 'Pick both to get a thumbnail and a Shorts cover.'
-            }
-          >
-            <AspectRatioPicker value={field.value} onChange={field.onChange} />
-          </ControlSection>
-        )}
-      />
-
-      <Controller
-        name='numImages'
-        control={control}
-        rules={{
-          required: 'Number of images is required',
-          min: {
-            value: 1,
-            message: 'Must generate at least 1 image',
-          },
-          max: {
-            value: 4,
-            message: 'Cannot generate more than 4 images',
-          },
-        }}
-        render={({ field }) => (
-          <ControlSection
-            label='Images per format'
-            error={errors.numImages?.message}
-          >
-            <SegmentedControl
-              ariaLabel='Images per format'
-              options={IMAGE_COUNT_OPTIONS}
-              value={field.value}
-              onChange={field.onChange}
-            />
-          </ControlSection>
-        )}
-      />
-
-      <AdvancedOptions summary={(watch('outputFormat') ?? '').toUpperCase()}>
-        <Controller
-          name='outputFormat'
-          control={control}
-          rules={{ required: 'Output format is required' }}
-          render={({ field }) => (
-            <ControlSection
-              label='Output format'
-              error={errors.outputFormat?.message}
-            >
-              <SegmentedControl
-                ariaLabel='Output format'
-                options={OUTPUT_FORMAT_OPTIONS}
-                value={field.value}
-                onChange={field.onChange}
-              />
-            </ControlSection>
-          )}
-        />
-      </AdvancedOptions>
-    </ControlsPanel>
+    </Composer>
   );
 
   return (
     <StudioWorkspace
       mode='image'
-      description='Bring your face, product or logo. ThumbAI composites it into a finished thumbnail.'
-      controls={controls}
+      composer={composer}
       status={status}
       images={displayImages}
       ratios={aspectRatios}
@@ -765,6 +747,11 @@ export const ImageToImage = () => {
         uploadedFiles.length > 0 &&
         ratioCount > 0
       }
+      suggestions={IMAGE_SUGGESTIONS}
+      onSuggest={(text) => {
+        setValue('prompt', text, { shouldValidate: true });
+        focusComposer();
+      }}
       onVary={lastRequest.current ? handleVary : undefined}
       onEdit={handleUseAsInput}
       editLabel='Use as input'
@@ -777,12 +764,6 @@ export const ImageToImage = () => {
       onLoadImages={handleLoadImages}
       onRestoreInputs={handleRestoreInputs}
       previewTitle={overlayText?.trim() || prompt.trim() || undefined}
-      empty={{
-        title: 'Your composite appears here',
-        description:
-          'Add a photo of yourself or your product, say what the thumbnail is about, and ThumbAI builds the scene around your subject.',
-        steps: ['Add your images', 'Describe the scene', 'Refine it'],
-      }}
     />
   );
 };

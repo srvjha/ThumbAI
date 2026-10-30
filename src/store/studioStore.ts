@@ -18,6 +18,8 @@ interface StudioState {
   setPreviewOpen: (open: boolean) => void;
   paletteOpen: boolean;
   setPaletteOpen: (open: boolean) => void;
+  historyOpen: boolean;
+  setHistoryOpen: (open: boolean) => void;
 }
 
 /**
@@ -49,6 +51,8 @@ export const useStudioStore = create<StudioState>()(
       setPreviewOpen: (previewOpen) => set({ previewOpen }),
       paletteOpen: false,
       setPaletteOpen: (paletteOpen) => set({ paletteOpen }),
+      historyOpen: false,
+      setHistoryOpen: (historyOpen) => set({ historyOpen }),
     }),
     {
       name: 'thumbai-studio',
