@@ -13,7 +13,13 @@ import {
   type TextareaHTMLAttributes,
 } from 'react';
 import Link from 'next/link';
-import { Loader2, SlidersHorizontal, Type, Wand2 } from 'lucide-react';
+import {
+  Loader2,
+  Settings2,
+  SlidersHorizontal,
+  Type,
+  Wand2,
+} from 'lucide-react';
 import { Button } from '../ui/button';
 import { Kbd } from '../ui/kbd';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
@@ -218,7 +224,7 @@ export const Composer = ({
       </div>
 
       <div className='flex flex-col gap-3 px-3 pb-3 sm:px-4 md:flex-row md:items-center'>
-        <div className='-mx-3 flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto px-3 pb-0.5 [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0'>
+        <div className='-mx-3 flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto px-3 pb-0.5 [scrollbar-width:none] md:mx-0 md:px-0 md:pb-0'>
           {controls}
         </div>
         {/* Below md this docks to the bottom of the screen. */}
@@ -501,9 +507,7 @@ export const AdvancedPopover = ({
             className={chipClass()}
             aria-label='Advanced settings'
           >
-            <span className='uppercase tabular-nums text-muted-foreground'>
-              {format}
-            </span>
+            <Settings2 className='size-4 text-muted-foreground' />
           </button>
         </PopoverTrigger>
       </TooltipTrigger>

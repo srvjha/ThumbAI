@@ -195,7 +195,10 @@ export const Canvas = ({
     <MotionConfig reducedMotion='user'>
       <section
         aria-label='Canvas'
-        className='flex min-h-0 flex-1 flex-col gap-4'
+        className={cn(
+          'flex min-h-0 flex-col gap-4',
+          view !== 'empty' && 'flex-1',
+        )}
       >
         {loadedFrom && view === 'result' && (
           <div className='flex justify-center'>
@@ -213,7 +216,13 @@ export const Canvas = ({
           </div>
         )}
 
-        <Stage className='min-h-[clamp(260px,50svh,640px)] flex-1'>
+        <Stage
+          className={
+            view === 'empty'
+              ? 'h-[clamp(180px,30svh,340px)]'
+              : 'min-h-[clamp(260px,50svh,640px)] flex-1'
+          }
+        >
           <AnimatePresence mode='wait' initial={false}>
             <motion.div
               key={view}

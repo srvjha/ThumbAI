@@ -37,6 +37,7 @@ import { HistoryRail } from './HistoryRail';
 import { STUDIO_MODES, modeById, type StudioMode } from './modes';
 import { submitStudioForm } from './Composer';
 import { useModKey } from './useModKey';
+import { cn } from '@/lib/utils';
 
 // The feed mock is only needed once someone opens it.
 const FeedPreview = dynamic(
@@ -295,12 +296,18 @@ export const StudioWorkspace = ({
     },
   };
 
+  // Nothing on the canvas yet: the prompt and the empty frame sit together
+  // in the middle of the screen, then move to the top once there's a result.
+  const isEmpty =
+    images.length === 0 && status !== 'generating' && status !== 'in-progress';
+
   return (
     <div className='flex flex-col md:h-[calc(100svh-3rem)]'>
-      {/* Top bar */}
-      <div className='flex h-14 shrink-0 items-center justify-between gap-3 px-4 md:px-6'>
+      {/* Top bar: mode tabs centred over the composer, tools on the right. */}
+      <div className='grid h-14 shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 md:px-6'>
+        <div />
         <ModeSwitcher mode={mode} />
-        <div className='flex items-center gap-1'>
+        <div className='flex items-center justify-self-end gap-1'>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -341,7 +348,12 @@ export const StudioWorkspace = ({
 
       {/* Prompt bar, then the canvas filling what is left. */}
       <div className='min-h-0 flex-1 overflow-y-auto'>
-        <div className='mx-auto flex min-h-full w-full max-w-[1240px] flex-col gap-6 px-4 pb-28 pt-2 md:px-8 md:pb-8'>
+        <div
+          className={cn(
+            'mx-auto flex min-h-full w-full max-w-[1240px] flex-col gap-6 px-4 pb-28 pt-2 md:px-8 md:pb-8',
+            isEmpty && 'justify-center md:pb-[8svh]',
+          )}
+        >
           <div className='mx-auto w-full max-w-[880px]'>{composer}</div>
           <Canvas
             status={status}
