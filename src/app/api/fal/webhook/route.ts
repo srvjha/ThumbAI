@@ -71,7 +71,7 @@ export const POST = async (req: NextRequest) => {
 
     if (body.status === 'ERROR') {
       console.error('Fal generation failed', { requestId, error: body.error });
-      await markGenerationFailed(requestId);
+      await markGenerationFailed({ request_id: requestId });
 
       return NextResponse.json(new ApiResponse(200, null, 'Failure recorded'), {
         status: 200,

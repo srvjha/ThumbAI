@@ -4,7 +4,7 @@ import { db } from '@/db';
 import { razorpay } from '@/config/razorpay';
 import { env } from '@/config/env';
 import { getPlan, RAZORPAY_APP_TAG, toPaise } from '@/config/plans';
-import { grantCreditsForOrder } from '@/server/credits';
+import { clawBackOrder, grantCreditsForOrder } from '@/server/credits';
 import { ApiError } from '@/server/errors';
 
 /** Constant-time compare so the secret can't be probed by timing. */
@@ -122,15 +122,22 @@ export const refundPayment = async (paymentId: unknown) => {
   if (!order?.amount) {
     throw new ApiError('Order not found for that payment', 404);
   }
+  if (order.status === 'refunded') {
+    throw new ApiError('That payment was already refunded', 409);
+  }
 
   const refund = await razorpay.payments.refund(paymentId, {
     amount: order.amount, // paise
   });
 
-  await db.order.updateMany({
-    where: { razorpayPaymentId: paymentId },
+  await db.order.update({
+    where: { id: order.id },
     data: { status: 'refunded' },
   });
+
+  // The money went back, so the credits it bought come back too — spent or
+  // not. Once-only via the ledger, and allowed to leave the balance negative.
+  await clawBackOrder(order.id);
 
   return refund;
 };

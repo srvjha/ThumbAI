@@ -8,49 +8,54 @@ datasource db {
 }
 
 model User {
-  id        String      @id @default(uuid())
-  email     String
-  fullName  String
-  profile_img String?
-  clerk_id  String      @unique
-  // Keep in sync with FREE_PLAN.credits in src/config/plans.ts.
-  credits   Int         @default(3)
-  plan      PLAN        @default(FREE)
-  role      Role        @default(USER)
-  last_active_at DateTime
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  Thumbnail Thumbnail[]
-  Order     Order[]
+  id                String              @id @default(uuid())
+  email             String
+  fullName          String
+  profile_img       String?
+  clerk_id          String              @unique
+  // A cache of SUM(CreditTransaction.amount), updated in the same
+  // transaction as every ledger row. Never write it any other way.
+  credits           Int                 @default(0)
+  plan              PLAN                @default(FREE)
+  role              Role                @default(USER)
+  last_active_at    DateTime
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  Thumbnail         Thumbnail[]
+  Order             Order[]
+  CreditTransaction CreditTransaction[]
 }
 
 model Thumbnail {
-  id                   String   @id @default(uuid())
-  user_id              String
-  request_id           String   @unique
-  user_prompt          String   @default("")
-  enhanced_ai_prompt   String   @default("")
-  num_of_images        Int?
+  id                 String     @id @default(uuid())
+  user_id            String
+  // Null until Fal accepts the job: the row is created first so the credit
+  // charge has something to belong to.
+  request_id         String?    @unique
+  user_prompt        String     @default("")
+  enhanced_ai_prompt String     @default("")
+  num_of_images      Int?
   // Single value, not a list. This used to be String[] that callers *pushed*
   // onto, so rows accumulated ['PENDING','COMPLETED'] while readers indexed
   // [0] and saw the stale value.
-  status               GEN_STATUS @default(PENDING)
-  image_url            String[]
-  content_type         String?
-  aspect_ratio         String?
-  model_used           MODEL?
+  status             GEN_STATUS @default(PENDING)
+  image_url          String[]
+  content_type       String?
+  aspect_ratio       String?
+  model_used         MODEL?
   // The Fal endpoint that served this request. The webhook needs it to poll
   // the right queue; it previously hardcoded the image-to-image endpoint for
   // every workflow.
-  model_endpoint       String?
-  model_tier           TIER?
+  model_endpoint     String?
+  model_tier         TIER?
   // The seed actually sent, when the endpoint honours one. Recorded so a
   // generation can be reproduced or re-rolled as a deliberate variation.
-  seed                 Int?
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  seed               Int?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
 
-  user                 User     @relation(fields: [user_id], references: [id])
+  user              User                @relation(fields: [user_id], references: [id])
+  CreditTransaction CreditTransaction[]
 }
 
 enum MODEL {
@@ -81,8 +86,8 @@ model Order {
   // Credits this purchase grants, resolved from the server-side plan
   // catalogue at creation time so the amount can never be set by a client.
   credits           Int         @default(0)
-  // Set once the webhook has topped up the buyer. Razorpay retries
-  // deliveries, so the grant is guarded on this rather than on status.
+  // Superseded by the PURCHASE ledger row and no longer read. Kept for one
+  // release so code still running mid-deploy doesn't break; drop afterwards.
   credits_granted   Boolean     @default(false)
   currency          String      @default("INR")
   razorpayOrderId   String?     @unique
@@ -92,9 +97,45 @@ model Order {
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 
-  user              User?       @relation(fields: [user_id], references: [id])
+  user              User?               @relation(fields: [user_id], references: [id])
+  CreditTransaction CreditTransaction[]
 
   @@index([user_id])
+}
+
+/// Every change to a user's credit balance. User.credits is the running sum.
+model CreditTransaction {
+  id            String         @id @default(uuid())
+  user_id       String
+  type          CREDIT_TX_TYPE
+  /// Signed: positive adds credits, negative removes them.
+  amount        Int
+  /// The user's balance immediately after this row was applied.
+  balance_after Int
+  order_id      String?
+  thumbnail_id  String?
+  note          String?
+  createdAt     DateTime       @default(now())
+
+  user      User       @relation(fields: [user_id], references: [id])
+  order     Order?     @relation(fields: [order_id], references: [id])
+  thumbnail Thumbnail? @relation(fields: [thumbnail_id], references: [id])
+
+  // At most one of each kind per order or generation. A redelivered webhook
+  // or a second refund path fails the insert instead of moving the balance.
+  @@unique([type, order_id])
+  @@unique([type, thumbnail_id])
+  @@index([user_id, createdAt])
+}
+
+enum CREDIT_TX_TYPE {
+  OPENING_BALANCE
+  SIGNUP_GRANT
+  PURCHASE
+  GENERATION_CHARGE
+  GENERATION_REFUND
+  ORDER_REFUND_CLAWBACK
+  ADMIN_ADJUSTMENT
 }
 
 enum PLAN {

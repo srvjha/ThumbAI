@@ -19,10 +19,39 @@ const db = new PrismaClient();
 const [email, creditsArg] = process.argv.slice(2);
 const credits = creditsArg === undefined ? 100 : Number(creditsArg);
 
+/**
+ * Sets a balance through the credit ledger: the difference is recorded as an
+ * ADMIN_ADJUSTMENT, so User.credits stays equal to the ledger's sum.
+ */
+const setCredits = (db, userId, target, note) =>
+  db.$transaction(async (tx) => {
+    const [{ credits }] = await tx.$queryRaw`
+      SELECT credits FROM "User" WHERE id = ${userId} FOR UPDATE`;
+    const delta = target - credits;
+    if (delta === 0) return;
+    await tx.user.update({ where: { id: userId }, data: { credits: target } });
+    await tx.creditTransaction.create({
+      data: {
+        user_id: userId,
+        type: 'ADMIN_ADJUSTMENT',
+        amount: delta,
+        balance_after: target,
+        note,
+      },
+    });
+  });
+
 try {
   if (!email) {
     const users = await db.user.findMany({
-      select: { id: true, email: true, fullName: true, role: true, credits: true, plan: true },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        role: true,
+        credits: true,
+        plan: true,
+      },
       orderBy: { createdAt: 'asc' },
     });
 
@@ -32,7 +61,9 @@ try {
     } else {
       console.table(users);
       console.log('\nPromote one with:');
-      console.log('  node --env-file=.env scripts/grant-admin.mjs <email> [credits]');
+      console.log(
+        '  node --env-file=.env scripts/grant-admin.mjs <email> [credits]',
+      );
     }
     process.exit(0);
   }
@@ -57,9 +88,13 @@ try {
   }
 
   if (matches.length > 1) {
-    console.error(`${matches.length} users share that email. Re-run with the id:`);
+    console.error(
+      `${matches.length} users share that email. Re-run with the id:`,
+    );
     for (const m of matches) {
-      console.error(`  ${m.id}  role=${m.role} credits=${m.credits} clerk=${m.clerk_id}`);
+      console.error(
+        `  ${m.id}  role=${m.role} credits=${m.credits} clerk=${m.clerk_id}`,
+      );
     }
     process.exit(1);
   }
@@ -67,17 +102,24 @@ try {
   const user = matches[0];
 
   console.log('Before:', {
-    email: user.email, role: user.role, credits: user.credits, plan: user.plan,
+    email: user.email,
+    role: user.role,
+    credits: user.credits,
+    plan: user.plan,
   });
 
   // Credits are SET, not incremented, so re-running is idempotent.
+  await setCredits(db, user.id, credits, 'tools/grant-admin.mjs');
   const updated = await db.user.update({
     where: { id: user.id },
-    data: { role: 'ADMIN', credits, plan: 'PAID' },
+    data: { role: 'ADMIN', plan: 'PAID' },
   });
 
   console.log('After: ', {
-    email: updated.email, role: updated.role, credits: updated.credits, plan: updated.plan,
+    email: updated.email,
+    role: updated.role,
+    credits: updated.credits,
+    plan: updated.plan,
   });
 } finally {
   await db.$disconnect();

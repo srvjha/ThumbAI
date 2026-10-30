@@ -2,8 +2,7 @@ import 'server-only';
 import { fal } from '@fal-ai/client';
 import { db } from '@/db';
 import { GEN_STATUS } from '@prisma/client';
-import { refundCredits } from '@/server/credits';
-import { creditsPerImageForEndpoint } from '@/config/models';
+import { refundGeneration } from '@/server/credits';
 
 /**
  * Recording generation results.
@@ -27,12 +26,16 @@ export const extractImageUrls = (payload: unknown): string[] => {
     .filter((url): url is string => typeof url === 'string' && url.length > 0);
 };
 
+const OPEN = [GEN_STATUS.PENDING, GEN_STATUS.IN_PROGRESS];
+
 export const storeGenerationResult = async (
   requestId: string,
   imageUrls: string[],
 ): Promise<void> => {
-  await db.thumbnail.update({
-    where: { request_id: requestId },
+  // Only an open row completes. A generation already given up on has been
+  // refunded; flipping it to COMPLETED would hand out free images.
+  await db.thumbnail.updateMany({
+    where: { request_id: requestId, status: { in: OPEN } },
     data: {
       status: GEN_STATUS.COMPLETED,
       // Every image, not just the first.
@@ -41,34 +44,27 @@ export const storeGenerationResult = async (
   });
 };
 
-/** Marks a generation failed and returns the credits taken at submit time. */
+/** Marks a generation failed and returns exactly what it was charged. */
 export const markGenerationFailed = async (
-  requestId: string,
+  where: { request_id: string } | { id: string },
 ): Promise<void> => {
-  const thumbnail = await db.thumbnail.findUnique({
-    where: { request_id: requestId },
+  const thumbnail = await db.thumbnail.findFirst({
+    where,
+    select: { id: true },
   });
 
   if (!thumbnail) return;
 
-  // Conditional on the row still being open, so the webhook and the sync
-  // path racing on the same request cannot both refund it.
+  // Conditional on the row still being open, so a completed generation is
+  // never failed. The refund itself is once-only via the ledger.
   const claimed = await db.thumbnail.updateMany({
-    where: {
-      request_id: requestId,
-      status: { notIn: [GEN_STATUS.FAILED, GEN_STATUS.COMPLETED] },
-    },
+    where: { id: thumbnail.id, status: { in: OPEN } },
     data: { status: GEN_STATUS.FAILED },
   });
 
   if (claimed.count === 0) return;
 
-  // Refund what was charged: a Quality image or an edit costs more than one
-  // credit, so refunding num_of_images alone under-paid those.
-  const cost =
-    (thumbnail.num_of_images ?? 1) *
-    creditsPerImageForEndpoint(thumbnail.model_endpoint);
-  await refundCredits(thumbnail.user_id, cost);
+  await refundGeneration(thumbnail.id);
 };
 
 export type SyncOutcome =
@@ -115,7 +111,7 @@ export const syncGenerationFromFal = async (
       const imageUrls = extractImageUrls(result.data);
 
       if (imageUrls.length === 0) {
-        await markGenerationFailed(requestId);
+        await markGenerationFailed({ request_id: requestId });
         return { status: 'FAILED' };
       }
 
@@ -125,8 +121,8 @@ export const syncGenerationFromFal = async (
 
     if (queued.status === 'IN_PROGRESS' || queued.status === 'IN_QUEUE') {
       if (thumbnail.status !== GEN_STATUS.IN_PROGRESS) {
-        await db.thumbnail.update({
-          where: { request_id: requestId },
+        await db.thumbnail.updateMany({
+          where: { request_id: requestId, status: GEN_STATUS.PENDING },
           data: { status: GEN_STATUS.IN_PROGRESS },
         });
       }
@@ -164,19 +160,27 @@ export const reconcileStaleGenerations = async (userId: string) => {
         status: { in: [GEN_STATUS.PENDING, GEN_STATUS.IN_PROGRESS] },
         createdAt: { lt: new Date(now - STALE_AFTER_MS) },
       },
-      select: { request_id: true, createdAt: true },
+      select: { id: true, request_id: true, createdAt: true },
       orderBy: { createdAt: 'asc' },
       take: MAX_RECONCILE,
     });
 
     await Promise.all(
-      stale.map(async ({ request_id, createdAt }) => {
+      stale.map(async ({ id, request_id, createdAt }) => {
+        // No request id after STALE_AFTER_MS means the submit never finished
+        // (the function died between charging and queueing). Nothing is
+        // running at Fal, so refund now rather than after ABANDON_AFTER_MS.
+        if (!request_id) {
+          await markGenerationFailed({ id });
+          return;
+        }
+
         const outcome = await syncGenerationFromFal(request_id);
         if (
           outcome.status === 'PENDING' &&
           now - createdAt.getTime() > ABANDON_AFTER_MS
         ) {
-          await markGenerationFailed(request_id);
+          await markGenerationFailed({ request_id });
         }
       }),
     );
