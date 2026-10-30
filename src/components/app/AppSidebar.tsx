@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { UserButton, useUser } from '@clerk/nextjs';
+import { useUser } from '@clerk/nextjs';
 import {
   BarChart3,
   CreditCard,
@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/user/auth';
 import { Logo } from '@/components/brand/Logo';
+import { NavUser } from './NavUser';
 import {
   Sidebar,
   SidebarContent,
@@ -167,17 +168,7 @@ export const AppSidebar = ({
 
       <SidebarFooter className='gap-3 overflow-hidden'>
         <Credits credits={credits} />
-        <div className='flex h-9 w-[calc(var(--sidebar-width)-1rem)] items-center gap-2 px-0.5'>
-          <span className='flex size-7 shrink-0 items-center justify-center'>
-            <UserButton />
-          </span>
-          <Link
-            href='/profile'
-            className='truncate text-sm text-muted-foreground transition-opacity duration-200 hover:text-foreground group-data-[collapsible=icon]:opacity-0'
-          >
-            {data?.email}
-          </Link>
-        </div>
+        <NavUser email={data?.email} plan={data?.plan} />
       </SidebarFooter>
 
       {rail}
