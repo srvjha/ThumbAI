@@ -40,11 +40,11 @@ Prompt authoring runs on `PROMPT_MODEL` in the same file, overridable with
 
 ```bash
 git clone <repo> && cd thumbai
-npm install                 # also runs prisma generate
+pnpm install                 # also runs prisma generate
 cp .env.example .env        # then fill it in, see below
-npm run db:up               # local Postgres via docker compose
-npm run db:deploy           # apply migrations to it
-npm run dev
+pnpm db:up               # local Postgres via docker compose
+pnpm db:deploy           # apply migrations to it
+pnpm dev
 ```
 
 Open http://localhost:3000.
@@ -63,35 +63,35 @@ cannot reach production data.
 by accident. Production commands opt in explicitly and print the target host
 before acting.
 
-| Command                     | Target                                   |
-| --------------------------- | ---------------------------------------- |
-| `npm run db:up` / `db:down` | local container                          |
-| `npm run db:migrate`        | local — create and apply a new migration |
-| `npm run db:deploy`         | local — apply existing migrations        |
-| `npm run db:studio`         | local — browse data                      |
-| `npm run db:status:prod`    | production — show migration state        |
-| `npm run db:deploy:prod`    | production — apply migrations            |
-| `npm run db:backup:prod`    | production — `pg_dump` into `backups/`   |
+| Command                  | Target                                   |
+| ------------------------ | ---------------------------------------- |
+| `pnpm db:up` / `db:down` | local container                          |
+| `pnpm db:migrate`        | local — create and apply a new migration |
+| `pnpm db:deploy`         | local — apply existing migrations        |
+| `pnpm db:studio`         | local — browse data                      |
+| `pnpm db:status:prod`    | production — show migration state        |
+| `pnpm db:deploy:prod`    | production — apply migrations            |
+| `pnpm db:backup:prod`    | production — `pg_dump` into `backups/`   |
 
-`npm run build` runs `prisma migrate deploy` first, so a deploy cannot ship code
+`pnpm build` runs `prisma migrate deploy` first, so a deploy cannot ship code
 ahead of the schema it needs. That ordering has bitten twice: once when a
 `String[]` to enum change went out before the code that understood it, and once
 when a new column was added in code but never migrated. The build step is the
 only pre-deploy hook Vercel offers, so it is where this belongs.
 
-Back up before migrating production: `npm run db:backup:prod`. Dumps land in
+Back up before migrating production: `pnpm db:backup:prod`. Dumps land in
 `backups/`, which is gitignored because they contain real user data.
 
 ### Tests
 
 ```bash
-npm run db:up   # tests use the same container
-npm test
+pnpm db:up   # tests use the same container
+pnpm test
 ```
 
 Tests run against a separate `thumbai_test` database on that container (created
-and migrated automatically), never the one `npm run dev` uses. They cover the
-paths where a bug costs money: credit charges and refunds, payment grants under
+and migrated automatically), never the one `pnpm dev` uses. They cover the paths
+where a bug costs money: credit charges and refunds, payment grants under
 duplicate delivery, and the guards on paid API calls. Business logic lives in
 `src/server/`; route handlers only parse the request and call into it, so tests
 call those modules directly.
@@ -132,13 +132,13 @@ their original signature headers intact.
 
 ## Scripts
 
-| Command             | Purpose                    |
-| ------------------- | -------------------------- |
-| `npm run dev`       | Development server         |
-| `npm run build`     | Production build           |
-| `npm run start`     | Serve the production build |
-| `npm run typecheck` | `tsc --noEmit`             |
-| `npm run format`    | Prettier                   |
+| Command          | Purpose                    |
+| ---------------- | -------------------------- |
+| `pnpm dev`       | Development server         |
+| `pnpm build`     | Production build           |
+| `pnpm start`     | Serve the production build |
+| `pnpm typecheck` | `tsc --noEmit`             |
+| `pnpm format`    | Prettier                   |
 
 ## Architecture notes
 

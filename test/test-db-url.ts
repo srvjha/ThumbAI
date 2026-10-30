@@ -1,6 +1,6 @@
 /**
  * Tests run against their own database on the docker-compose Postgres, never
- * the one `npm run dev` uses. Override with TEST_DATABASE_URL (CI does).
+ * the one `pnpm dev` uses. Override with TEST_DATABASE_URL (CI does).
  */
 export const TEST_DATABASE_URL =
   process.env.TEST_DATABASE_URL ??

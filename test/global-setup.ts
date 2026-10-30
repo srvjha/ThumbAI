@@ -26,7 +26,7 @@ export default async function setup() {
     await client.$disconnect();
   }
 
-  execFileSync('npx', ['prisma', 'migrate', 'deploy'], {
+  execFileSync('pnpm', ['exec', 'prisma', 'migrate', 'deploy'], {
     env: { ...process.env, DATABASE_URL: TEST_DATABASE_URL },
     stdio: 'pipe',
   });

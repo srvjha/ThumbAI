@@ -25,10 +25,12 @@ jobs:
       TEST_DATABASE_URL: postgresql://thumbai:thumbai@localhost:5433/thumbai_test
     steps:
       - uses: actions/checkout@v4
+      # Version comes from packageManager in package.json.
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run typecheck
-      - run: npm test
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
