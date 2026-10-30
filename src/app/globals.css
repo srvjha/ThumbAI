@@ -91,44 +91,71 @@
   --sidebar-ring: #3e63dd;
 }
 
-/* Dark: the navy ink becomes the page and the paper becomes the type. */
+/* Dark: near-black with a faint cool tint, not navy. Surfaces step up in
+   lightness as they rise (page, card, popover), borders are white at low
+   alpha, and the blue is kept for accents. Hues follow Radix Slate and
+   Indigo dark; the brand blue is Indigo 9. */
 .dark {
-  --brand: #5b7ef0;
-  --brand-strong: #4766dd;
+  --brand: #5472e4;
+  --brand-strong: #3e63dd;
   --brand-foreground: #ffffff;
-  --brand-muted: rgb(91 126 240 / 16%);
-  --background: #0c0f19;
-  --foreground: #ebe9e2;
-  --card: #131726;
-  --card-foreground: #ebe9e2;
-  --popover: #161b2c;
-  --popover-foreground: #ebe9e2;
-  --primary: #5b7ef0;
+  --brand-muted: rgb(84 114 228 / 14%);
+  --background: #0b0c0f;
+  --foreground: #edeef0;
+  --card: #131418;
+  --card-foreground: #edeef0;
+  --popover: #18191d;
+  --popover-foreground: #edeef0;
+  --primary: #5472e4;
   --primary-foreground: #ffffff;
-  --secondary: #1b2033;
-  --secondary-foreground: #ebe9e2;
-  --muted: #1b2033;
-  --muted-foreground: #959cb0;
-  --accent: #1c2645;
-  --accent-foreground: #c9d4fb;
-  --destructive: #f06161;
-  --border: #252b3f;
-  --input: #2c3248;
-  --ring: #5b7ef0;
-  --chart-1: #5b7ef0;
-  --chart-2: #8aa2ef;
-  --chart-3: #c9d3f6;
-  --chart-4: #3a4f9e;
-  --chart-5: #959cb0;
-  --sidebar: #0f1320;
-  --sidebar-foreground: #ebe9e2;
-  --sidebar-primary: #5b7ef0;
+  --secondary: #1b1c21;
+  --secondary-foreground: #edeef0;
+  --muted: #1b1c21;
+  --muted-foreground: #9a9fa8;
+  --accent: rgb(84 114 228 / 14%);
+  --accent-foreground: #9eb1ff;
+  --destructive: #ec5d5e;
+  --border: rgb(255 255 255 / 8%);
+  --input: rgb(255 255 255 / 11%);
+  --ring: #5472e4;
+  --chart-1: #5472e4;
+  --chart-2: #9eb1ff;
+  --chart-3: #3a4f97;
+  --chart-4: #d6e1ff;
+  --chart-5: #696e77;
+  --sidebar: #0e0f12;
+  --sidebar-foreground: #edeef0;
+  --sidebar-primary: #5472e4;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1c2645;
-  --sidebar-accent-foreground: #c9d4fb;
-  --sidebar-border: #20263a;
-  --sidebar-ring: #5b7ef0;
+  /* Hover and selection in the sidebar stay neutral; blue is for actions. */
+  --sidebar-accent: rgb(255 255 255 / 6%);
+  --sidebar-accent-foreground: #edeef0;
+  --sidebar-border: rgb(255 255 255 / 6%);
+  --sidebar-ring: #5472e4;
+  /* Raised surfaces: lit from above, a soft contact shadow and a deep one. */
+  --shadow-raised:
+    inset 0 1px 0 0 rgb(255 255 255 / 4%), 0 1px 2px rgb(0 0 0 / 50%),
+    0 12px 32px -14px rgb(0 0 0 / 80%);
+  --shadow-floating:
+    inset 0 1px 0 0 rgb(255 255 255 / 6%), 0 0 0 1px rgb(0 0 0 / 40%),
+    0 16px 48px -12px rgb(0 0 0 / 85%);
   color-scheme: dark;
+}
+
+/* Depth is a dark-mode device: the light theme keeps its flat paper look.
+   Unlayered so it applies over the shadow utilities tuned for light. */
+.dark .bg-card {
+  background-image: linear-gradient(
+    180deg,
+    rgb(255 255 255 / 2.5%),
+    transparent 48px
+  );
+  box-shadow: var(--shadow-raised);
+}
+.dark .bg-popover,
+.dark [data-slot='dropdown-menu-content'],
+.dark [data-slot='select-content'] {
+  box-shadow: var(--shadow-floating);
 }
 
 @layer base {
@@ -139,7 +166,7 @@
      the hue back so the paper goes dark and the ink stays blue. */
   .dark .engraving {
     filter: invert(1) hue-rotate(180deg);
-    opacity: 0.7;
+    opacity: 0.55;
   }
   body {
     @apply bg-background text-foreground;
@@ -172,6 +199,18 @@
   }
   .btn-brand:active {
     box-shadow: inset 0 1px 2px rgb(18 23 43 / 25%);
+  }
+  /* On dark the button carries a faint blue glow instead of a drop shadow. */
+  .dark .btn-brand {
+    background: linear-gradient(180deg, #5f7deb 0%, #4a6be2 55%, #3e63dd 100%);
+    border-color: rgb(255 255 255 / 10%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 22%),
+      0 0 0 1px rgb(62 99 221 / 50%),
+      0 8px 24px -10px rgb(62 99 221 / 70%);
+  }
+  .dark .btn-brand:hover {
+    background: linear-gradient(180deg, #6a86ee 0%, #5472e4 55%, #4568df 100%);
   }
 }
 
