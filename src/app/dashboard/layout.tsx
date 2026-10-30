@@ -1,9 +1,11 @@
 import { AppShell } from '@/components/app/AppShell';
+import { getSidebarDefaults } from '@/components/app/sidebar-defaults';
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <AppShell>{children}</AppShell>;
+  const sidebar = await getSidebarDefaults(true);
+  return <AppShell {...sidebar}>{children}</AppShell>;
 }

@@ -1,234 +1,158 @@
 'use client';
 
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, type ReactNode } from 'react';
-import { UserButton, useUser } from '@clerk/nextjs';
 import {
-  BarChart3,
-  CreditCard,
-  FileText,
-  ImagePlus,
-  LayoutGrid,
-  Menu,
-  Shield,
-  Type,
-  X,
-} from 'lucide-react';
-import { useAuth } from '@/hooks/user/auth';
-import { cn } from '@/lib/utils';
-import { Logo } from '@/components/brand/Logo';
-
-type NavItem = { label: string; href: string; icon: ReactNode };
-
-const STUDIO_NAV: NavItem[] = [
-  {
-    label: 'Text to Image',
-    href: '/studio/text-to-image',
-    icon: <Type className='size-4' />,
-  },
-  {
-    label: 'Image to Image',
-    href: '/studio/image-to-image',
-    icon: <ImagePlus className='size-4' />,
-  },
-  {
-    label: 'Blog Cover',
-    href: '/studio/blog-cover',
-    icon: <FileText className='size-4' />,
-  },
-];
-
-const ACCOUNT_NAV: NavItem[] = [
-  {
-    label: 'Library',
-    href: '/dashboard',
-    icon: <LayoutGrid className='size-4' />,
-  },
-  {
-    label: 'Analytics',
-    href: '/dashboard/analytics',
-    icon: <BarChart3 className='size-4' />,
-  },
-  {
-    label: 'Credits & billing',
-    href: '/billing',
-    icon: <CreditCard className='size-4' />,
-  },
-];
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type CSSProperties,
+  type ReactNode,
+} from 'react';
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from '@/components/ui/sidebar';
+import { Separator } from '@/components/ui/separator';
+import { Kbd } from '@/components/ui/kbd';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
+  ACCOUNT_NAV,
+  AppSidebar,
+  STUDIO_NAV,
+  isNavActive,
+} from './AppSidebar';
+import { SidebarResizeRail } from './SidebarResizeRail';
+import {
+  SIDEBAR_DEFAULT_WIDTH,
+  SIDEBAR_WIDTH_COOKIE,
+  SIDEBAR_WIDTH_STORAGE_KEY,
+  parseSidebarWidth,
+} from './sidebar-config';
 
 /** Routes that render inside the app shell instead of the marketing header. */
 export const APP_ROUTE_PREFIXES = ['/studio', '/dashboard', '/billing'];
 
-const NavGroup = ({
-  title,
-  items,
-  pathname,
-  onNavigate,
-}: {
-  title: string;
-  items: NavItem[];
-  pathname: string;
-  onNavigate?: () => void;
-}) => (
-  <div>
-    <p className='px-3 pb-2 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground'>
-      {title}
-    </p>
-    <ul className='space-y-0.5'>
-      {items.map((item) => {
-        // /dashboard must not light up while on /dashboard/analytics.
-        const active =
-          item.href === '/dashboard'
-            ? pathname === '/dashboard'
-            : pathname.startsWith(item.href);
-        return (
-          <li key={item.href}>
-            <Link
-              href={item.href}
-              onClick={onNavigate}
-              className={cn(
-                'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors',
-                active
-                  ? 'bg-accent text-accent-foreground font-medium'
-                  : 'text-foreground/75 hover:bg-secondary hover:text-foreground',
-              )}
-            >
-              {item.icon}
-              {item.label}
-            </Link>
-          </li>
-        );
-      })}
-    </ul>
-  </div>
-);
+const ALL_NAV = [...STUDIO_NAV, ...ACCOUNT_NAV];
 
-/** Credit balance with a link to top up; lives at the foot of the sidebar. */
-const CreditsCard = () => {
-  const { isSignedIn, isLoaded } = useUser();
-  const { data, isLoading } = useAuth({ enabled: isLoaded && !!isSignedIn });
+// ⌘ on Apple platforms, Ctrl elsewhere; the server renders ⌘.
+const noop = () => () => {};
+const useModKey = () =>
+  useSyncExternalStore(
+    noop,
+    () => (/Mac|iPhone|iPad/.test(navigator.userAgent) ? '⌘' : 'Ctrl'),
+    () => '⌘',
+  );
+
+const TopBar = ({ pathname }: { pathname: string }) => {
+  const mod = useModKey();
+  const current = ALL_NAV.find((item) => isNavActive(item.href, pathname));
   return (
-    <div className='rounded-xl border bg-card p-3'>
-      <div className='flex items-baseline justify-between'>
-        <span className='text-xs text-muted-foreground'>Credits</span>
-        <span className='font-mono text-lg tabular-nums'>
-          {isLoading ? '—' : (data?.credits ?? 0)}
-        </span>
-      </div>
-      <Link
-        href='/billing'
-        className='btn-brand mt-3 flex h-8 items-center justify-center rounded-lg text-xs font-medium'
-      >
-        Top up credits
-      </Link>
-    </div>
+    <header className='sticky top-0 z-20 flex h-12 shrink-0 items-center gap-2 border-b bg-background px-3 sm:px-4'>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <SidebarTrigger className='-ml-1 text-muted-foreground hover:text-foreground' />
+        </TooltipTrigger>
+        <TooltipContent side='bottom' className='flex items-center gap-2'>
+          Toggle sidebar <Kbd>{mod}B</Kbd>
+        </TooltipContent>
+      </Tooltip>
+      {current ? (
+        <>
+          <Separator orientation='vertical' className='mr-1 h-4!' />
+          <span className='truncate text-sm font-medium'>{current.label}</span>
+        </>
+      ) : null}
+    </header>
   );
 };
 
-const SidebarBody = ({
-  pathname,
-  onNavigate,
-}: {
-  pathname: string;
-  onNavigate?: () => void;
-}) => {
-  const { isSignedIn, isLoaded } = useUser();
-  const { data } = useAuth({ enabled: isLoaded && !!isSignedIn });
-  return (
-    <div className='flex h-full flex-col gap-6 p-3'>
-      <div className='px-2 pt-2'>
-        <Logo />
-      </div>
-      <NavGroup
-        title='Studio'
-        items={STUDIO_NAV}
-        pathname={pathname}
-        onNavigate={onNavigate}
-      />
-      <NavGroup
-        title='Account'
-        items={ACCOUNT_NAV}
-        pathname={pathname}
-        onNavigate={onNavigate}
-      />
-      {data?.role === 'ADMIN' && (
-        <NavGroup
-          title='Internal'
-          items={[
-            {
-              label: 'Admin',
-              href: '/admin',
-              icon: <Shield className='size-4' />,
-            },
-          ]}
-          pathname={pathname}
-          onNavigate={onNavigate}
-        />
-      )}
-      <div className='mt-auto space-y-3'>
-        <CreditsCard />
-        <div className='flex items-center gap-2 px-2 pb-1'>
-          <UserButton />
-          <span className='truncate text-sm text-muted-foreground'>
-            {data?.email}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
+const saveWidth = (px: number) => {
+  try {
+    localStorage.setItem(SIDEBAR_WIDTH_STORAGE_KEY, String(px));
+  } catch {
+    // storage blocked; the cookie below still carries it
+  }
+  document.cookie = `${SIDEBAR_WIDTH_COOKIE}=${px}; path=/; max-age=31536000; samesite=lax`;
 };
 
 /**
- * Frame for every signed-in screen: a fixed sidebar on desktop, a slide-over
- * on mobile. Pages supply their own heading via <AppPageHeader>.
+ * Frame for every signed-in screen: shadcn's collapsible icon sidebar
+ * (a Sheet on mobile) with a resizable rail. Pages supply their own
+ * heading via <AppPageHeader>.
+ *
+ * defaultOpen / defaultWidth come from the layout's cookie read
+ * (getSidebarDefaults) so the first paint matches the saved state.
  */
-export const AppShell = ({ children }: { children: ReactNode }) => {
+export const AppShell = ({
+  children,
+  defaultOpen = true,
+  defaultWidth,
+  fullBleed = false,
+}: {
+  children: ReactNode;
+  defaultOpen?: boolean;
+  defaultWidth?: number;
+  fullBleed?: boolean;
+}) => {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(defaultWidth ?? SIDEBAR_DEFAULT_WIDTH);
+
+  // No cookie yet: fall back to a width saved in this browser.
+  useEffect(() => {
+    if (defaultWidth !== undefined) return;
+    try {
+      const stored = parseSidebarWidth(
+        localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY),
+      );
+      if (stored !== undefined) setWidth(stored);
+    } catch {
+      // storage blocked; keep the default
+    }
+  }, [defaultWidth]);
+
+  const onResizeEnd = useCallback((px: number) => {
+    setWidth(px);
+    saveWidth(px);
+  }, []);
 
   return (
-    <div className='min-h-svh bg-background'>
-      <aside className='fixed inset-y-0 left-0 z-40 hidden w-60 border-r bg-sidebar lg:block'>
-        <SidebarBody pathname={pathname} />
-      </aside>
-
-      <div className='sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-background/85 px-4 backdrop-blur lg:hidden'>
-        <Logo />
-        <button
-          aria-label='Open navigation'
-          onClick={() => setOpen(true)}
-          className='rounded-lg p-2 hover:bg-secondary'
-        >
-          <Menu className='size-5' />
-        </button>
-      </div>
-
-      {open && (
-        <div className='fixed inset-0 z-50 lg:hidden'>
-          <div
-            className='absolute inset-0 bg-foreground/30'
-            onClick={() => setOpen(false)}
+    <SidebarProvider
+      ref={wrapperRef}
+      defaultOpen={defaultOpen}
+      style={{ '--sidebar-width': `${width}px` } as CSSProperties}
+      // While dragging, width tracks the pointer with no transition.
+      className='[&[data-resizing=true]_[data-slot=sidebar-container]]:transition-none [&[data-resizing=true]_[data-slot=sidebar-gap]]:transition-none'
+    >
+      <AppSidebar
+        pathname={pathname}
+        rail={
+          <SidebarResizeRail
+            wrapperRef={wrapperRef}
+            width={width}
+            onResizeEnd={onResizeEnd}
           />
-          <aside className='absolute inset-y-0 left-0 w-72 border-r bg-sidebar'>
-            <button
-              aria-label='Close navigation'
-              onClick={() => setOpen(false)}
-              className='absolute right-3 top-4 rounded-lg p-1.5 hover:bg-secondary'
-            >
-              <X className='size-4' />
-            </button>
-            <SidebarBody pathname={pathname} onNavigate={() => setOpen(false)} />
-          </aside>
-        </div>
-      )}
-
-      <main className='lg:pl-60'>
-        <div className='mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-10 lg:py-8'>
-          {children}
-        </div>
-      </main>
-    </div>
+        }
+      />
+      <SidebarInset className='min-w-0'>
+        <TopBar pathname={pathname} />
+        {/* The studio canvas manages its own padding and fills the inset. */}
+        {fullBleed ? (
+          <div className='flex min-h-0 flex-1 flex-col'>{children}</div>
+        ) : (
+          <div className='mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 lg:px-10 lg:py-8'>
+            {children}
+          </div>
+        )}
+      </SidebarInset>
+    </SidebarProvider>
   );
 };
 
