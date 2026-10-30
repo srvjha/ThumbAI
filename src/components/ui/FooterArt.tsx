@@ -22,7 +22,8 @@ export const FooterArt = () => {
     <div
       ref={ref}
       aria-hidden
-      className='relative -z-10 -mt-[6vw] aspect-[2200/890] min-h-56 w-full'
+      // Dark only: fade the art in from the top rather than starting on a line.
+      className='relative -z-10 -mt-[6vw] aspect-[2200/890] min-h-56 w-full dark:[mask-image:linear-gradient(to_bottom,transparent,black_35%)]'
     >
       <m.div className='absolute inset-0' style={{ y: reduce ? 0 : y }}>
         <Image

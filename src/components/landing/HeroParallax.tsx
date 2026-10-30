@@ -71,6 +71,13 @@ export const HeroParallax = ({ children }: { children: ReactNode }) => {
           className='engraving object-cover object-bottom'
         />
       </m.div>
+
+      {/* Dark only: the inverted wash is bright against the page, so it
+          fades out instead of stopping at the section's edge. */}
+      <div
+        aria-hidden
+        className='pointer-events-none absolute inset-x-0 bottom-0 z-30 hidden h-24 bg-gradient-to-b from-transparent to-background md:h-32 dark:block'
+      />
     </section>
   );
 };

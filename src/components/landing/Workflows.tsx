@@ -19,7 +19,8 @@ const StudioLink = ({ href, label }: { href: string; label: string }) => (
 );
 
 export const Workflows = () => (
-  <section className='bg-secondary py-24 md:py-36'>
+  // On dark a full-bleed band reads as a slab; it eases in and out instead.
+  <section className='bg-secondary py-24 md:py-36 dark:bg-transparent dark:bg-[linear-gradient(to_bottom,transparent,var(--card)_10rem,var(--card)_calc(100%-10rem),transparent)]'>
     <div className='mx-auto max-w-6xl px-4 sm:px-6 lg:px-8'>
       <Reveal stagger={0.08}>
         <RevealItem as='h2' className={`${H2} ${H2_ONE_LINE}`}>
