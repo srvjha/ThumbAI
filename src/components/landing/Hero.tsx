@@ -19,7 +19,7 @@ const ART_BOX = 'absolute inset-x-0 bottom-0 h-[125%]';
  * visible gradient; it only decides where the top copy shows.
  */
 const FOREGROUND_MASK =
-  '[mask-image:linear-gradient(to_bottom,transparent_calc(100%-11rem),black_calc(100%-6rem))] md:[mask-image:linear-gradient(to_bottom,transparent_calc(100%-15rem),black_calc(100%-8rem))]'; // taste-skill-ignore
+  '[mask-image:linear-gradient(to_bottom,transparent_calc(100%-9rem),black_calc(100%-5rem))] md:[mask-image:linear-gradient(to_bottom,transparent_calc(100%-12rem),black_calc(100%-8rem))]'; // taste-skill-ignore
 
 const ForegroundBand = () => (
   <div

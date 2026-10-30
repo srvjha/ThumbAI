@@ -53,7 +53,7 @@ export default function PricingPage() {
           <h1 className='font-serif text-5xl leading-[1.02] tracking-tight sm:text-6xl lg:text-7xl'>
             Buy credits once.
             <br />
-            <span className='text-brand'>Spend them on thumbnails.</span>
+            Spend them on thumbnails.
           </h1>
           <p className='mt-5 max-w-xl text-base text-muted-foreground sm:text-lg'>
             No subscription and no monthly bill. Pick a pack, and each image
