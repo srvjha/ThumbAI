@@ -1,46 +1,18 @@
-import { db } from '@/db';
+import { NextRequest, NextResponse } from 'next/server';
 import { apiErrorResponse } from '@/server/errors';
 import { ApiResponse } from '@/utils/ApiResponse';
-import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/server/auth';
+import { listUsers, parseUserListParams } from '@/server/admin';
 
+/** GET /api/admin/users?q=&role=&plan=&sort=&order=&page= */
 export const GET = async (req: NextRequest) => {
   try {
     await requireAdmin();
-
-    // Fetch all users with their thumbnails
-    const users = await db.user.findMany({
-      include: {
-        Thumbnail: {
-          orderBy: {
-            createdAt: 'desc',
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-
-    // Format the data
-    const formattedUsers = users.map((user) => ({
-      id: user.id,
-      email: user.email,
-      credits: user.credits,
-      plan: user.plan,
-      role: user.role,
-      createdAt: user.createdAt,
-      thumbnailCount: user.Thumbnail.length,
-      thumbnails: user.Thumbnail.map((thumb) => ({
-        id: thumb.id,
-        status: thumb.status,
-        imageUrl: thumb.image_url,
-        createdAt: thumb.createdAt,
-      })),
-    }));
-
+    const result = await listUsers(
+      parseUserListParams(req.nextUrl.searchParams),
+    );
     return NextResponse.json(
-      new ApiResponse(200, formattedUsers, 'Users fetched successfully'),
+      new ApiResponse(200, result, 'Users fetched successfully'),
       { status: 200 },
     );
   } catch (err) {
