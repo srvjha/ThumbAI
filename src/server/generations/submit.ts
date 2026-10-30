@@ -6,6 +6,7 @@ import { env } from '@/config/env';
 import {
   EDIT_MODEL,
   MAX_IMAGES_PER_REQUEST,
+  MAX_SEED,
   getTextToImageModel,
   isAspectRatio,
   isOutputFormat,
@@ -151,7 +152,10 @@ export const submitGeneration = async (
   }
   assertImageCount(numImages);
   if (seed !== undefined && !isValidSeed(seed)) {
-    throw new ApiError('seed must be an integer between 0 and 2^32-1', 400);
+    throw new ApiError(
+      `seed must be an integer between 0 and ${MAX_SEED}`,
+      400,
+    );
   }
 
   const resolvedTier = resolveTier(tier);
@@ -296,7 +300,10 @@ export const submitEdit = async (
     throw new ApiError('Unsupported output format', 400);
   }
   if (seed !== undefined && !isValidSeed(seed)) {
-    throw new ApiError('seed must be an integer between 0 and 2^32-1', 400);
+    throw new ApiError(
+      `seed must be an integer between 0 and ${MAX_SEED}`,
+      400,
+    );
   }
   if (!Array.isArray(images_urls)) {
     throw new ApiError('images_urls must be an array', 400);

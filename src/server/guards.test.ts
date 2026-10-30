@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { MAX_SEED, isValidSeed, randomSeed } from '@/config/models';
 import { isPrivateAddress } from '@/server/articles';
 import { isAllowedSource } from '@/server/imageProxy';
 import { assertImageUrls, parseWorkflow } from '@/server/generations/input';
@@ -62,5 +63,17 @@ describe('assertImageUrls', () => {
   it('rejects non-strings and non-https', () => {
     expect(() => assertImageUrls([42])).toThrow();
     expect(() => assertImageUrls(['http://x.test/a.png'])).toThrow();
+  });
+});
+
+describe('seeds', () => {
+  // Thumbnail.seed is a Postgres INT4. A larger seed fails the row write
+  // after the Fal job is already queued.
+  it('never exceeds what the seed column can store', () => {
+    expect(MAX_SEED).toBeLessThanOrEqual(2 ** 31 - 1);
+    for (let i = 0; i < 10_000; i++) {
+      expect(randomSeed()).toBeLessThanOrEqual(2 ** 31 - 1);
+    }
+    expect(isValidSeed(2 ** 31)).toBe(false);
   });
 });

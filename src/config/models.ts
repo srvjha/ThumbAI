@@ -199,11 +199,18 @@ export const isOutputFormat = (value: unknown): value is OutputFormat =>
 
 export const MAX_IMAGES_PER_REQUEST = 4;
 
-/** Fal seeds are 32-bit unsigned integers. */
-export const MAX_SEED = 2 ** 32 - 1;
+/**
+ * Fal accepts any 32-bit unsigned seed, but Thumbnail.seed is a Postgres INT4,
+ * whose ceiling is 2^31-1. Seeds above it used to fail the row write after
+ * the job was already queued, so about half of all seeded generations
+ * errored and were refunded while Fal still ran them.
+ */
+export const MAX_SEED = 2 ** 31 - 1;
 
 export const isValidSeed = (value: unknown): value is number =>
-  Number.isInteger(value) && (value as number) >= 0 && (value as number) <= MAX_SEED;
+  Number.isInteger(value) &&
+  (value as number) >= 0 &&
+  (value as number) <= MAX_SEED;
 
 /**
  * Chosen here rather than left to the provider, because a seed we did not pick
