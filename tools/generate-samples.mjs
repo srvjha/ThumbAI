@@ -33,10 +33,7 @@ const gpt = (prompt, size) => ({
   endpoint: 'openai/gpt-image-2',
   input: {
     prompt: `${RULES}\n\n${prompt}`,
-    image_size:
-      size === '9:16'
-        ? { width: 720, height: 1280 }
-        : { width: 1280, height: 720 },
+    image_size: size === '9:16' ? { width: 720, height: 1280 } : { width: 1280, height: 720 },
     quality: 'medium',
     num_images: 1,
     output_format: 'png',
@@ -199,8 +196,7 @@ const JOBS = [
       output_format: 'png',
     },
     // Trims the printed plate margin of this particular render (fractions of its size).
-    post: (img) =>
-      toneEngraving(img, { left: 0.0273, top: 0, width: 0.947, height: 0.97 }),
+    post: (img) => toneEngraving(img, { left: 0.0273, top: 0, width: 0.947, height: 0.97 }),
   },
   {
     id: 'footer-engraving',
@@ -216,13 +212,7 @@ const JOBS = [
       output_format: 'png',
     },
     // Trims the deckled paper edge of this particular render (fractions of its size).
-    post: (img) =>
-      toneEngraving(img, {
-        left: 0.0417,
-        top: 0.0393,
-        width: 0.9167,
-        height: 0.8743,
-      }),
+    post: (img) => toneEngraving(img, { left: 0.0417, top: 0.0393, width: 0.9167, height: 0.8743 }),
   },
 ];
 
@@ -250,12 +240,9 @@ const toneEngraving = async (img, crop) => {
   const out = Buffer.alloc(info.width * info.height * 3);
   for (let i = 0, o = 0; i < data.length; i += info.channels, o += 3) {
     const t = Math.min(1, Math.max(0, (data[i] - 40) / (232 - 40)));
-    for (let c = 0; c < 3; c++)
-      out[o + c] = Math.round(INK[c] + (PAPER[c] - INK[c]) * t);
+    for (let c = 0; c < 3; c++) out[o + c] = Math.round(INK[c] + (PAPER[c] - INK[c]) * t);
   }
-  return sharp(out, {
-    raw: { width: info.width, height: info.height, channels: 3 },
-  })
+  return sharp(out, { raw: { width: info.width, height: info.height, channels: 3 } })
     .png()
     .toBuffer();
 };
@@ -315,8 +302,7 @@ for (let i = 0; i < independent.length; i += 4) {
   const batch = independent.slice(i, i + 4);
   const results = await Promise.allSettled(batch.map(run));
   results.forEach((r, k) => {
-    if (r.status === 'rejected')
-      failures.push(`${batch[k].id}: ${r.reason?.message ?? r.reason}`);
+    if (r.status === 'rejected') failures.push(`${batch[k].id}: ${r.reason?.message ?? r.reason}`);
   });
 }
 for (const job of dependent) {
