@@ -5,11 +5,11 @@ already have, or a blog URL.
 
 ## Workflows
 
-| Route | What it does |
-| --- | --- |
-| `/studio/text-to-image` | Describe the thumbnail; the app writes a design prompt and generates it. |
-| `/studio/image-to-image` | Upload photos (a face, a product) and composite them into a thumbnail. |
-| `/studio/blog-cover` | Paste a blog URL. The page is fetched and read, and a cover image is designed from its actual content. |
+| Route                    | What it does                                                                                           |
+| ------------------------ | ------------------------------------------------------------------------------------------------------ |
+| `/studio/text-to-image`  | Describe the thumbnail; the app writes a design prompt and generates it.                               |
+| `/studio/image-to-image` | Upload photos (a face, a product) and composite them into a thumbnail.                                 |
+| `/studio/blog-cover`     | Paste a blog URL. The page is fetched and read, and a cover image is designed from its actual content. |
 
 Every workflow outputs YouTube (16:9, 1280×720) and Shorts (9:16, 720×1280).
 
@@ -24,14 +24,14 @@ Every workflow outputs YouTube (16:9, 1280×720) and Shorts (9:16, 720×1280).
 
 ## Image models
 
-Defined in one place, `src/config/models.ts`. Swapping a model is a change
-there rather than in the route handlers.
+Defined in one place, `src/config/models.ts`. Swapping a model is a change there
+rather than in the route handlers.
 
-| Tier | Endpoint | Cost | Credits |
-| --- | --- | --- | --- |
-| Draft | `openai/gpt-image-2` (medium) | ~$0.040 / image | 1 |
-| Quality | `fal-ai/nano-banana-pro` (2K) | ~$0.150 / image | 3 |
-| Edit | `fal-ai/nano-banana-2/edit` | ~$0.080 / image | 2 |
+| Tier    | Endpoint                      | Cost            | Credits |
+| ------- | ----------------------------- | --------------- | ------- |
+| Draft   | `openai/gpt-image-2` (medium) | ~$0.040 / image | 1       |
+| Quality | `fal-ai/nano-banana-pro` (2K) | ~$0.150 / image | 3       |
+| Edit    | `fal-ai/nano-banana-2/edit`   | ~$0.080 / image | 2       |
 
 Prompt authoring runs on `PROMPT_MODEL` in the same file, overridable with
 `OPENAI_PROMPT_MODEL`.
@@ -40,11 +40,11 @@ Prompt authoring runs on `PROMPT_MODEL` in the same file, overridable with
 
 ```bash
 git clone <repo> && cd thumbai
-npm install                 # also runs prisma generate
+pnpm install                 # also runs prisma generate
 cp .env.example .env        # then fill it in, see below
-npm run db:up               # local Postgres via docker compose
-npm run db:deploy           # apply migrations to it
-npm run dev
+pnpm db:up               # local Postgres via docker compose
+pnpm db:deploy           # apply migrations to it
+pnpm dev
 ```
 
 Open http://localhost:3000.
@@ -54,33 +54,47 @@ Open http://localhost:3000.
 Production runs on Neon. Local runs on a Postgres container, so `next dev`
 cannot reach production data.
 
-| File | Holds | Loaded |
-| --- | --- | --- |
-| `.env` | local `DATABASE_URL` plus all other keys | automatically by Next |
-| `.env.prod` | **only** the production `DATABASE_URL` | never automatically |
+| File        | Holds                                    | Loaded                |
+| ----------- | ---------------------------------------- | --------------------- |
+| `.env`      | local `DATABASE_URL` plus all other keys | automatically by Next |
+| `.env.prod` | **only** the production `DATABASE_URL`   | never automatically   |
 
-`.env.prod` is not a Next.js convention, which is the point: nothing picks it
-up by accident. Production commands opt in explicitly and print the target
-host before acting.
+`.env.prod` is not a Next.js convention, which is the point: nothing picks it up
+by accident. Production commands opt in explicitly and print the target host
+before acting.
 
-| Command | Target |
-| --- | --- |
-| `npm run db:up` / `db:down` | local container |
-| `npm run db:migrate` | local — create and apply a new migration |
-| `npm run db:deploy` | local — apply existing migrations |
-| `npm run db:studio` | local — browse data |
-| `npm run db:status:prod` | production — show migration state |
-| `npm run db:deploy:prod` | production — apply migrations |
-| `npm run db:backup:prod` | production — `pg_dump` into `backups/` |
+| Command                  | Target                                   |
+| ------------------------ | ---------------------------------------- |
+| `pnpm db:up` / `db:down` | local container                          |
+| `pnpm db:migrate`        | local — create and apply a new migration |
+| `pnpm db:deploy`         | local — apply existing migrations        |
+| `pnpm db:studio`         | local — browse data                      |
+| `pnpm db:status:prod`    | production — show migration state        |
+| `pnpm db:deploy:prod`    | production — apply migrations            |
+| `pnpm db:backup:prod`    | production — `pg_dump` into `backups/`   |
 
-`npm run build` runs `prisma migrate deploy` first, so a deploy cannot ship
-code ahead of the schema it needs. That ordering has bitten twice: once when a
+`pnpm build` runs `prisma migrate deploy` first, so a deploy cannot ship code
+ahead of the schema it needs. That ordering has bitten twice: once when a
 `String[]` to enum change went out before the code that understood it, and once
 when a new column was added in code but never migrated. The build step is the
 only pre-deploy hook Vercel offers, so it is where this belongs.
 
-Back up before migrating production: `npm run db:backup:prod`. Dumps land in
+Back up before migrating production: `pnpm db:backup:prod`. Dumps land in
 `backups/`, which is gitignored because they contain real user data.
+
+### Tests
+
+```bash
+pnpm db:up   # tests use the same container
+pnpm test
+```
+
+Tests run against a separate `thumbai_test` database on that container (created
+and migrated automatically), never the one `pnpm dev` uses. They cover the paths
+where a bug costs money: credit charges and refunds, payment grants under
+duplicate delivery, and the guards on paid API calls. Business logic lives in
+`src/server/`; route handlers only parse the request and call into it, so tests
+call those modules directly.
 
 ### Admin tooling
 
@@ -107,24 +121,24 @@ readable by any visitor and spendable against your account. Uploads go through
 Two endpoints need to be reachable from the internet, so use a tunnel
 (`ngrok http 3000`) in development:
 
-| Provider | Endpoint | Purpose |
-| --- | --- | --- |
-| Clerk | `/api/webhook/register` | Creates the local `User` row on sign-up. Without it, sign-in succeeds but every API call returns 401. |
-| Razorpay | `/api/webhook/payment` | Grants credits after a verified payment. |
-| Fal | `/api/fal/webhook` | Receives finished generations. Set `NEXT_PUBLIC_FAL_WEBHOOK_URL` to the tunnel origin. |
+| Provider | Endpoint                | Purpose                                                                                               |
+| -------- | ----------------------- | ----------------------------------------------------------------------------------------------------- |
+| Clerk    | `/api/webhook/register` | Creates the local `User` row on sign-up. Without it, sign-in succeeds but every API call returns 401. |
+| Razorpay | `/api/webhook/payment`  | Grants credits after a verified payment.                                                              |
+| Fal      | `/api/fal/webhook`      | Receives finished generations. Set `NEXT_PUBLIC_FAL_WEBHOOK_URL` to the tunnel origin.                |
 
 Fal deliveries are verified against Fal's ED25519 JWKS, so they must arrive with
 their original signature headers intact.
 
 ## Scripts
 
-| Command | Purpose |
-| --- | --- |
-| `npm run dev` | Development server |
-| `npm run build` | Production build |
-| `npm run start` | Serve the production build |
-| `npm run typecheck` | `tsc --noEmit` |
-| `npm run format` | Prettier |
+| Command          | Purpose                    |
+| ---------------- | -------------------------- |
+| `pnpm dev`       | Development server         |
+| `pnpm build`     | Production build           |
+| `pnpm start`     | Serve the production build |
+| `pnpm typecheck` | `tsc --noEmit`             |
+| `pnpm format`    | Prettier                   |
 
 ## Architecture notes
 

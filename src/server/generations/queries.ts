@@ -1,28 +1,7 @@
-import { auth } from '@clerk/nextjs/server';
+import 'server-only';
 import type { Prisma } from '@prisma/client';
-import { db } from '@/db';
-import { ApiError, apiErrorResponse } from '@/utils/ApiError';
 import { creditsPerImageForEndpoint } from '@/config/models';
 import type { GenerationItem } from '@/components/dashboard/types';
-
-/** Resolves the signed-in Clerk user to our User row, or throws 401. */
-export const requireUser = async () => {
-  const { userId } = await auth();
-  if (!userId) throw new ApiError('Unauthorized Request', 401);
-
-  const user = await db.user.findUnique({
-    where: { clerk_id: userId },
-    select: { id: true, credits: true },
-  });
-  if (!user) throw new ApiError('Unauthorized Request', 401);
-  return user;
-};
-
-/**
- * Kept as an alias so callers don't change. It used to echo err.message for
- * any error, which sent Prisma internals to the browser.
- */
-export const errorResponse = apiErrorResponse;
 
 export const generationSelect = {
   id: true,

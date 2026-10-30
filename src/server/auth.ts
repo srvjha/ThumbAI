@@ -1,13 +1,14 @@
+import 'server-only';
 import { auth } from '@clerk/nextjs/server';
+import { Role, type User } from '@prisma/client';
 import { db } from '@/db';
-import { ApiError } from '@/utils/ApiError';
-import type { User } from '@prisma/client';
+import { ApiError } from '@/server/errors';
 
 /**
  * Resolves the Clerk session to the local User row.
  *
- * Every mutating route must derive the acting user from here rather than from
- * the request body — a client-supplied user id is not a credential.
+ * Every route must derive the acting user from here rather than from the
+ * request body — a client-supplied user id is not a credential.
  */
 export const requireUser = async (): Promise<User> => {
   const { userId: clerkId } = await auth();
@@ -35,5 +36,14 @@ export const requireUser = async (): Promise<User> => {
     throw new ApiError('Unauthorized', 401);
   }
 
+  return user;
+};
+
+/** requireUser, then 403 unless the user is an admin. */
+export const requireAdmin = async (): Promise<User> => {
+  const user = await requireUser();
+  if (user.role !== Role.ADMIN) {
+    throw new ApiError('Forbidden - Admin access required', 403);
+  }
   return user;
 };

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { requireUser } from '@/lib/auth';
-import { apiErrorResponse } from '@/utils/ApiError';
+import { requireUser } from '@/server/auth';
+import { apiErrorResponse } from '@/server/errors';
 import { ApiResponse } from '@/utils/ApiResponse';
 
 /**

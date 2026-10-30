@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ApiResponse } from '@/utils/ApiResponse';
 import { db } from '@/db';
-import { readFalWebhookHeaders, verifyFalWebhook } from '@/lib/falWebhook';
+import {
+  readFalWebhookHeaders,
+  verifyFalWebhook,
+} from '@/server/generations/falWebhook';
 import {
   extractImageUrls,
   markGenerationFailed,
   storeGenerationResult,
   syncGenerationFromFal,
-} from '@/lib/generationResult';
+} from '@/server/generations/results';
 
 export const POST = async (req: NextRequest) => {
   // Raw body: the signature covers the exact bytes Fal sent, so this must be

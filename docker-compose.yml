@@ -4,7 +4,7 @@
 # production database — see .env.example.
 #
 #   docker compose up -d
-#   npx prisma migrate dev
+#   pnpm exec prisma migrate dev
 services:
   postgres:
     image: postgres:17

@@ -1,15 +1,8 @@
 import { NextRequest } from 'next/server';
 import sharp from 'sharp';
-import { requireUser } from '@/lib/auth';
-import { apiErrorResponse } from '@/utils/ApiError';
-
-/**
- * Hosts we will fetch from. This proxy runs inside our network, so an
- * unrestricted `url` param turns it into an SSRF primitive: an attacker could
- * point it at cloud metadata endpoints or internal services and read the
- * response back as an "image".
- */
-const ALLOWED_HOSTS = ['fal.media', 'fal.ai'];
+import { requireUser } from '@/server/auth';
+import { apiErrorResponse } from '@/server/errors';
+import { isAllowedSource } from '@/server/imageProxy';
 
 /** Bounds how long a slow or stalled source can hold this function open. */
 const FETCH_TIMEOUT_MS = 15_000;
@@ -18,26 +11,6 @@ const FETCH_TIMEOUT_MS = 15_000;
 const MAX_DIMENSION = 4096;
 
 const MAX_SOURCE_BYTES = 25 * 1024 * 1024;
-
-const isAllowedSource = (raw: string): URL | null => {
-  let parsed: URL;
-  try {
-    parsed = new URL(raw);
-  } catch {
-    return null;
-  }
-
-  if (parsed.protocol !== 'https:') return null;
-
-  const host = parsed.hostname.toLowerCase();
-  // The exact host or a true subdomain of it. A bare endsWith('fal.media')
-  // also admitted evilfal.media, which an attacker can point at any address.
-  const allowed = ALLOWED_HOSTS.some(
-    (domain) => host === domain || host.endsWith(`.${domain}`),
-  );
-
-  return allowed ? parsed : null;
-};
 
 export async function GET(req: NextRequest) {
   try {

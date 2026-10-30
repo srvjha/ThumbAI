@@ -1,0 +1,21 @@
+# Dependencies allowed to run install scripts. pnpm blocks the rest.
+# Prisma downloads its engines, sharp its native binary, esbuild and
+# Tailwind's oxide their platform builds.
+allowBuilds:
+  '@clerk/shared': false
+  '@prisma/client': true
+  '@prisma/engines': true
+  '@tailwindcss/oxide': true
+  esbuild: true
+  prisma: true
+  sharp: true
+
+# The same list for pnpm 10, which Vercel may pick from the lockfile version
+# when it does not honour packageManager.
+onlyBuiltDependencies:
+  - '@prisma/client'
+  - '@prisma/engines'
+  - '@tailwindcss/oxide'
+  - esbuild
+  - prisma
+  - sharp

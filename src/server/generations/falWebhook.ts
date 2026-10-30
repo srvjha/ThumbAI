@@ -1,3 +1,4 @@
+import 'server-only';
 import crypto from 'crypto';
 
 /**
@@ -67,9 +68,7 @@ export interface FalWebhookHeaders {
   signature: string | null;
 }
 
-export const readFalWebhookHeaders = (
-  headers: Headers,
-): FalWebhookHeaders => ({
+export const readFalWebhookHeaders = (headers: Headers): FalWebhookHeaders => ({
   requestId: headers.get('x-fal-webhook-request-id'),
   userId: headers.get('x-fal-webhook-user-id'),
   timestamp: headers.get('x-fal-webhook-timestamp'),

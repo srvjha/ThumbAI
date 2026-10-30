@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fal } from '@fal-ai/client';
 import { env } from '@/config/env';
-import { requireUser } from '@/lib/auth';
-import { ApiError, apiErrorResponse } from '@/utils/ApiError';
+import { requireUser } from '@/server/auth';
+import { ApiError, apiErrorResponse } from '@/server/errors';
 
 fal.config({
   credentials: env.FAL_KEY,
@@ -10,11 +10,7 @@ fal.config({
 
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10MB
 
-const ALLOWED_TYPES = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-]);
+const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 /**
  * Server-side proxy for Fal storage uploads.

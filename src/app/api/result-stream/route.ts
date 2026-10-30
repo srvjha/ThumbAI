@@ -1,8 +1,8 @@
 import { NextRequest } from 'next/server';
 import { db } from '@/db';
-import { requireUser } from '@/lib/auth';
-import { apiErrorResponse } from '@/utils/ApiError';
-import { syncGenerationFromFal } from '@/lib/generationResult';
+import { requireUser } from '@/server/auth';
+import { apiErrorResponse } from '@/server/errors';
+import { syncGenerationFromFal } from '@/server/generations/results';
 
 const POLL_INTERVAL_MS = 2000;
 
