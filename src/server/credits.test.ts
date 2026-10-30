@@ -4,7 +4,6 @@ import { EDIT_MODEL } from '@/config/models';
 import {
   chargeGeneration,
   clawBackOrder,
-  createUserWithSignupGrant,
   grantCreditsForOrder,
   refundGeneration,
 } from '@/server/credits';
@@ -18,12 +17,6 @@ import {
 } from '../../test/factories';
 
 beforeEach(resetDb);
-
-const ledgerOf = (userId: string) =>
-  db.creditTransaction.findMany({
-    where: { user_id: userId },
-    orderBy: { createdAt: 'asc' },
-  });
 
 describe('chargeGeneration', () => {
   it('charges the balance and records the charge against the generation', async () => {
@@ -221,24 +214,5 @@ describe('clawBackOrder', () => {
 
     const after = await db.user.findUniqueOrThrow({ where: { id: user.id } });
     expect(after.plan).toBe('PAID');
-  });
-});
-
-describe('createUserWithSignupGrant', () => {
-  it('creates the user with a SIGNUP_GRANT row', async () => {
-    const user = await createUserWithSignupGrant(
-      {
-        email: 'new@example.test',
-        fullName: 'New',
-        clerk_id: 'user_new',
-        last_active_at: new Date(),
-      },
-      3,
-    );
-
-    expect(user.credits).toBe(3);
-    expect(await ledgerOf(user.id)).toMatchObject([
-      { type: 'SIGNUP_GRANT', amount: 3, balance_after: 3 },
-    ]);
   });
 });

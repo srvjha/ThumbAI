@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -31,6 +32,7 @@ import {
   ConversationContent,
   ConversationScrollButton,
 } from '@/components/ai-elements/conversation';
+import { useAuth } from '@/hooks/user/auth';
 import { useGeneration } from '@/hooks/user/generations';
 import type { ImageData } from '@/components/shared/imageUtils';
 import { HistoryRail } from '../HistoryRail';
@@ -160,6 +162,7 @@ export const ChatStudio = ({ mode }: { mode: StudioMode }) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const chat = useStudioChat(mode);
+  const { data: account } = useAuth();
   const composer = useRef<ChatComposerHandle>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [preview, setPreview] = useState<{
@@ -217,8 +220,24 @@ export const ChatStudio = ({ mode }: { mode: StudioMode }) => {
     return '';
   };
 
+  // Free credits were withheld at signup (reused email, network limit, or a
+  // disposable address). Say so, rather than leaving a silent zero balance.
+  const refused =
+    account?.signupCreditsRefused != null && (account.credits ?? 0) <= 0;
+
   const input = (
-    <ChatComposer ref={composer} mode={mode} chat={chat} autoFocus />
+    <>
+      {refused && (
+        <p className='mb-2 rounded-xl border bg-card/60 px-4 py-2.5 text-sm text-muted-foreground text-pretty'>
+          Free credits have already been claimed from this network or email.{' '}
+          <Link href='/pricing' className='text-brand hover:underline'>
+            Pick a plan
+          </Link>{' '}
+          to start.
+        </p>
+      )}
+      <ChatComposer ref={composer} mode={mode} chat={chat} autoFocus />
+    </>
   );
 
   return (
