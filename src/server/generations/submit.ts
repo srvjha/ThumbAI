@@ -45,6 +45,8 @@ export type SubmitResult =
   | {
       kind: 'submitted';
       requestId: string;
+      /** What the client polls: GET /api/me/generations/[generationId]. */
+      generationId: string;
       tier?: string;
       creditsCharged: number;
       seed: number | null;
@@ -93,7 +95,7 @@ const chargeAndQueue = async (
   endpointId: string,
   input: Record<string, unknown>,
   row: GenerationRow,
-): Promise<string> => {
+): Promise<{ requestId: string; generationId: string }> => {
   const thumbnail = await db.thumbnail.create({
     data: {
       ...row,
@@ -128,7 +130,7 @@ const chargeAndQueue = async (
       where: { id: thumbnail.id },
       data: { request_id },
     });
-    return request_id;
+    return { requestId: request_id, generationId: thumbnail.id };
   } catch (err) {
     // Don't keep the user's money if we never produced an image.
     await markGenerationFailed({ id: thumbnail.id });
@@ -256,7 +258,7 @@ export const submitGeneration = async (
     };
   }
 
-  const requestId = await chargeAndQueue(
+  const { requestId, generationId } = await chargeAndQueue(
     user.id,
     cost,
     model.endpointId,
@@ -284,6 +286,7 @@ export const submitGeneration = async (
   return {
     kind: 'submitted',
     requestId,
+    generationId,
     tier: resolvedTier,
     creditsCharged: cost,
     seed: usedSeed ?? null,
@@ -369,7 +372,7 @@ export const submitEdit = async (
   const enhancedPrompt = finalPrompt.response;
   const usedSeed = EDIT_MODEL.supportsSeed ? (seed ?? randomSeed()) : undefined;
 
-  const requestId = await chargeAndQueue(
+  const { requestId, generationId } = await chargeAndQueue(
     user.id,
     cost,
     EDIT_MODEL.endpointId,
@@ -399,6 +402,7 @@ export const submitEdit = async (
   return {
     kind: 'submitted',
     requestId,
+    generationId,
     creditsCharged: cost,
     seed: usedSeed ?? null,
   };

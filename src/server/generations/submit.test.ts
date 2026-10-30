@@ -43,6 +43,7 @@ describe('submitGeneration', () => {
     });
 
     expect(result).toMatchObject({ kind: 'submitted', requestId: 'req_1' });
+    if (result.kind !== 'submitted') throw new Error('unreachable');
     expect(await creditsOf(user.id)).toBe(5 - draftCost);
     const gen = await db.thumbnail.findUniqueOrThrow({
       where: { request_id: 'req_1' },

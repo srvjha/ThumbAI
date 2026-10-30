@@ -74,10 +74,14 @@ before acting.
 | `pnpm db:backup:prod`    | production — `pg_dump` into `backups/`   |
 
 `pnpm build` runs `prisma migrate deploy` first, so a deploy cannot ship code
-ahead of the schema it needs. That ordering has bitten twice: once when a
-`String[]` to enum change went out before the code that understood it, and once
-when a new column was added in code but never migrated. The build step is the
-only pre-deploy hook Vercel offers, so it is where this belongs.
+ahead of the schema it needs. `vercel.json` pins that as the Vercel build
+command: the dashboard used to override it with `prisma generate && next build`,
+so merged migrations silently never reached production, and in October 2026 the
+credit ledger went live without its table until it was applied by hand. Preview
+deploys migrate their own Neon branch database, not production.
+
+After merging a PR that adds a migration, confirm it landed:
+`pnpm db:status:prod` should report the schema is up to date.
 
 Back up before migrating production: `pnpm db:backup:prod`. Dumps land in
 `backups/`, which is gitignored because they contain real user data.
