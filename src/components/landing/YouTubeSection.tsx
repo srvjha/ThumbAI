@@ -6,17 +6,22 @@ import { H2 } from './type';
 import { YouTubeDemo } from './YouTubeDemo';
 import { YouTubeIcon } from './YouTubeIcon';
 
-// Copy left, the live YouTube demo right. The logo sits outside every
-// animated wrapper: the brand rules forbid moving it.
+// Copy left, the live YouTube demo right. The logo leads the headline at cap
+// height, unmodified; it only fades in with the heading, never moves on its own.
 export const YouTubeSection = () => (
   <section className='py-24 md:py-40'>
     <div className='mx-auto max-w-6xl px-4 sm:px-6 lg:px-8'>
       <div className='grid items-center gap-12 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-16'>
         <div>
-          <YouTubeIcon label='YouTube' className='h-11' />
-          <Reveal stagger={0.08} className='mt-8'>
+          <Reveal stagger={0.08}>
             <RevealItem as='h2' className={H2}>
-              <span className='block'>Video’s done.</span>
+              <span className='block whitespace-nowrap'>
+                <YouTubeIcon
+                  label='YouTube'
+                  className='mr-[0.22em] inline-block h-[0.74em] align-[-0.04em]'
+                />
+                Video’s done.
+              </span>
               <span className='block'>Thumbnail isn’t?</span>
             </RevealItem>
             <RevealItem
