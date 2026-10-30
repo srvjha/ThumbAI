@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { fal } from '@fal-ai/client';
 import { env } from '@/config/env';
 import { requireUser } from '@/server/auth';
+import { enforceRateLimit } from '@/server/rateLimit';
 import { ApiError, apiErrorResponse } from '@/server/errors';
 
 fal.config({
@@ -21,7 +22,8 @@ const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
  */
 export async function POST(req: NextRequest) {
   try {
-    await requireUser();
+    const user = await requireUser();
+    await enforceRateLimit('upload', user.id);
 
     const formData = await req.formData();
     const file = formData.get('file');

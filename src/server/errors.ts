@@ -3,6 +3,16 @@ import { NextResponse } from 'next/server';
 import { ApiError } from '@/utils/ApiError';
 import { ApiResponse } from '@/utils/ApiResponse';
 
+/** A 429 that tells the client when to try again. */
+class RateLimitError extends ApiError {
+  constructor(
+    message: string,
+    public retryAfterSeconds: number,
+  ) {
+    super(message, 429);
+  }
+}
+
 /**
  * Turns a thrown error into a response.
  *
@@ -16,6 +26,10 @@ const apiErrorResponse = (err: unknown): NextResponse => {
       new ApiResponse(err.statusCode, null, err.message),
       {
         status: err.statusCode,
+        headers:
+          err instanceof RateLimitError
+            ? { 'Retry-After': String(err.retryAfterSeconds) }
+            : undefined,
       },
     );
   }
@@ -24,10 +38,8 @@ const apiErrorResponse = (err: unknown): NextResponse => {
 
   return NextResponse.json(
     new ApiResponse(500, null, 'Internal server error'),
-    {
-      status: 500,
-    },
+    { status: 500 },
   );
 };
 
-export { ApiError, apiErrorResponse };
+export { ApiError, RateLimitError, apiErrorResponse };
