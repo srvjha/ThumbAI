@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ApiResponse } from '@/utils/ApiResponse';
 import { requireUser } from '@/server/auth';
+import { enforceRateLimit } from '@/server/rateLimit';
 import { apiErrorResponse } from '@/server/errors';
 import { submitEdit } from '@/server/generations/submit';
 
@@ -9,6 +10,7 @@ export const POST = async (req: NextRequest) => {
     // The acting user comes from the session. A userId in the body is not a
     // credential and is ignored.
     const user = await requireUser();
+    await enforceRateLimit('generate', user.id);
     const result = await submitEdit(user, await req.json());
 
     if (result.kind === 'rejected') {
