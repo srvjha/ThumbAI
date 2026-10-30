@@ -1,36 +1,28 @@
-import { HomePageBackground } from '@/components/design/HomePageBackground';
 import { Footer } from '@/components/ui/Footer';
-import { HeroSection } from '@/components/home/HeroSection';
-import { ShowcaseSection } from '@/components/home/ShowcaseSection';
-import { FeaturesSection } from '@/components/home/FeaturesSection';
-import { HowItWorkSection } from '@/components/home/HowItWorkSection';
-import { DemoSection } from '@/components/home/DemoSection';
+import { MotionRoot } from '@/components/motion/MotionRoot';
+import { Hero } from '@/components/landing/Hero';
+import { YouTubeSection } from '@/components/landing/YouTubeSection';
+import { Workflows } from '@/components/landing/Workflows';
+import { SamplesGallery } from '@/components/landing/SamplesGallery';
+import { HowItWorks } from '@/components/landing/HowItWorks';
+import { PricingTeaser } from '@/components/landing/PricingTeaser';
+import { FinalCta } from '@/components/landing/FinalCta';
 
-const Home = () => {
-  return (
-    <>
-      <HomePageBackground />
-      <div className='min-h-screen  text-white z-10'>
-        {/* Hero Section */}
-        <HeroSection />
-
-        {/* Showcase Thumbnails  */}
-        <ShowcaseSection />
-
-        {/* Features Section */}
-        <FeaturesSection />
-
-        {/* How It Works Section */}
-        <HowItWorkSection />
-
-        {/* Demo Section */}
-        <DemoSection />
-
-        {/* Footer */}
-        <Footer />
-      </div>
-    </>
-  );
-};
+// Still a server component: MotionRoot only provides the motion features to
+// the client islands inside it.
+const Home = () => (
+  <MotionRoot>
+    <main className='overflow-x-clip'>
+      <Hero />
+      <YouTubeSection />
+      <Workflows />
+      <SamplesGallery />
+      <HowItWorks />
+      <PricingTeaser />
+      <FinalCta />
+    </main>
+    <Footer />
+  </MotionRoot>
+);
 
 export default Home;

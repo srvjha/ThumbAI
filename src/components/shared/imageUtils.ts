@@ -3,33 +3,6 @@ export type ImageData = {
   aspectRatio: string;
 };
 
-export const getImageContainerStyle = (aspectRatio: string): string => {
-  if (aspectRatio === '9:16') {
-    return 'aspect-[9/16] max-h-[300px] w-auto mx-auto';
-  }
-  return 'aspect-[16/9] w-full';
-};
-
-export const getGridLayout = (images: ImageData[]): string => {
-  if (images.length === 1) return 'grid-cols-1';
-
-  // Check if we have mixed aspect ratios
-  const hasLandscape = images.some((img) => img.aspectRatio === '16:9');
-  const hasPortrait = images.some((img) => img.aspectRatio === '9:16');
-
-  if (hasLandscape && hasPortrait) {
-    // Mixed ratios - use flexible grid
-    return 'grid-cols-1 sm:grid-cols-2 gap-4';
-  }
-
-  // Same aspect ratios
-  if (images[0]?.aspectRatio === '9:16') {
-    return images.length <= 2 ? 'grid-cols-2 gap-3' : 'grid-cols-3 gap-2';
-  }
-
-  return 'grid-cols-1 gap-3';
-};
-
 /**
  * Download a single image from URL
  */
@@ -55,39 +28,6 @@ export const downloadImage = async (
   } catch (error) {
     throw error;
   }
-};
-
-/**
- * Copy image URL to clipboard
- */
-export const copyToClipboard = async (url: string): Promise<void> => {
-  try {
-    await navigator.clipboard.writeText(url);
-  } catch (error) {
-    throw error;
-  }
-};
-
-/**
- * Share image using native share API or fallback to clipboard
- */
-export const shareImage = async (url: string): Promise<boolean> => {
-  if (navigator.share) {
-    try {
-      await navigator.share({
-        title: 'Generated Image',
-        text: 'Check out this generated image!',
-        url,
-      });
-      return true;
-    } catch (err) {
-      if ((err as Error).name === 'AbortError') {
-        return false;
-      }
-      throw err;
-    }
-  }
-  return false;
 };
 
 /**

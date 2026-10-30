@@ -2,6 +2,7 @@ import { fal } from '@fal-ai/client';
 import { db } from '@/db';
 import { GEN_STATUS } from '@prisma/client';
 import { refundCredits } from '@/lib/credits';
+import { creditsPerImageForEndpoint } from '@/config/models';
 
 /**
  * Recording generation results.
@@ -47,17 +48,26 @@ export const markGenerationFailed = async (
     where: { request_id: requestId },
   });
 
-  if (!thumbnail || thumbnail.status === GEN_STATUS.FAILED) {
-    // Already recorded; don't refund twice.
-    return;
-  }
+  if (!thumbnail) return;
 
-  await db.thumbnail.update({
-    where: { request_id: requestId },
+  // Conditional on the row still being open, so the webhook and the sync
+  // path racing on the same request cannot both refund it.
+  const claimed = await db.thumbnail.updateMany({
+    where: {
+      request_id: requestId,
+      status: { notIn: [GEN_STATUS.FAILED, GEN_STATUS.COMPLETED] },
+    },
     data: { status: GEN_STATUS.FAILED },
   });
 
-  await refundCredits(thumbnail.user_id, thumbnail.num_of_images ?? 1);
+  if (claimed.count === 0) return;
+
+  // Refund what was charged: a Quality image or an edit costs more than one
+  // credit, so refunding num_of_images alone under-paid those.
+  const cost =
+    (thumbnail.num_of_images ?? 1) *
+    creditsPerImageForEndpoint(thumbnail.model_endpoint);
+  await refundCredits(thumbnail.user_id, cost);
 };
 
 export type SyncOutcome =
@@ -127,5 +137,49 @@ export const syncGenerationFromFal = async (
     // A 4xx from Fal usually means the request id is unknown or expired.
     console.error('Failed to sync generation from Fal', { requestId, err });
     return { status: 'PENDING' };
+  }
+};
+
+/** Older than this, an open row is checked against Fal on read. */
+const STALE_AFTER_MS = 2 * 60 * 1000;
+/** Older than this and still not done, the job is treated as lost. */
+const ABANDON_AFTER_MS = 30 * 60 * 1000;
+/** Bounds the Fal calls one read can make. */
+const MAX_RECONCILE = 8;
+
+/**
+ * Closes a user's generations that have been open too long, so the library
+ * never shows "Generating" for a job nobody is waiting on. Each is checked
+ * against Fal first; one still unresolved after ABANDON_AFTER_MS is marked
+ * failed, which refunds its credits.
+ */
+export const reconcileStaleGenerations = async (userId: string) => {
+  // Housekeeping only: a failure here must never fail the read it rides on.
+  try {
+    const now = Date.now();
+    const stale = await db.thumbnail.findMany({
+      where: {
+        user_id: userId,
+        status: { in: [GEN_STATUS.PENDING, GEN_STATUS.IN_PROGRESS] },
+        createdAt: { lt: new Date(now - STALE_AFTER_MS) },
+      },
+      select: { request_id: true, createdAt: true },
+      orderBy: { createdAt: 'asc' },
+      take: MAX_RECONCILE,
+    });
+
+    await Promise.all(
+      stale.map(async ({ request_id, createdAt }) => {
+        const outcome = await syncGenerationFromFal(request_id);
+        if (
+          outcome.status === 'PENDING' &&
+          now - createdAt.getTime() > ABANDON_AFTER_MS
+        ) {
+          await markGenerationFailed(request_id);
+        }
+      }),
+    );
+  } catch (err) {
+    console.error('Failed to reconcile stale generations', { userId, err });
   }
 };

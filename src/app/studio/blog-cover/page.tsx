@@ -1,5 +1,11 @@
-import { UrlToImageGenerator } from '@/components/UrlToImage';
+import { Suspense } from 'react';
+import { ChatStudio } from '@/components/studio/chat/ChatStudio';
 
-export default function UrlToImagePage() {
-  return <UrlToImageGenerator />;
+// The studio reads ?from=, so it renders under Suspense.
+export default function BlogCoverPage() {
+  return (
+    <Suspense>
+      <ChatStudio mode='blog' />
+    </Suspense>
+  );
 }

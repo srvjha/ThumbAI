@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { SignIn } from '@clerk/nextjs';
-import { AuthShell } from '@/components/auth/AuthShell';
+import { AuthShell, authAppearance } from '@/components/auth/AuthShell';
 
 export const metadata: Metadata = {
   title: 'Sign in',
@@ -14,6 +14,7 @@ export default function SignInPage() {
       subheading='Pick up where you left off. Your generations are waiting.'
     >
       <SignIn
+        appearance={authAppearance}
         routing='path'
         path='/sign-in'
         // Leading slash matters: 'sign-up' is relative, so Clerk linked to

@@ -1,19 +1,22 @@
 import type { Metadata, Viewport } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Inter, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { Header } from '@/components/Header';
 import { Toaster } from 'react-hot-toast';
 import { ClerkProvider } from '@clerk/nextjs';
 import { QueryProvider } from '@/components/providers/query';
+import { ThemeProvider } from '@/components/providers/theme';
 
-// globals.css already expects --font-geist-sans / --font-geist-mono; nothing
-// ever defined them, so every screen fell back to the browser default sans.
-const geistSans = Geist({
+// One family for the whole interface. The optical-size axis tightens Inter's
+// letterforms at display sizes, so headlines need no second typeface.
+const inter = Inter({
   subsets: ['latin'],
-  variable: '--font-geist-sans',
+  axes: ['opsz'],
+  variable: '--font-inter',
   display: 'swap',
 });
 
+// Numbers (credits, prices, dimensions) stay monospaced so columns align.
 const geistMono = Geist_Mono({
   subsets: ['latin'],
   variable: '--font-geist-mono',
@@ -24,26 +27,26 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://thumbai.app';
 
 /**
  * Clerk renders its own components, so it needs telling about the theme once
- * here rather than per page. Without this the sign-in card and the header
- * avatar menu came out in Clerk's default light styling against a dark app.
- * Values track the tokens in globals.css.
+ * here rather than per page. Values point at the tokens in globals.css, so
+ * they follow light and dark.
  */
 const clerkAppearance = {
+  cssLayerName: 'clerk',
   variables: {
-    colorPrimary: '#2563eb',
-    colorPrimaryForeground: '#ffffff',
-    colorBackground: '#0a0a0a',
-    colorForeground: '#fafafa',
-    colorMutedForeground: '#a3a3a3',
-    colorInput: '#171717',
-    colorInputForeground: '#fafafa',
-    // Clerk derives secondary text (the "Continue with Google" label), the
-    // "or" divider and card borders from these. Left unset they keep the
-    // light-theme near-black and vanish against the dark card.
-    colorNeutral: '#fafafa',
-    colorBorder: '#262626',
-    colorDanger: '#f87171',
-    borderRadius: '0.625rem',
+    colorPrimary: 'var(--primary)',
+    colorPrimaryForeground: 'var(--primary-foreground)',
+    colorBackground: 'var(--card)',
+    colorForeground: 'var(--foreground)',
+    colorMutedForeground: 'var(--muted-foreground)',
+    colorMuted: 'var(--muted)',
+    colorInput: 'var(--card)',
+    colorInputForeground: 'var(--foreground)',
+    colorNeutral: 'var(--foreground)',
+    colorBorder: 'var(--border)',
+    colorRing: 'var(--ring)',
+    colorDanger: 'var(--destructive)',
+    borderRadius: '0.75rem',
+    fontFamily: 'var(--font-inter)',
   },
 } as const;
 
@@ -74,8 +77,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#2563EB',
-  colorScheme: 'dark',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f7f6f2' },
+    { media: '(prefers-color-scheme: dark)', color: '#0c0f19' },
+  ],
+  colorScheme: 'light dark',
 };
 
 export default function RootLayout({
@@ -85,18 +91,28 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider appearance={clerkAppearance}>
-      {/* `dark` belongs on <html> so the root element is themed too, not just
-          body's descendants. */}
       <html
         lang='en'
-        className={`dark ${geistSans.variable} ${geistMono.variable}`}
+        // next-themes sets the class before hydration.
+        suppressHydrationWarning
+        className={`${inter.variable} ${geistMono.variable}`}
       >
         <body className='bg-background text-foreground font-sans antialiased'>
-          <QueryProvider>
-            <Toaster />
-            <Header />
-            {children}
-          </QueryProvider>
+          <ThemeProvider>
+            <QueryProvider>
+              <Toaster
+                toastOptions={{
+                  style: {
+                    background: 'var(--popover)',
+                    color: 'var(--popover-foreground)',
+                    border: '1px solid var(--border)',
+                  },
+                }}
+              />
+              <Header />
+              {children}
+            </QueryProvider>
+          </ThemeProvider>
         </body>
       </html>
     </ClerkProvider>
