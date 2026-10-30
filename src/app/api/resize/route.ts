@@ -9,7 +9,10 @@ import { apiErrorResponse } from '@/utils/ApiError';
  * point it at cloud metadata endpoints or internal services and read the
  * response back as an "image".
  */
-const ALLOWED_HOST_SUFFIXES = ['.fal.media', 'fal.media', '.fal.ai'];
+const ALLOWED_HOSTS = ['fal.media', 'fal.ai'];
+
+/** Bounds how long a slow or stalled source can hold this function open. */
+const FETCH_TIMEOUT_MS = 15_000;
 
 /** Guards against a resize bomb allocating an enormous bitmap. */
 const MAX_DIMENSION = 4096;
@@ -27,8 +30,10 @@ const isAllowedSource = (raw: string): URL | null => {
   if (parsed.protocol !== 'https:') return null;
 
   const host = parsed.hostname.toLowerCase();
-  const allowed = ALLOWED_HOST_SUFFIXES.some(
-    (suffix) => host === suffix || host.endsWith(suffix),
+  // The exact host or a true subdomain of it. A bare endsWith('fal.media')
+  // also admitted evilfal.media, which an attacker can point at any address.
+  const allowed = ALLOWED_HOSTS.some(
+    (domain) => host === domain || host.endsWith(`.${domain}`),
   );
 
   return allowed ? parsed : null;
@@ -61,7 +66,10 @@ export async function GET(req: NextRequest) {
       return new Response('Source host not allowed', { status: 400 });
     }
 
-    const res = await fetch(source, { redirect: 'error' });
+    const res = await fetch(source, {
+      redirect: 'error',
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
     if (!res.ok) {
       return new Response('Failed to fetch image', { status: 502 });
     }
@@ -84,7 +92,9 @@ export async function GET(req: NextRequest) {
     return new Response(new Uint8Array(resizedBuffer), {
       headers: {
         'Content-Type': 'image/jpeg',
-        'Cache-Control': 'public, max-age=31536000, immutable',
+        // Private: this route requires a session, so a shared cache must not
+        // hand its output to whoever asks next.
+        'Cache-Control': 'private, max-age=31536000, immutable',
       },
     });
   } catch (err) {

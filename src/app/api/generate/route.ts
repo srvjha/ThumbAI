@@ -11,6 +11,13 @@ import { requireUser } from '@/lib/auth';
 import { deductCredits, refundCredits } from '@/lib/credits';
 import { ApiError, apiErrorResponse } from '@/utils/ApiError';
 import {
+  MAX_URL_CHARS,
+  assertCanAfford,
+  assertChoicesSize,
+  assertPromptLength,
+  parseWorkflow,
+} from '@/lib/generationInput';
+import {
   MAX_IMAGES_PER_REQUEST,
   getTextToImageModel,
   isAspectRatio,
@@ -37,10 +44,10 @@ export const POST = async (req: NextRequest) => {
       outputFormat = 'jpeg',
       aspectRatio = '16:9',
       userChoices = '',
-      workflow,
       tier,
       seed,
     } = body;
+    const workflow = parseWorkflow(body.workflow);
 
     // The blog workflow supplies a URL instead of a prompt: the page is read
     // here and authored once, rather than the client authoring a prompt that
@@ -52,6 +59,14 @@ export const POST = async (req: NextRequest) => {
     if (!isBlogWorkflow && (typeof prompt !== 'string' || !prompt.trim())) {
       throw new ApiError('A prompt is required', 400);
     }
+    if (isBlogWorkflow) {
+      if (blogUrl.length > MAX_URL_CHARS) {
+        throw new ApiError('That URL is too long', 400);
+      }
+    } else {
+      assertPromptLength(prompt);
+    }
+    assertChoicesSize(userChoices);
     if (!isAspectRatio(aspectRatio)) {
       throw new ApiError('Unsupported aspect ratio', 400);
     }
@@ -79,6 +94,11 @@ export const POST = async (req: NextRequest) => {
     // Only pick a seed where the endpoint honours one, so a recorded seed
     // always reflects what was actually sent.
     const usedSeed = model.supportsSeed ? (seed ?? randomSeed()) : undefined;
+
+    // Refuse before the page fetch and the prompt agent, which both run on
+    // our account. The atomic charge further down is still the real guard.
+    const cost = numImages * model.creditsPerImage;
+    assertCanAfford(user.credits, cost);
 
     // What the prompt agent is briefed with, and what we record as the user's
     // own input. They differ for the blog workflow.
@@ -150,7 +170,6 @@ export const POST = async (req: NextRequest) => {
     }
 
     // Charge before submitting so concurrent requests cannot overdraw.
-    const cost = numImages * model.creditsPerImage;
     await deductCredits(user.id, cost);
     charged = { userId: user.id, cost };
 
@@ -183,7 +202,7 @@ export const POST = async (req: NextRequest) => {
         image_url: [],
         content_type: outputFormat,
         aspect_ratio: aspectRatio,
-        model_used: workflow,
+        model_used: workflow ?? null,
         model_endpoint: model.endpointId,
         model_tier: resolvedTier === 'quality' ? TIER.QUALITY : TIER.DRAFT,
         seed: usedSeed ?? null,

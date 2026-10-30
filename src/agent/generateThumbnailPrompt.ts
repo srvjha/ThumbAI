@@ -1,4 +1,4 @@
-'use server';
+import 'server-only';
 import { Agent, run } from '@openai/agents';
 import { z } from 'zod';
 import { MODEL } from '@prisma/client';

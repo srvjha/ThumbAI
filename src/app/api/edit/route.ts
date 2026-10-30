@@ -10,6 +10,13 @@ import { requireUser } from '@/lib/auth';
 import { deductCredits, refundCredits } from '@/lib/credits';
 import { ApiError, apiErrorResponse } from '@/utils/ApiError';
 import {
+  assertCanAfford,
+  assertChoicesSize,
+  assertImageUrls,
+  assertPromptLength,
+  parseWorkflow,
+} from '@/lib/generationInput';
+import {
   EDIT_MODEL,
   MAX_IMAGES_PER_REQUEST,
   isAspectRatio,
@@ -36,6 +43,7 @@ export const POST = async (req: NextRequest) => {
     // credential and is ignored.
     const user = await requireUser();
 
+    const body = await req.json();
     const {
       mode,
       prompt,
@@ -45,14 +53,16 @@ export const POST = async (req: NextRequest) => {
       aspectRatio = '16:9',
       choices = 'random',
       userChoices,
-      workflow,
       seed,
-    } = await req.json();
+    } = body;
+    const workflow = parseWorkflow(body.workflow);
 
     // Validate before spending anything: these values reach a paid API.
     if (typeof prompt !== 'string' || prompt.trim().length === 0) {
       throw new ApiError('A prompt is required', 400);
     }
+    assertPromptLength(prompt);
+    assertChoicesSize(userChoices);
     if (!isAspectRatio(aspectRatio)) {
       throw new ApiError('Unsupported aspect ratio', 400);
     }
@@ -71,6 +81,7 @@ export const POST = async (req: NextRequest) => {
         400,
       );
     }
+    const imageUrls = assertImageUrls(images_urls);
 
     // The chat flow historically sent an array here and then read its last
     // element. Normalise once, up front.
@@ -88,6 +99,11 @@ export const POST = async (req: NextRequest) => {
         400,
       );
     }
+
+    // Refuse before the prompt agent, which runs on our account. The atomic
+    // charge further down is still the real guard.
+    const cost = imageCount * EDIT_MODEL.creditsPerImage;
+    assertCanAfford(user.credits, cost);
 
     let enhancedPrompt: string;
     let needsGrounding = false;
@@ -123,7 +139,6 @@ export const POST = async (req: NextRequest) => {
       : undefined;
 
     // Charge before submitting so concurrent requests cannot overdraw.
-    const cost = imageCount * EDIT_MODEL.creditsPerImage;
     await deductCredits(user.id, cost);
     charged = { userId: user.id, cost };
 
@@ -133,7 +148,7 @@ export const POST = async (req: NextRequest) => {
         aspectRatio,
         numImages: imageCount,
         outputFormat,
-        imageUrls: images_urls,
+        imageUrls,
         enableWebSearch: needsGrounding,
         seed: usedSeed,
       }),

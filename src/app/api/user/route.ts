@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { ApiError } from '@/utils/ApiError';
+import { ApiError, apiErrorResponse } from '@/utils/ApiError';
 import { ApiResponse } from '@/utils/ApiResponse';
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
@@ -25,14 +25,7 @@ export const GET = async (req: NextRequest) => {
       new ApiResponse(200, existingUser, 'User fetched successfully'),
       { status: 200 },
     );
-  } catch (err: any) {
-    return NextResponse.json(
-      new ApiResponse(
-        err.statusCode || 500,
-        null,
-        err.message || 'Server Error',
-      ),
-      { status: err.statusCode || 500 },
-    );
+  } catch (err) {
+    return apiErrorResponse(err);
   }
 };

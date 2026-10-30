@@ -4,6 +4,7 @@ import { WebhookEvent, UserJSON } from '@clerk/nextjs/server';
 import { db } from '@/db';
 import { NextResponse } from 'next/server';
 import { ApiResponse } from '@/utils/ApiResponse';
+import { apiErrorResponse } from '@/utils/ApiError';
 import { env } from '@/config/env';
 import { Role } from '@prisma/client';
 import { FREE_PLAN } from '@/config/plans';
@@ -99,15 +100,8 @@ export const POST = async (req: Request): Promise<NextResponse> => {
         new ApiResponse(201, newUser, 'User created successfully'),
         { status: 201 },
       );
-    } catch (err: any) {
-      return NextResponse.json(
-        new ApiResponse(
-          err.statusCode || 500,
-          null,
-          err.message || 'Server Error',
-        ),
-        { status: err.statusCode || 500 },
-      );
+    } catch (err) {
+      return apiErrorResponse(err);
     }
   }
 

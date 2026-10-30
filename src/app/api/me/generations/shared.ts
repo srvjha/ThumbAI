@@ -1,9 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
-import { NextResponse } from 'next/server';
 import type { Prisma } from '@prisma/client';
 import { db } from '@/db';
-import { ApiError } from '@/utils/ApiError';
-import { ApiResponse } from '@/utils/ApiResponse';
+import { ApiError, apiErrorResponse } from '@/utils/ApiError';
 import { creditsPerImageForEndpoint } from '@/config/models';
 import type { GenerationItem } from '@/components/dashboard/types';
 
@@ -20,11 +18,11 @@ export const requireUser = async () => {
   return user;
 };
 
-export const errorResponse = (err: any) =>
-  NextResponse.json(
-    new ApiResponse(err.statusCode || 500, null, err.message || 'Server Error'),
-    { status: err.statusCode || 500 },
-  );
+/**
+ * Kept as an alias so callers don't change. It used to echo err.message for
+ * any error, which sent Prisma internals to the browser.
+ */
+export const errorResponse = apiErrorResponse;
 
 export const generationSelect = {
   id: true,
