@@ -9,6 +9,8 @@ import { Loader } from './ai-elements/loader';
 import { Badge } from './ui/badge';
 import { useAuth } from '@/hooks/user/auth';
 import { Skeleton } from './ui/skeleton';
+import { usePathname } from 'next/navigation';
+import { APP_ROUTE_PREFIXES } from './app/AppShell';
 
 export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -23,6 +25,12 @@ export const Header = () => {
   }, [authData]);
 
   const navLinks = [{ label: 'Pricing', href: '/pricing' }];
+
+  // Signed-in screens bring their own navigation in the app shell.
+  const pathname = usePathname();
+  if (APP_ROUTE_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+    return null;
+  }
 
   return (
     <header className='fixed top-0 w-full bg-transparent backdrop-blur-md border-none border-neutral-800 z-50'>

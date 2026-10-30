@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Geist, Geist_Mono, Instrument_Serif } from 'next/font/google';
 import './globals.css';
 import { Header } from '@/components/Header';
 import { Toaster } from 'react-hot-toast';
@@ -20,30 +20,34 @@ const geistMono = Geist_Mono({
   display: 'swap',
 });
 
+// Display face for headlines; body copy stays in Geist.
+const instrumentSerif = Instrument_Serif({
+  subsets: ['latin'],
+  weight: '400',
+  style: ['normal', 'italic'],
+  variable: '--font-instrument-serif',
+  display: 'swap',
+});
+
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://thumbai.app';
 
 /**
  * Clerk renders its own components, so it needs telling about the theme once
- * here rather than per page. Without this the sign-in card and the header
- * avatar menu came out in Clerk's default light styling against a dark app.
- * Values track the tokens in globals.css.
+ * here rather than per page. Values track the tokens in globals.css.
  */
 const clerkAppearance = {
   variables: {
-    colorPrimary: '#2563eb',
+    colorPrimary: '#3e63dd',
     colorPrimaryForeground: '#ffffff',
-    colorBackground: '#0a0a0a',
-    colorForeground: '#fafafa',
-    colorMutedForeground: '#a3a3a3',
-    colorInput: '#171717',
-    colorInputForeground: '#fafafa',
-    // Clerk derives secondary text (the "Continue with Google" label), the
-    // "or" divider and card borders from these. Left unset they keep the
-    // light-theme near-black and vanish against the dark card.
-    colorNeutral: '#fafafa',
-    colorBorder: '#262626',
-    colorDanger: '#f87171',
-    borderRadius: '0.625rem',
+    colorBackground: '#ffffff',
+    colorForeground: '#12172b',
+    colorMutedForeground: '#5c6275',
+    colorInput: '#ffffff',
+    colorInputForeground: '#12172b',
+    colorNeutral: '#12172b',
+    colorBorder: '#e4e1d8',
+    colorDanger: '#d93f3f',
+    borderRadius: '0.75rem',
   },
 } as const;
 
@@ -74,8 +78,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#2563EB',
-  colorScheme: 'dark',
+  themeColor: '#3e63dd',
+  colorScheme: 'light',
 };
 
 export default function RootLayout({
@@ -85,11 +89,9 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider appearance={clerkAppearance}>
-      {/* `dark` belongs on <html> so the root element is themed too, not just
-          body's descendants. */}
       <html
         lang='en'
-        className={`dark ${geistSans.variable} ${geistMono.variable}`}
+        className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable}`}
       >
         <body className='bg-background text-foreground font-sans antialiased'>
           <QueryProvider>
