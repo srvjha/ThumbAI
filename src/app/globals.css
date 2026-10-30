@@ -175,6 +175,35 @@
   }
 }
 
+/* "Creating image": a highlight sweeping across the text while it waits. */
+@utility shimmer-text {
+  background: linear-gradient(
+      90deg,
+      var(--muted-foreground) 0%,
+      var(--muted-foreground) 40%,
+      var(--foreground) 50%,
+      var(--muted-foreground) 60%,
+      var(--muted-foreground) 100%
+    )
+    0 0 / 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer-text 2.2s linear infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@keyframes shimmer-text {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -150% 0;
+  }
+}
+
 @theme inline {
   --animate-scroll: scroll var(--animation-duration, 40s)
     var(--animation-direction, forwards) linear infinite;

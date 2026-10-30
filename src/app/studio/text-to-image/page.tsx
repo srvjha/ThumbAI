@@ -1,11 +1,11 @@
 import { Suspense } from 'react';
-import { TextToImageGenerator } from '@/components/TextToImage';
+import { ChatStudio } from '@/components/studio/chat/ChatStudio';
 
-// The studio reads ?from= and hand-off params, so it renders under Suspense.
+// The studio reads ?from=, so it renders under Suspense.
 export default function TextToImagePage() {
   return (
     <Suspense>
-      <TextToImageGenerator />
+      <ChatStudio mode='text' />
     </Suspense>
   );
 }

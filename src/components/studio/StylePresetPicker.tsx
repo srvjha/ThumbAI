@@ -5,7 +5,7 @@ import { Check, Palette } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import { STYLE_PRESETS, presetById } from './presets';
-import { chipClass } from './Composer';
+import { chipClass } from './controls';
 import { cn } from '@/lib/utils';
 
 /** A look to steer the render, picked from real samples. Optional. */

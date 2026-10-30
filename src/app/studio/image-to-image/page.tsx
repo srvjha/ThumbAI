@@ -1,11 +1,11 @@
 import { Suspense } from 'react';
-import { ImageToImage } from '@/components/ImageToImage';
+import { ChatStudio } from '@/components/studio/chat/ChatStudio';
 
-// The studio reads ?from= and hand-off params, so it renders under Suspense.
-export default function ImageEditorPage() {
+// The studio reads ?from=, so it renders under Suspense.
+export default function ImageToImagePage() {
   return (
     <Suspense>
-      <ImageToImage />
+      <ChatStudio mode='image' />
     </Suspense>
   );
 }
