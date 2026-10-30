@@ -9,8 +9,10 @@
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
   --color-brand-muted: var(--brand-muted);
-  --font-sans: var(--font-geist-sans);
-  --font-serif: var(--font-instrument-serif);
+  --font-sans: var(--font-inter);
+  /* Display headlines. Still named `serif` so existing class names keep
+     working; it is Inter set tight and heavy, see .font-serif below. */
+  --font-serif: var(--font-inter);
   --color-brand-strong: var(--brand-strong);
   --font-mono: var(--font-geist-mono);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -95,6 +97,15 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: 'cv11', 'ss03';
+  }
+  /* Display type: Inter at a semibold weight with negative tracking, the way
+     it is set on product sites. In the base layer so a tracking-* or font-*
+     utility on the element still wins. */
+  .font-serif {
+    font-weight: 600;
+    letter-spacing: -0.035em;
+    line-height: 1.05;
   }
 }
 

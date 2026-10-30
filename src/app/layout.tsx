@@ -1,31 +1,24 @@
 import type { Metadata, Viewport } from 'next';
-import { Geist, Geist_Mono, Instrument_Serif } from 'next/font/google';
+import { Inter, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { Header } from '@/components/Header';
 import { Toaster } from 'react-hot-toast';
 import { ClerkProvider } from '@clerk/nextjs';
 import { QueryProvider } from '@/components/providers/query';
 
-// globals.css already expects --font-geist-sans / --font-geist-mono; nothing
-// ever defined them, so every screen fell back to the browser default sans.
-const geistSans = Geist({
+// One family for the whole interface. The optical-size axis tightens Inter's
+// letterforms at display sizes, so headlines need no second typeface.
+const inter = Inter({
   subsets: ['latin'],
-  variable: '--font-geist-sans',
+  axes: ['opsz'],
+  variable: '--font-inter',
   display: 'swap',
 });
 
+// Numbers (credits, prices, dimensions) stay monospaced so columns align.
 const geistMono = Geist_Mono({
   subsets: ['latin'],
   variable: '--font-geist-mono',
-  display: 'swap',
-});
-
-// Display face for headlines; body copy stays in Geist.
-const instrumentSerif = Instrument_Serif({
-  subsets: ['latin'],
-  weight: '400',
-  style: ['normal', 'italic'],
-  variable: '--font-instrument-serif',
   display: 'swap',
 });
 
@@ -48,6 +41,7 @@ const clerkAppearance = {
     colorBorder: '#e4e1d8',
     colorDanger: '#d93f3f',
     borderRadius: '0.75rem',
+    fontFamily: 'var(--font-inter)',
   },
 } as const;
 
@@ -91,7 +85,7 @@ export default function RootLayout({
     <ClerkProvider appearance={clerkAppearance}>
       <html
         lang='en'
-        className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable}`}
+        className={`${inter.variable} ${geistMono.variable}`}
       >
         <body className='bg-background text-foreground font-sans antialiased'>
           <QueryProvider>
