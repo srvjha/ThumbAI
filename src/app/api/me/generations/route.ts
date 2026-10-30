@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GEN_STATUS, MODEL, type Prisma } from '@prisma/client';
 import { db } from '@/db';
+import { reconcileStaleGenerations } from '@/lib/generationResult';
 import { ApiResponse } from '@/utils/ApiResponse';
 import { ApiError } from '@/utils/ApiError';
 import {
@@ -58,6 +59,10 @@ export const GET = async (req: NextRequest) => {
         ? { user_prompt: { contains: q.slice(0, 200), mode: 'insensitive' } }
         : {}),
     };
+
+    // Jobs whose webhook never arrived would otherwise read as running
+    // forever; settle them before reading.
+    await reconcileStaleGenerations(user.id);
 
     const rows = await db.thumbnail.findMany({
       where,

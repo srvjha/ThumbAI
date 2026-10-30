@@ -139,3 +139,42 @@ export const syncGenerationFromFal = async (
     return { status: 'PENDING' };
   }
 };
+
+/** Older than this, an open row is checked against Fal on read. */
+const STALE_AFTER_MS = 2 * 60 * 1000;
+/** Older than this and still not done, the job is treated as lost. */
+const ABANDON_AFTER_MS = 30 * 60 * 1000;
+/** Bounds the Fal calls one read can make. */
+const MAX_RECONCILE = 8;
+
+/**
+ * Closes a user's generations that have been open too long, so the library
+ * never shows "Generating" for a job nobody is waiting on. Each is checked
+ * against Fal first; one still unresolved after ABANDON_AFTER_MS is marked
+ * failed, which refunds its credits.
+ */
+export const reconcileStaleGenerations = async (userId: string) => {
+  const now = Date.now();
+  const stale = await db.thumbnail.findMany({
+    where: {
+      user_id: userId,
+      status: { in: [GEN_STATUS.PENDING, GEN_STATUS.IN_PROGRESS] },
+      createdAt: { lt: new Date(now - STALE_AFTER_MS) },
+    },
+    select: { request_id: true, createdAt: true },
+    orderBy: { createdAt: 'asc' },
+    take: MAX_RECONCILE,
+  });
+
+  await Promise.all(
+    stale.map(async ({ request_id, createdAt }) => {
+      const outcome = await syncGenerationFromFal(request_id);
+      if (
+        outcome.status === 'PENDING' &&
+        now - createdAt.getTime() > ABANDON_AFTER_MS
+      ) {
+        await markGenerationFailed(request_id);
+      }
+    }),
+  );
+};

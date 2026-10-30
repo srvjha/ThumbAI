@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
+import { reconcileStaleGenerations } from '@/lib/generationResult';
 import { ApiResponse } from '@/utils/ApiResponse';
 import { ApiError } from '@/utils/ApiError';
 import type { GenerationDetail } from '@/components/dashboard/types';
@@ -19,6 +20,10 @@ export const GET = async (
   try {
     const user = await requireUser();
     const { id } = await params;
+
+    // Jobs whose webhook never arrived would otherwise read as running
+    // forever; settle them before reading.
+    await reconcileStaleGenerations(user.id);
 
     // Scoped by user_id so another user's id reads as not found.
     const row = await db.thumbnail.findFirst({
