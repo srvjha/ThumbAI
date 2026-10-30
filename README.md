@@ -73,12 +73,17 @@ before acting.
 | `pnpm db:deploy:prod`    | production — apply migrations            |
 | `pnpm db:backup:prod`    | production — `pg_dump` into `backups/`   |
 
-`pnpm build` runs `prisma migrate deploy` first, so a deploy cannot ship code
-ahead of the schema it needs. `vercel.json` pins that as the Vercel build
-command: the dashboard used to override it with `prisma generate && next build`,
-so merged migrations silently never reached production, and in October 2026 the
-credit ledger went live without its table until it was applied by hand. Preview
-deploys migrate their own Neon branch database, not production.
+Production deploys run `prisma migrate deploy` before `next build`
+(`tools/vercel-build.sh`, pinned in `vercel.json`), so a deploy cannot ship code
+ahead of the schema it needs. The dashboard used to override the build command
+with `prisma generate && next build`, so merged migrations silently never
+reached production; in October 2026 the credit ledger went live without its
+table until it was applied by hand.
+
+**Preview deploys share the production database.** They therefore never migrate:
+a preview of a PR that changes the schema runs against the old schema and may
+error. Giving previews their own database (e.g. Neon branching) would remove
+both problems.
 
 After merging a PR that adds a migration, confirm it landed:
 `pnpm db:status:prod` should report the schema is up to date.
