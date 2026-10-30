@@ -1,6 +1,6 @@
 import 'server-only';
 import { fal } from '@fal-ai/client';
-import { GEN_STATUS, MODEL, TIER, type User } from '@prisma/client';
+import { GEN_STATUS, MODEL, Prisma, TIER, type User } from '@prisma/client';
 import { db } from '@/db';
 import { env } from '@/config/env';
 import {
@@ -15,7 +15,8 @@ import {
   resolveTier,
 } from '@/config/models';
 import { ArticleFetchError, fetchArticle } from '@/server/articles';
-import { deductCredits, refundCredits } from '@/server/credits';
+import { chargeGeneration } from '@/server/credits';
+import { markGenerationFailed } from '@/server/generations/results';
 import { ApiError } from '@/server/errors';
 import {
   MAX_URL_CHARS,
@@ -74,19 +75,42 @@ const assertImageCount = (count: unknown): number => {
   return count as number;
 };
 
+type GenerationRow = Omit<
+  Prisma.ThumbnailUncheckedCreateInput,
+  'request_id' | 'user_id' | 'status' | 'image_url'
+>;
+
 /**
- * Charges, queues the job at Fal and records it. Refunds if anything after
- * the charge fails, so a user never pays for an image we never asked for.
+ * Records the generation, charges for it, then queues it at Fal.
+ *
+ * The row comes first so the charge has something to belong to: every
+ * GENERATION_CHARGE in the ledger points at a generation, and every failure
+ * after the charge refunds through that same row, exactly once.
  */
 const chargeAndQueue = async (
   userId: string,
   cost: number,
   endpointId: string,
   input: Record<string, unknown>,
-  record: (requestId: string) => Promise<unknown>,
+  row: GenerationRow,
 ): Promise<string> => {
-  // Charge before submitting so concurrent requests cannot overdraw.
-  await deductCredits(userId, cost);
+  const thumbnail = await db.thumbnail.create({
+    data: {
+      ...row,
+      user_id: userId,
+      status: GEN_STATUS.PENDING,
+      image_url: [],
+    },
+  });
+
+  try {
+    // Charge before submitting so concurrent requests cannot overdraw.
+    await chargeGeneration(userId, thumbnail.id, cost);
+  } catch (err) {
+    // Nothing was charged and nothing will run: the row is just noise.
+    await db.thumbnail.delete({ where: { id: thumbnail.id } });
+    throw err;
+  }
 
   try {
     // Queue rather than block: quality-tier generations routinely outlast a
@@ -100,10 +124,14 @@ const chargeAndQueue = async (
       throw new ApiError('Image provider did not accept the request', 502);
     }
 
-    await record(request_id);
+    await db.thumbnail.update({
+      where: { id: thumbnail.id },
+      data: { request_id },
+    });
     return request_id;
   } catch (err) {
-    await refundCredits(userId, cost);
+    // Don't keep the user's money if we never produced an image.
+    await markGenerationFailed({ id: thumbnail.id });
     throw err;
   }
 };
@@ -240,24 +268,17 @@ export const submitGeneration = async (
       enableWebSearch: finalPrompt.needs_factual_grounding ?? false,
       seed: usedSeed,
     }),
-    (request_id) =>
-      db.thumbnail.create({
-        data: {
-          request_id,
-          user_id: user.id,
-          user_prompt: recordedPrompt,
-          enhanced_ai_prompt: finalPrompt.response,
-          num_of_images: numImages,
-          status: GEN_STATUS.PENDING,
-          image_url: [],
-          content_type: outputFormat,
-          aspect_ratio: aspectRatio,
-          model_used: workflow ?? null,
-          model_endpoint: model.endpointId,
-          model_tier: resolvedTier === 'quality' ? TIER.QUALITY : TIER.DRAFT,
-          seed: usedSeed ?? null,
-        },
-      }),
+    {
+      user_prompt: recordedPrompt,
+      enhanced_ai_prompt: finalPrompt.response,
+      num_of_images: numImages,
+      content_type: outputFormat,
+      aspect_ratio: aspectRatio,
+      model_used: workflow ?? null,
+      model_endpoint: model.endpointId,
+      model_tier: resolvedTier === 'quality' ? TIER.QUALITY : TIER.DRAFT,
+      seed: usedSeed ?? null,
+    },
   );
 
   return {
@@ -362,24 +383,17 @@ export const submitEdit = async (
         mode === 'normal' && (finalPrompt.needs_factual_grounding ?? false),
       seed: usedSeed,
     }),
-    (request_id) =>
-      db.thumbnail.create({
-        data: {
-          request_id,
-          user_id: user.id,
-          user_prompt: prompt,
-          enhanced_ai_prompt: enhancedPrompt,
-          num_of_images: imageCount,
-          status: GEN_STATUS.PENDING,
-          image_url: [],
-          content_type: outputFormat,
-          aspect_ratio: aspectRatio,
-          model_used:
-            workflow || (mode === 'chat' ? 'TEXT_TO_IMAGE' : 'IMAGE_TO_IMAGE'),
-          model_endpoint: EDIT_MODEL.endpointId,
-          seed: usedSeed ?? null,
-        },
-      }),
+    {
+      user_prompt: prompt,
+      enhanced_ai_prompt: enhancedPrompt,
+      num_of_images: imageCount,
+      content_type: outputFormat,
+      aspect_ratio: aspectRatio,
+      model_used:
+        workflow || (mode === 'chat' ? 'TEXT_TO_IMAGE' : 'IMAGE_TO_IMAGE'),
+      model_endpoint: EDIT_MODEL.endpointId,
+      seed: usedSeed ?? null,
+    },
   );
 
   return {

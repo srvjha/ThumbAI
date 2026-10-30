@@ -1,13 +1,23 @@
 import crypto from 'crypto';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '@/db';
-import { processRazorpayWebhook, verifyCheckout } from '@/server/payments';
+import {
+  processRazorpayWebhook,
+  refundPayment,
+  verifyCheckout,
+} from '@/server/payments';
 import {
   createOrder,
   createUser,
   creditsOf,
+  expectLedgerBalanced,
   resetDb,
 } from '../../test/factories';
+
+const { refund } = vi.hoisted(() => ({ refund: vi.fn() }));
+vi.mock('@/config/razorpay', () => ({
+  razorpay: { payments: { refund } },
+}));
 
 const sign = (secret: string, data: string) =>
   crypto.createHmac('sha256', secret).update(data).digest('hex');
@@ -136,5 +146,25 @@ describe('verifyCheckout', () => {
     ]);
 
     expect(await creditsOf(user.id)).toBe(8);
+  });
+});
+
+describe('refundPayment', () => {
+  it('refunds the charged amount and takes the credits back, once', async () => {
+    refund.mockReset().mockResolvedValue({ id: 'rfnd_1' });
+    const user = await createUser({ credits: 0 });
+    const order = await createOrder(user.id, { credits: 8 });
+    await deliver(webhookBody('payment.captured', order.razorpayOrderId!));
+    expect(await creditsOf(user.id)).toBe(8);
+
+    await refundPayment('pay_1');
+
+    expect(refund).toHaveBeenCalledWith('pay_1', { amount: order.amount });
+    expect(await creditsOf(user.id)).toBe(0);
+    await expect(refundPayment('pay_1')).rejects.toMatchObject({
+      statusCode: 409,
+    });
+    expect(refund).toHaveBeenCalledTimes(1);
+    await expectLedgerBalanced(user.id);
   });
 });

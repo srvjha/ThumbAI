@@ -22,28 +22,55 @@ if (!/localhost|127\.0\.0\.1|host\.docker\.internal/.test(url)) {
 
 const [clerkId, email] = process.argv.slice(2);
 if (!clerkId) {
-  console.error('Usage: node --env-file=.env tools/seed-dev-user.mjs <clerk_user_id> [email]');
+  console.error(
+    'Usage: node --env-file=.env tools/seed-dev-user.mjs <clerk_user_id> [email]',
+  );
   process.exit(1);
 }
+
+/**
+ * Sets a balance through the credit ledger: the difference is recorded as an
+ * ADMIN_ADJUSTMENT, so User.credits stays equal to the ledger's sum.
+ */
+const setCredits = (db, userId, target, note) =>
+  db.$transaction(async (tx) => {
+    const [{ credits }] = await tx.$queryRaw`
+      SELECT credits FROM "User" WHERE id = ${userId} FOR UPDATE`;
+    const delta = target - credits;
+    if (delta === 0) return;
+    await tx.user.update({ where: { id: userId }, data: { credits: target } });
+    await tx.creditTransaction.create({
+      data: {
+        user_id: userId,
+        type: 'ADMIN_ADJUSTMENT',
+        amount: delta,
+        balance_after: target,
+        note,
+      },
+    });
+  });
 
 const db = new PrismaClient({ log: ['error'] });
 try {
   const user = await db.user.upsert({
     where: { clerk_id: clerkId },
-    update: { credits: 100, role: 'ADMIN', plan: 'PAID' },
+    update: { role: 'ADMIN', plan: 'PAID' },
     create: {
       clerk_id: clerkId,
       email: email ?? 'dev@localhost',
       fullName: 'Local Dev',
-      credits: 100,
       role: 'ADMIN',
       plan: 'PAID',
       last_active_at: new Date(),
     },
   });
+  await setCredits(db, user.id, 100, 'tools/seed-dev-user.mjs');
   console.log('Seeded local user:', {
-    id: user.id, email: user.email, clerk_id: user.clerk_id,
-    role: user.role, credits: user.credits,
+    id: user.id,
+    email: user.email,
+    clerk_id: user.clerk_id,
+    role: user.role,
+    credits: 100,
   });
 } finally {
   await db.$disconnect();

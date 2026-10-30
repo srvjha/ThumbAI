@@ -1,7 +1,7 @@
 import { Webhook } from 'svix';
 import { headers } from 'next/headers';
 import { WebhookEvent, UserJSON } from '@clerk/nextjs/server';
-import { db } from '@/db';
+import { createUserWithSignupGrant } from '@/server/credits';
 import { NextResponse } from 'next/server';
 import { ApiResponse } from '@/utils/ApiResponse';
 import { apiErrorResponse } from '@/server/errors';
@@ -83,18 +83,18 @@ export const POST = async (req: Request): Promise<NextResponse> => {
       : new Date(created_at);
 
     try {
-      const newUser = await db.user.create({
-        data: {
+      const newUser = await createUserWithSignupGrant(
+        {
           email: primaryEmail,
           fullName,
           profile_img,
           clerk_id: id,
-          credits: FREE_PLAN.credits,
           plan: 'FREE',
           role: Role.USER,
           last_active_at: lastActiveAt,
         },
-      });
+        FREE_PLAN.credits,
+      );
 
       return NextResponse.json(
         new ApiResponse(201, newUser, 'User created successfully'),

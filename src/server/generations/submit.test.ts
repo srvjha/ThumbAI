@@ -2,7 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '@/db';
 import { getTextToImageModel } from '@/config/models';
 import { submitEdit, submitGeneration } from '@/server/generations/submit';
-import { createUser, creditsOf, resetDb } from '../../../test/factories';
+import {
+  createUser,
+  creditsOf,
+  expectLedgerBalanced,
+  resetDb,
+} from '../../../test/factories';
 
 const { submit, thumbnailPrompt, chatPrompt } = vi.hoisted(() => ({
   submit: vi.fn(),
@@ -39,9 +44,18 @@ describe('submitGeneration', () => {
 
     expect(result).toMatchObject({ kind: 'submitted', requestId: 'req_1' });
     expect(await creditsOf(user.id)).toBe(5 - draftCost);
-    expect(
-      await db.thumbnail.findUnique({ where: { request_id: 'req_1' } }),
-    ).toMatchObject({ user_id: user.id, model_used: 'TEXT_TO_IMAGE' });
+    const gen = await db.thumbnail.findUniqueOrThrow({
+      where: { request_id: 'req_1' },
+      include: { CreditTransaction: true },
+    });
+    expect(gen).toMatchObject({
+      user_id: user.id,
+      model_used: 'TEXT_TO_IMAGE',
+    });
+    expect(gen.CreditTransaction).toMatchObject([
+      { type: 'GENERATION_CHARGE', amount: -draftCost },
+    ]);
+    await expectLedgerBalanced(user.id);
   });
 
   it('rejects an unknown workflow before any paid call', async () => {
@@ -66,6 +80,20 @@ describe('submitGeneration', () => {
     expect(thumbnailPrompt).not.toHaveBeenCalled();
   });
 
+  it('leaves no generation behind when the atomic charge loses a race', async () => {
+    // Passes the early balance check (stale user object), then the charge
+    // finds the credits already gone.
+    const user = await createUser({ credits: 5 });
+    await db.user.update({ where: { id: user.id }, data: { credits: 0 } });
+
+    await expect(
+      submitGeneration(user, { prompt: 'a cat' }),
+    ).rejects.toMatchObject({ statusCode: 402 });
+
+    expect(submit).not.toHaveBeenCalled();
+    expect(await db.thumbnail.count()).toBe(0);
+  });
+
   it('charges nothing when the agent rejects the prompt', async () => {
     const user = await createUser({ credits: 5 });
     thumbnailPrompt.mockResolvedValue({ valid_prompt: false, response: 'no' });
@@ -84,7 +112,17 @@ describe('submitGeneration', () => {
     await expect(submitGeneration(user, { prompt: 'a cat' })).rejects.toThrow(
       'fal down',
     );
+
     expect(await creditsOf(user.id)).toBe(5);
+    const gen = await db.thumbnail.findFirstOrThrow({
+      include: { CreditTransaction: true },
+    });
+    expect(gen.status).toBe('FAILED');
+    expect(gen.CreditTransaction.map((t) => t.type).sort()).toEqual([
+      'GENERATION_CHARGE',
+      'GENERATION_REFUND',
+    ]);
+    await expectLedgerBalanced(user.id);
   });
 
   it('rejects an oversized prompt', async () => {
