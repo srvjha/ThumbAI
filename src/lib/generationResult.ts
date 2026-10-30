@@ -154,27 +154,32 @@ const MAX_RECONCILE = 8;
  * failed, which refunds its credits.
  */
 export const reconcileStaleGenerations = async (userId: string) => {
-  const now = Date.now();
-  const stale = await db.thumbnail.findMany({
-    where: {
-      user_id: userId,
-      status: { in: [GEN_STATUS.PENDING, GEN_STATUS.IN_PROGRESS] },
-      createdAt: { lt: new Date(now - STALE_AFTER_MS) },
-    },
-    select: { request_id: true, createdAt: true },
-    orderBy: { createdAt: 'asc' },
-    take: MAX_RECONCILE,
-  });
+  // Housekeeping only: a failure here must never fail the read it rides on.
+  try {
+    const now = Date.now();
+    const stale = await db.thumbnail.findMany({
+      where: {
+        user_id: userId,
+        status: { in: [GEN_STATUS.PENDING, GEN_STATUS.IN_PROGRESS] },
+        createdAt: { lt: new Date(now - STALE_AFTER_MS) },
+      },
+      select: { request_id: true, createdAt: true },
+      orderBy: { createdAt: 'asc' },
+      take: MAX_RECONCILE,
+    });
 
-  await Promise.all(
-    stale.map(async ({ request_id, createdAt }) => {
-      const outcome = await syncGenerationFromFal(request_id);
-      if (
-        outcome.status === 'PENDING' &&
-        now - createdAt.getTime() > ABANDON_AFTER_MS
-      ) {
-        await markGenerationFailed(request_id);
-      }
-    }),
-  );
+    await Promise.all(
+      stale.map(async ({ request_id, createdAt }) => {
+        const outcome = await syncGenerationFromFal(request_id);
+        if (
+          outcome.status === 'PENDING' &&
+          now - createdAt.getTime() > ABANDON_AFTER_MS
+        ) {
+          await markGenerationFailed(request_id);
+        }
+      }),
+    );
+  } catch (err) {
+    console.error('Failed to reconcile stale generations', { userId, err });
+  }
 };
