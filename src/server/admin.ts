@@ -712,6 +712,7 @@ export const listFlags = async ({
             email: true,
             suspended_at: true,
             role: true,
+            credits: true,
             _count: {
               select: { PromptFlag: { where: { resolved_at: null } } },
             },
@@ -741,6 +742,7 @@ export const listFlags = async ({
         id: f.user.id,
         email: f.user.email,
         role: f.user.role,
+        credits: f.user.credits,
         suspendedAt: f.user.suspended_at,
         openFlags: f.user._count.PromptFlag,
       },

@@ -22,7 +22,15 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { ACCOUNT_NAV, AppSidebar, STUDIO_NAV, isNavActive } from './AppSidebar';
+import {
+  ACCOUNT_NAV,
+  ADMIN_NAV,
+  AppSidebar,
+  STUDIO_NAV,
+  isNavActive,
+} from './AppSidebar';
+import { useAuth } from '@/hooks/user/auth';
+import { ShieldOff } from 'lucide-react';
 import { SidebarResizeRail } from './SidebarResizeRail';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import {
@@ -38,6 +46,7 @@ export const APP_ROUTE_PREFIXES = [
   '/dashboard',
   '/billing',
   '/profile',
+  '/admin',
 ];
 
 const ALL_NAV = [...STUDIO_NAV, ...ACCOUNT_NAV];
@@ -53,7 +62,13 @@ const useModKey = () =>
 
 const TopBar = ({ pathname }: { pathname: string }) => {
   const mod = useModKey();
-  const current = ALL_NAV.find((item) => isNavActive(item.href, pathname));
+  const admin = pathname.startsWith('/admin')
+    ? (ADMIN_NAV.find((item) => isNavActive(item.href, pathname)) ??
+      // Pages under a section, e.g. one user, belong to its parent.
+      [...ADMIN_NAV].reverse().find((item) => pathname.startsWith(item.href)))
+    : undefined;
+  const current =
+    admin ?? ALL_NAV.find((item) => isNavActive(item.href, pathname));
   return (
     <header className='sticky top-0 z-20 flex h-12 shrink-0 items-center gap-2 border-b bg-background px-3 sm:px-4'>
       <Tooltip>
@@ -67,11 +82,32 @@ const TopBar = ({ pathname }: { pathname: string }) => {
       {current ? (
         <>
           <Separator orientation='vertical' className='mr-1 h-4!' />
+          {admin && (
+            <span className='text-sm text-muted-foreground'>Admin /</span>
+          )}
           <span className='truncate text-sm font-medium'>{current.label}</span>
         </>
       ) : null}
       <ThemeToggle className='ml-auto' />
     </header>
+  );
+};
+
+/** Says why every action fails, instead of leaving a suspended user guessing. */
+const SuspendedBanner = () => {
+  const { data } = useAuth();
+  if (!data?.suspended_at) return null;
+  return (
+    <div
+      role='alert'
+      className='flex items-start gap-2 border-b border-destructive/20 bg-destructive/10 px-4 py-2.5 text-sm text-destructive sm:px-6'
+    >
+      <ShieldOff className='mt-0.5 size-4 shrink-0' />
+      <p>
+        Your account is suspended, so generating and editing are turned off.
+        Contact support if you think this is a mistake.
+      </p>
+    </div>
   );
 };
 
@@ -145,6 +181,7 @@ export const AppShell = ({
       />
       <SidebarInset className='min-w-0'>
         <TopBar pathname={pathname} />
+        <SuspendedBanner />
         {/* The studio canvas manages its own padding and fills the inset. */}
         {fullBleed ? (
           <div className='flex min-h-0 flex-1 flex-col'>{children}</div>

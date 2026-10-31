@@ -273,3 +273,22 @@
     }
   }
 }
+
+/*
+ * Categorical series for the admin charts, in this fixed order. Validated
+ * for colour-blind separation against each mode's card surface; dark mode
+ * has its own steps rather than a flip. Failures use --destructive, which
+ * is reserved for status and always ships with a label.
+ */
+:root {
+  --viz-1: #3e63dd;
+  --viz-2: #d97a1f;
+  --viz-3: #1f9e8a;
+  --viz-4: #a855c7;
+}
+.dark {
+  --viz-1: #5472e4;
+  --viz-2: #c97a2a;
+  --viz-3: #239683;
+  --viz-4: #a265c4;
+}
