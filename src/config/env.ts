@@ -12,13 +12,6 @@ export const env = createEnv({
     NEXT_CLERK_WEBHOOK_SECRET: z.string(),
     RAZORPAY_KEY_SECRET: z.string(),
     RAZORPAY_WEBHOOK_SECRET: z.string(),
-    // Upstash Redis, for throttling and rate limits. Optional so the app
-    // still runs before the Vercel integration is added; see server/redis.ts.
-    // The Vercel Marketplace integration names them KV_REST_API_*.
-    UPSTASH_REDIS_REST_URL: z.string().url().optional(),
-    UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
-    KV_REST_API_URL: z.string().url().optional(),
-    KV_REST_API_TOKEN: z.string().optional(),
     // Keys the hash of signup IPs. Optional so deploys don't fail before it
     // is set; without it the per-IP signup limit is off.
     SIGNUP_IP_SALT: z.string().min(16).optional(),
@@ -38,10 +31,6 @@ export const env = createEnv({
     NEXT_CLERK_WEBHOOK_SECRET: process.env.NEXT_CLERK_WEBHOOK_SECRET,
     RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET,
     RAZORPAY_WEBHOOK_SECRET: process.env.RAZORPAY_WEBHOOK_SECRET,
-    UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
-    UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
-    KV_REST_API_URL: process.env.KV_REST_API_URL,
-    KV_REST_API_TOKEN: process.env.KV_REST_API_TOKEN,
     SIGNUP_IP_SALT: process.env.SIGNUP_IP_SALT,
 
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
