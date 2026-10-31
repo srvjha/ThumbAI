@@ -1,5 +1,6 @@
 import 'server-only';
 import { OpenAI } from 'openai';
+import { llmFor } from '@/server/prompts/llm';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 import { CLASSIFIER_MODEL, PROMPT_MODEL } from '@/config/models';
@@ -32,8 +33,6 @@ import { explicitText, inventedWords } from '@/server/prompts/textOrigin';
  * category to the writer at once, as before, made it blend recipes and
  * override what the user asked for.
  */
-
-const client = new OpenAI();
 
 export interface ThumbnailBrief {
   /** The user's request, or the extracted article for blog covers. */
@@ -74,7 +73,7 @@ const classify = async (
     archetype: z.enum(ids),
   });
 
-  const completion = await client.chat.completions.parse({
+  const completion = await llmFor(CLASSIFIER_MODEL).chat.completions.parse({
     model: CLASSIFIER_MODEL,
     temperature: 0,
     messages: [
@@ -194,7 +193,7 @@ const callWriter = async (
     type: 'image_url' as const,
     image_url: { url, detail: 'low' as const },
   }));
-  const completion = await client.chat.completions.parse({
+  const completion = await llmFor(PROMPT_MODEL).chat.completions.parse({
     model: PROMPT_MODEL,
     messages: [
       { role: 'system', content: instructions },

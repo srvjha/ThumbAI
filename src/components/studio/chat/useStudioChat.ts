@@ -10,6 +10,7 @@ import { uploadFile } from '@/config/falClient';
 import {
   DEFAULT_TIER,
   EDIT_MODEL,
+  PHOTO_MODEL,
   TEXT_TO_IMAGE_MODELS,
   isAspectRatio,
 } from '@/config/models';
@@ -43,7 +44,7 @@ export const costOf = (request: Omit<GenerationRequest, 'text'>) => {
   if (request.target) return EDIT_MODEL.creditsPerImage;
   const perImage =
     request.attachments.length > 0
-      ? EDIT_MODEL.creditsPerImage
+      ? PHOTO_MODEL.creditsPerImage
       : TEXT_TO_IMAGE_MODELS[request.settings.tier].creditsPerImage;
   return (
     perImage *
@@ -101,11 +102,17 @@ const reshapeTo = (text: string, from: string): AspectRatio | null => {
   return null;
 };
 
-/** The image model's display name, known before the server answers. */
+/**
+ * The image model's display name, known before the server answers. A chat
+ * edit may move up to Pro once the server sees what it changes; the badge
+ * then takes the server's answer.
+ */
 const modelNameFor = (request: GenerationRequest) =>
-  (request.target || request.attachments.length > 0
+  (request.target
     ? EDIT_MODEL
-    : TEXT_TO_IMAGE_MODELS[request.settings.tier]
+    : request.attachments.length > 0
+      ? PHOTO_MODEL
+      : TEXT_TO_IMAGE_MODELS[request.settings.tier]
   ).modelName;
 
 const EDIT_SUGGESTIONS = [
@@ -177,7 +184,11 @@ export const useStudioChat = (mode: StudioMode) => {
         t.role === 'generation' ? t.images.map((i) => i.aspectRatio) : [],
       ),
     );
-    if (mode !== 'blog' && target.aspectRatio === '16:9' && !shapes.has('9:16')) {
+    if (
+      mode !== 'blog' &&
+      target.aspectRatio === '16:9' &&
+      !shapes.has('9:16')
+    ) {
       return 'Make a 9:16 vertical version of this thumbnail for Shorts';
     }
     if (target.aspectRatio === '9:16' && !shapes.has('16:9')) {

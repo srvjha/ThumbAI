@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { GEN_STATUS } from '@prisma/client';
 import { db } from '@/db';
 import { scheduleStaleReconcile } from '@/server/generations/results';
-import { EDIT_MODEL } from '@/config/models';
+import { EDIT_MODEL, PHOTO_MODEL } from '@/config/models';
 import { ApiResponse } from '@/utils/ApiResponse';
 import type {
   AnalyticsData,
@@ -187,7 +187,9 @@ export const GET = async (req: NextRequest) => {
       const tier =
         row.model_endpoint === EDIT_MODEL.endpointId
           ? 'EDIT'
-          : (row.model_tier ?? 'UNKNOWN');
+          : row.model_endpoint === PHOTO_MODEL.endpointId
+            ? 'PHOTO'
+            : (row.model_tier ?? 'UNKNOWN');
       tally(byTier, tier, produced, cost);
       tally(byAspect, row.aspect_ratio ?? 'UNKNOWN', produced, cost);
     }

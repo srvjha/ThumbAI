@@ -1,5 +1,6 @@
 import 'server-only';
 import { OpenAI } from 'openai';
+import { llmFor } from '@/server/prompts/llm';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 import { PROMPT_MODEL } from '@/config/models';
@@ -8,8 +9,6 @@ import {
   assembleEditPrompt,
   type EditLock,
 } from '@/server/prompts/imageRules';
-
-const client = new OpenAI();
 
 const lockIds = Object.keys(EDIT_LOCKS) as [EditLock, ...EditLock[]];
 
@@ -47,7 +46,9 @@ change: one or two imperative sentences stating exactly what differs, concretely
 
 Text: read the lettering currently on the thumbnail. When the user says "title X", "headline X", "text X", "write X" or asks to remove or add words, X is the new lettering, not a design style: state the complete new headline in double quotes, in the same letter case as the current lettering, and say it is spelled exactly as written. Example: the thumbnail reads "LEARN RUST TODAY" and the user says "remove the word today" → Change the headline to exactly "LEARN RUST". If no thumbnail is attached or you cannot read its lettering, never guess the rest of the headline: state the change against the current lettering instead (Remove the word "TODAY" from the headline, keeping the other words exactly as they are).
 
-unlocked: the aspects the change itself necessarily alters, from: ${lockIds.join(', ')}. Everything not listed is preserved. Changing the headline unlocks "text"; making someone smile unlocks "expression"; a new background unlocks "background", and also "colours" when its colour changes; any colour change unlocks "colours". When in doubt, leave it locked.
+Where: locate people, body parts and objects by where they are in the image as seen ("the arm cut off at the bottom-right edge", "the hand on the left of the frame"), never by the person's own left or right. When the user says left or right, they mean as seen in the image unless they say "my left" or "his right"; look at the image to find what they mean. A cut-off, missing or malformed body part is fixed by redrawing it whole and natural where it belongs, and the change says to remove any leftover fragment of it.
+
+unlocked: the aspects the change itself necessarily alters, from: ${lockIds.join(', ')}. Everything not listed is preserved. Changing the headline unlocks "text"; making someone smile unlocks "expression"; fixing or moving a body part, or adding or removing a person, unlocks "person"; a new background unlocks "background", and also "colours" when its colour changes; any colour change unlocks "colours". When in doubt, leave it locked.
 
 needs_web_search: true when the change adds or corrects a real logo, product, place or public figure that has to look accurate; otherwise false.
 
@@ -56,7 +57,7 @@ reply: one short, friendly first-person sentence for the user saying what you wi
 valid: true for any instruction about the image, however vague ("make it better", "more eye-catching"): turn a vague one into a concrete improvement that keeps the design, such as stronger contrast and a bolder headline. false only when the message is empty or gibberish.`;
 
 const askEditor = (chatPrompt: string, imageUrls: string[]) =>
-  client.chat.completions.parse({
+  llmFor(PROMPT_MODEL).chat.completions.parse({
     model: PROMPT_MODEL,
     temperature: 0,
     messages: [
@@ -119,6 +120,7 @@ export const generateChatPrompt = async (
       referenceCount: Math.max(0, imageUrls.length - 1),
     }),
     needs_factual_grounding: parsed.needs_web_search,
+    unlocked: parsed.unlocked,
     reply: parsed.reply.trim() || undefined,
   };
 };

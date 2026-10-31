@@ -5,6 +5,8 @@ const NOTES: Record<(typeof CREDIT_COSTS)[number]['label'], string> = {
   'Draft thumbnail': 'Fast, clean text. The right default for most uploads.',
   'Quality thumbnail':
     'Slower model with sharper typography and stronger face consistency.',
+  'Thumbnail from your photo':
+    'Designed around your photo on the Pro model, keeping your face.',
   'Edit an existing image':
     'Change an image you already have, or composite reference photos.',
 };
@@ -16,7 +18,9 @@ export const CreditCostTable = ({ className }: { className?: string }) => (
         <thead className='border-b bg-secondary/60 text-xs text-muted-foreground'>
           <tr>
             <th className='px-4 py-2.5 font-medium'>Action</th>
-            <th className='px-4 py-2.5 text-right font-medium'>Cost per image</th>
+            <th className='px-4 py-2.5 text-right font-medium'>
+              Cost per image
+            </th>
           </tr>
         </thead>
         <tbody className='divide-y'>
