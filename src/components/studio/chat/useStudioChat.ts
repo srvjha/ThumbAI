@@ -13,6 +13,7 @@ import {
   TEXT_TO_IMAGE_MODELS,
   isAspectRatio,
 } from '@/config/models';
+import type { AspectRatio } from '@/config/models';
 import type { ImageData } from '@/components/shared/imageUtils';
 import type { GenerationItem } from '@/components/dashboard/types';
 import { composePrompt } from '../presets';
@@ -78,6 +79,52 @@ export const sendBlocker = (
   return trimmed.length >= 3 ? null : 'Describe the video in a few words.';
 };
 
+/**
+ * "Make a 9:16 vertical version for Shorts" changes an edit's shape; any
+ * other edit keeps the shape of the image it edits.
+ */
+const reshapeTo = (text: string, from: string): AspectRatio | null => {
+  if (
+    from !== '9:16' &&
+    /\b9:16\b|\bvertical\b|\bfor (youtube )?shorts\b|\bshorts (cover|version|thumbnail)\b/i.test(
+      text,
+    )
+  ) {
+    return '9:16';
+  }
+  if (
+    from !== '16:9' &&
+    /\b16:9\b|\bhorizontal\b|\blandscape\b|\bwidescreen\b/i.test(text)
+  ) {
+    return '16:9';
+  }
+  return null;
+};
+
+/** The image model's display name, known before the server answers. */
+const modelNameFor = (request: GenerationRequest) =>
+  (request.target || request.attachments.length > 0
+    ? EDIT_MODEL
+    : TEXT_TO_IMAGE_MODELS[request.settings.tier]
+  ).modelName;
+
+const EDIT_SUGGESTIONS = [
+  'Make the headline bigger and bolder',
+  'Give the background more contrast so the subject pops',
+  'Try a warmer, brighter colour palette',
+];
+
+const isAbort = (err: unknown) =>
+  err instanceof DOMException && err.name === 'AbortError';
+
+const cancelJob = (generationId: string) =>
+  axios
+    .post(`/api/me/generations/${generationId}/cancel`, null, {
+      validateStatus: (status) => status < 500,
+    })
+    .then((res) => res.status)
+    .catch(() => 0);
+
 const errorMessage = (err: unknown) =>
   axios.isAxiosError(err)
     ? (err.response?.data?.message ?? err.message)
@@ -100,6 +147,10 @@ export const useStudioChat = (mode: StudioMode) => {
   const [followLatest, setFollowLatest] = useState(true);
   const turnsRef = useRef(turns);
   turnsRef.current = turns;
+  // In-flight runs by turn id, so Cancel can stop the wait and the jobs.
+  const jobs = useRef(
+    new Map<string, { controller: AbortController; ids: string[] }>(),
+  );
 
   const workflow = modeById(mode).workflow;
 
@@ -114,6 +165,29 @@ export const useStudioChat = (mode: StudioMode) => {
   }, [turns]);
 
   const target = pickedTarget ?? (followLatest ? latestImage : null);
+
+  // A ready-made next step for the composer, after a finished image.
+  const suggestion = useMemo(() => {
+    const last = turns[turns.length - 1];
+    if (!target || last?.role !== 'generation' || last.phase !== 'done') {
+      return null;
+    }
+    const shapes = new Set(
+      turns.flatMap((t) =>
+        t.role === 'generation' ? t.images.map((i) => i.aspectRatio) : [],
+      ),
+    );
+    if (mode !== 'blog' && target.aspectRatio === '16:9' && !shapes.has('9:16')) {
+      return 'Make a 9:16 vertical version of this thumbnail for Shorts';
+    }
+    if (target.aspectRatio === '9:16' && !shapes.has('16:9')) {
+      return 'Make a 16:9 YouTube thumbnail version of this';
+    }
+    const done = turns.filter(
+      (t) => t.role === 'generation' && t.phase === 'done',
+    ).length;
+    return EDIT_SUGGESTIONS[(done - 1) % EDIT_SUGGESTIONS.length];
+  }, [turns, target, mode]);
 
   const busy = turns.some(
     (t) =>
@@ -209,9 +283,16 @@ export const useStudioChat = (mode: StudioMode) => {
       }
 
       const ratios = request.target
-        ? [request.target.aspectRatio]
+        ? [
+            reshapeTo(request.text, request.target.aspectRatio) ??
+              request.target.aspectRatio,
+          ]
         : request.settings.aspectRatios;
       const id = uid();
+      const startedAt = Date.now();
+      const job = { controller: new AbortController(), ids: [] as string[] };
+      const { signal } = job.controller;
+      jobs.current.set(id, job);
       setTurns((prev) => [
         ...prev,
         {
@@ -221,7 +302,9 @@ export const useStudioChat = (mode: StudioMode) => {
           request,
           ratios,
           images: [],
-          startedAt: Date.now(),
+          startedAt,
+          modelName: modelNameFor(request),
+          generationIds: [],
         },
       ]);
 
@@ -231,26 +314,58 @@ export const useStudioChat = (mode: StudioMode) => {
         const perRatio = await Promise.all(
           ratios.map(async (aspectRatio) => {
             const res = await submitOne(request, aspectRatio, referenceUrls);
-            if (!res.data.data.valid_prompt) {
-              throw new Error(res.data.data.response ?? 'Invalid prompt');
+            const data = res.data.data;
+            if (!data.valid_prompt) {
+              throw new Error(data.response ?? 'Invalid prompt');
             }
-            patch(id, { phase: 'rendering' });
-            const urls = await waitForGeneration(
-              queryClient,
-              res.data.data.generationId,
+            const generationId: string = data.generationId;
+            job.ids.push(generationId);
+            // Cancelled while the prompt was being written: the job exists
+            // now, so stop it too.
+            if (signal.aborted) {
+              void cancelJob(generationId);
+              throw new DOMException('Aborted', 'AbortError');
+            }
+            setTurns((prev) =>
+              prev.map((t) =>
+                t.id === id && t.role === 'generation'
+                  ? {
+                      ...t,
+                      phase: 'rendering',
+                      generationIds: [...(t.generationIds ?? []), generationId],
+                      // The first format to come back speaks for the turn.
+                      writingMs: t.writingMs ?? Date.now() - startedAt,
+                      reply: t.reply ?? data.reply ?? null,
+                      archetype: t.archetype ?? data.archetype ?? null,
+                      headline: t.headline ?? data.headline ?? null,
+                      modelName: data.modelName ?? t.modelName,
+                    }
+                  : t,
+              ),
             );
+            const urls = await waitForGeneration(queryClient, generationId, {
+              signal,
+            });
             return urls.map((url) => ({ url, aspectRatio }));
           }),
         );
+        if (signal.aborted) return;
         const images = perRatio.flat();
         if (images.length === 0) throw new Error('No images came back.');
-        patch(id, { phase: 'done', images });
+        patch(id, { phase: 'done', images, finishedAt: Date.now() });
         // A fresh result becomes the default thing follow-ups edit.
         setPickedTarget(null);
         setFollowLatest(true);
       } catch (err) {
-        patch(id, { phase: 'failed', error: errorMessage(err) });
+        // cancel() has already marked the turn.
+        if (signal.aborted || isAbort(err)) return;
+        patch(id, {
+          phase: 'failed',
+          error: errorMessage(err),
+          finishedAt: Date.now(),
+        });
       } finally {
+        jobs.current.delete(id);
         // Failed jobs are refunded server side; resync either way.
         refetchAccount();
         queryClient.invalidateQueries({ queryKey: ['me', 'generations'] });
@@ -328,6 +443,34 @@ export const useStudioChat = (mode: StudioMode) => {
     [run],
   );
 
+  /**
+   * Stops a run. The server refunds what it charged; a job that already
+   * finished can't be cancelled, so that run is left to land.
+   */
+  const cancel = useCallback(
+    async (id: string) => {
+      const job = jobs.current.get(id);
+      if (!job) return;
+      const statuses = await Promise.all(job.ids.map(cancelJob));
+      if (statuses.length > 0 && statuses.every((s) => s === 409)) {
+        toast('It had already finished.');
+        return;
+      }
+      job.controller.abort();
+      patch(id, { phase: 'cancelled', finishedAt: Date.now() });
+    },
+    [patch],
+  );
+
+  const rate = useCallback(
+    (id: string, feedback: 'up' | 'down') => {
+      const turn = turnsRef.current.find((t) => t.id === id);
+      if (turn?.role !== 'generation') return;
+      patch(id, { feedback: turn.feedback === feedback ? null : feedback });
+    },
+    [patch],
+  );
+
   const pickTarget = useCallback((image: ImageData | null) => {
     setPickedTarget(image);
     setFollowLatest(image !== null);
@@ -360,6 +503,7 @@ export const useStudioChat = (mode: StudioMode) => {
         ratios: [ratio],
         images,
         startedAt: Date.parse(item.createdAt) || Date.now(),
+        finishedAt: Date.parse(item.createdAt) || Date.now(),
         request: {
           text: item.prompt ?? '',
           attachments: [],
@@ -378,10 +522,13 @@ export const useStudioChat = (mode: StudioMode) => {
     target,
     pickTarget,
     busy,
+    suggestion,
     balance: account?.credits,
     send,
     answerQuestions,
     rerun,
+    cancel,
+    rate,
     reset,
     loadGeneration,
   };

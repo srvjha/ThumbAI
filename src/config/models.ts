@@ -55,6 +55,8 @@ export interface ModelInputOptions {
 export interface ModelDefinition {
   endpointId: string;
   label: string;
+  /** The model's own name, shown on the generation card in the studio. */
+  modelName: string;
   description: string;
   /** Which prompt style the model reads best; see imageRules.ts. */
   family: ModelFamily;
@@ -87,6 +89,7 @@ const GPT_IMAGE_SIZES: Record<AspectRatio, { width: number; height: number }> =
 const draftModel: ModelDefinition = {
   endpointId: 'openai/gpt-image-2',
   label: 'Draft',
+  modelName: 'GPT Image 2',
   description: 'Fast, strong text rendering. Best value per image.',
   family: 'openai',
   creditsPerImage: 1,
@@ -111,6 +114,7 @@ const draftModel: ModelDefinition = {
 const qualityModel: ModelDefinition = {
   endpointId: 'fal-ai/nano-banana-pro',
   label: 'Quality',
+  modelName: 'Nano Banana Pro',
   description: 'Sharpest typography and face consistency. Slower.',
   family: 'gemini',
   creditsPerImage: 3,
@@ -150,6 +154,7 @@ export const TEXT_TO_IMAGE_MODELS: Record<ModelTier, ModelDefinition> = {
 export const EDIT_MODEL: ModelDefinition = {
   endpointId: 'fal-ai/nano-banana-2/edit',
   label: 'Edit',
+  modelName: 'Nano Banana 2',
   description: 'Edits and composites up to 14 reference images.',
   family: 'gemini',
   creditsPerImage: 2,

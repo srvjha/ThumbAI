@@ -36,6 +36,12 @@ export interface FinalPrompt {
   response: string;
   /** Set by the prompt agent when the image has to be factually right. */
   needs_factual_grounding?: boolean;
+  /** The prompt agent's note to the user, shown in the chat. */
+  reply?: string;
+  /** Human label of the design archetype; new designs only. */
+  archetypeLabel?: string;
+  /** The lettering chosen for a new design, or null for none. */
+  headline?: string | null;
 }
 
 /**
@@ -52,6 +58,14 @@ export type SubmitResult =
       tier?: string;
       creditsCharged: number;
       seed: number | null;
+      /** The prompt agent's note to the user, or null. */
+      reply: string | null;
+      /** Human label of the design archetype; null for edits. */
+      archetype: string | null;
+      /** The headline set on a new design; null for edits or no text. */
+      headline: string | null;
+      /** The image model's display name, e.g. "Nano Banana Pro". */
+      modelName: string;
     };
 
 /** nano-banana-2/edit composites at most 14 reference images. */
@@ -313,6 +327,10 @@ export const submitGeneration = async (
     tier: resolvedTier,
     creditsCharged: cost,
     seed: usedSeed ?? null,
+    reply: finalPrompt.reply ?? null,
+    archetype: finalPrompt.archetypeLabel ?? null,
+    headline: finalPrompt.headline ?? null,
+    modelName: model.modelName,
   };
 };
 
@@ -432,5 +450,9 @@ export const submitEdit = async (
     generationId,
     creditsCharged: cost,
     seed: usedSeed ?? null,
+    reply: finalPrompt.reply ?? null,
+    archetype: isChatEdit ? null : (finalPrompt.archetypeLabel ?? null),
+    headline: isChatEdit ? null : (finalPrompt.headline ?? null),
+    modelName: EDIT_MODEL.modelName,
   };
 };

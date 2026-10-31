@@ -43,7 +43,13 @@ describe('submitGeneration', () => {
       workflow: 'TEXT_TO_IMAGE',
     });
 
-    expect(result).toMatchObject({ kind: 'submitted', requestId: 'req_1' });
+    expect(result).toMatchObject({
+      kind: 'submitted',
+      requestId: 'req_1',
+      reply: null,
+      archetype: null,
+      modelName: getTextToImageModel('draft').modelName,
+    });
     if (result.kind !== 'submitted') throw new Error('unreachable');
     expect(await creditsOf(user.id)).toBe(5 - draftCost);
     const gen = await db.thumbnail.findUniqueOrThrow({
@@ -58,6 +64,28 @@ describe('submitGeneration', () => {
       { type: 'GENERATION_CHARGE', amount: -draftCost },
     ]);
     await expectLedgerBalanced(user.id);
+  });
+
+  it("returns the writer's reply and the design's label", async () => {
+    const user = await createUser({ credits: 5 });
+    thumbnailPrompt.mockResolvedValue({
+      ...validPrompt,
+      reply: 'I went with a bold red headline.',
+      archetypeLabel: 'Coding / dev',
+    });
+
+    const result = await submitGeneration(user, {
+      prompt: 'build a CDN',
+      workflow: 'TEXT_TO_IMAGE',
+      tier: 'quality',
+    });
+
+    expect(result).toMatchObject({
+      kind: 'submitted',
+      reply: 'I went with a bold red headline.',
+      archetype: 'Coding / dev',
+      modelName: 'Nano Banana Pro',
+    });
   });
 
   it('rejects an unknown workflow before any paid call', async () => {
@@ -150,6 +178,11 @@ describe('submitEdit', () => {
 
   it('uses the chat prompt for a follow-up edit', async () => {
     const user = await createUser({ credits: 5 });
+    chatPrompt.mockResolvedValue({
+      ...validPrompt,
+      reply: "I'll brighten it.",
+      archetypeLabel: 'ignored',
+    });
 
     const result = await submitEdit(user, {
       mode: 'chat',
@@ -157,7 +190,12 @@ describe('submitEdit', () => {
       images_urls: ['https://fal.media/a.png'],
     });
 
-    expect(result.kind).toBe('submitted');
+    expect(result).toMatchObject({
+      kind: 'submitted',
+      reply: "I'll brighten it.",
+      archetype: null,
+      modelName: 'Nano Banana 2',
+    });
     expect(chatPrompt).toHaveBeenCalledWith('brighter', [
       'https://fal.media/a.png',
     ]);

@@ -34,7 +34,12 @@ export interface GenerationRequest {
   answers?: StyleAnswers;
 }
 
-export type GenerationPhase = 'writing' | 'rendering' | 'done' | 'failed';
+export type GenerationPhase =
+  | 'writing'
+  | 'rendering'
+  | 'done'
+  | 'failed'
+  | 'cancelled';
 
 export type Turn =
   | {
@@ -62,4 +67,17 @@ export type Turn =
       images: ImageData[];
       error?: string;
       startedAt: number;
+      /** How long writing the prompt took, once rendering started. */
+      writingMs?: number;
+      finishedAt?: number;
+      /** The assistant's note on what it designed, from the prompt writer. */
+      reply?: string | null;
+      /** The design type it picked, e.g. "Coding". */
+      archetype?: string | null;
+      headline?: string | null;
+      /** The image model's display name, e.g. "Nano Banana Pro". */
+      modelName?: string;
+      /** The server's generation rows, one per format. */
+      generationIds?: string[];
+      feedback?: 'up' | 'down' | null;
     };

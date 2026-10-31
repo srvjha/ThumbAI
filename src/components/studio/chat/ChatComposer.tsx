@@ -188,8 +188,16 @@ export const ChatComposer = forwardRef<
   ChatComposerHandle,
   { mode: StudioMode; chat: StudioChat; autoFocus?: boolean }
 >(({ mode, chat, autoFocus }, ref) => {
-  const { settings, setSettings, target, pickTarget, busy, balance, send } =
-    chat;
+  const {
+    settings,
+    setSettings,
+    target,
+    pickTarget,
+    busy,
+    balance,
+    send,
+    suggestion,
+  } = chat;
   const [text, setText] = useState('');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [dragging, setDragging] = useState(false);
@@ -220,6 +228,14 @@ export const ChatComposer = forwardRef<
   const short = balance !== undefined && balance < cost;
   const empty = !text.trim() && attachments.length === 0;
   const usesEditModel = !!target || attachments.length > 0;
+  // Shown as ghost text in the empty input; Tab (or a tap) takes it.
+  const ghost = !text && attachments.length === 0 ? suggestion : null;
+
+  const takeGhost = () => {
+    if (!ghost) return;
+    setText(ghost);
+    inputRef.current?.focus();
+  };
 
   const submit = (e?: FormEvent) => {
     e?.preventDefault();
@@ -239,6 +255,11 @@ export const ChatComposer = forwardRef<
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Tab' && !e.shiftKey && ghost) {
+      e.preventDefault();
+      takeGhost();
+      return;
+    }
     if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       submit();
@@ -323,19 +344,44 @@ export const ChatComposer = forwardRef<
       <label htmlFor='composer-input' className='sr-only'>
         Message
       </label>
-      <AutoTextarea
-        ref={inputRef}
-        id='composer-input'
-        value={text}
-        autoFocus={autoFocus}
-        onChange={(e) => setText(e.target.value)}
-        onKeyDown={onKeyDown}
-        onPaste={onPaste}
-        placeholder={
-          target ? 'Describe a change to this image…' : PLACEHOLDERS[mode]
-        }
-        className='min-h-12 px-3 pb-1 pt-2.5'
-      />
+      <div className='relative'>
+        <AutoTextarea
+          ref={inputRef}
+          id='composer-input'
+          value={text}
+          autoFocus={autoFocus}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={onKeyDown}
+          onPaste={onPaste}
+          placeholder={
+            ghost
+              ? ''
+              : target
+                ? 'Describe a change to this image…'
+                : PLACEHOLDERS[mode]
+          }
+          aria-describedby={ghost ? 'composer-suggestion' : undefined}
+          className='min-h-12 px-3 pb-1 pt-2.5'
+        />
+        {ghost && (
+          <p
+            id='composer-suggestion'
+            className='pointer-events-none absolute inset-x-0 top-0 flex items-center gap-2 px-3 pt-2.5 text-base leading-6 text-muted-foreground/70'
+          >
+            <span className='sr-only'>Suggestion: </span>
+            <span className='min-w-0 truncate'>{ghost}</span>
+            <button
+              type='button'
+              onClick={takeGhost}
+              className='pointer-events-auto inline-flex shrink-0 items-center gap-1 rounded-md border bg-background px-1.5 py-0.5 text-[11px] font-medium leading-4 text-muted-foreground transition-colors hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/50'
+            >
+              <kbd className='font-sans max-sm:hidden'>Tab</kbd>
+              <span className='max-sm:hidden'>to use</span>
+              <span className='sm:hidden'>Use</span>
+            </button>
+          </p>
+        )}
+      </div>
 
       <div className='flex items-center gap-2'>
         <div className='-my-1 flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto py-1 [scrollbar-width:none]'>

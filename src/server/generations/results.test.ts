@@ -4,6 +4,7 @@ import { db } from '@/db';
 import { EDIT_MODEL } from '@/config/models';
 import { chargeGeneration } from '@/server/credits';
 import {
+  cancelGeneration,
   markGenerationFailed,
   reconcileStaleGenerations,
   storeGenerationResult,
@@ -16,9 +17,14 @@ import {
   resetDb,
 } from '../../../test/factories';
 
-vi.mock('@fal-ai/client', () => ({ fal: { queue: {} } }));
+const { cancel } = vi.hoisted(() => ({ cancel: vi.fn() }));
 
-beforeEach(resetDb);
+vi.mock('@fal-ai/client', () => ({ fal: { queue: { cancel } } }));
+
+beforeEach(async () => {
+  await resetDb();
+  cancel.mockReset().mockResolvedValue(undefined);
+});
 
 describe('markGenerationFailed', () => {
   it('refunds exactly what was charged', async () => {
@@ -127,5 +133,79 @@ describe('reconcileStaleGenerations', () => {
       where: { id: gen.id },
     });
     expect(saved.status).toBe(GEN_STATUS.PENDING);
+  });
+});
+
+describe('cancelGeneration', () => {
+  it('refunds the owner and asks Fal to drop the job', async () => {
+    const user = await createUser({ credits: 5 });
+    const gen = await createGeneration(user.id);
+    await chargeGeneration(user.id, gen.id, 2);
+
+    await cancelGeneration(user.id, gen.id);
+
+    expect(await creditsOf(user.id)).toBe(5);
+    expect(cancel).toHaveBeenCalledWith(gen.model_endpoint, {
+      requestId: gen.request_id,
+    });
+    const saved = await db.thumbnail.findUniqueOrThrow({
+      where: { id: gen.id },
+    });
+    expect(saved).toMatchObject({
+      status: GEN_STATUS.FAILED,
+      error: 'Cancelled by user',
+    });
+    await expectLedgerBalanced(user.id);
+  });
+
+  it('keeps the refund when Fal refuses to cancel', async () => {
+    const user = await createUser({ credits: 5 });
+    const gen = await createGeneration(user.id);
+    await chargeGeneration(user.id, gen.id, 2);
+    cancel.mockRejectedValue(new Error('already running'));
+
+    await cancelGeneration(user.id, gen.id);
+
+    expect(await creditsOf(user.id)).toBe(5);
+  });
+
+  it('never lets a late result complete a cancelled generation', async () => {
+    const user = await createUser({ credits: 5 });
+    const gen = await createGeneration(user.id);
+    await chargeGeneration(user.id, gen.id, 2);
+
+    await cancelGeneration(user.id, gen.id);
+    await storeGenerationResult(gen.request_id!, ['https://fal.media/a.png']);
+
+    const saved = await db.thumbnail.findUniqueOrThrow({
+      where: { id: gen.id },
+    });
+    expect(saved.status).toBe(GEN_STATUS.FAILED);
+    expect(await creditsOf(user.id)).toBe(5);
+  });
+
+  it('refuses with 409 once the generation has finished', async () => {
+    const user = await createUser({ credits: 5 });
+    const gen = await createGeneration(user.id);
+    await chargeGeneration(user.id, gen.id, 2);
+    await storeGenerationResult(gen.request_id!, ['https://fal.media/a.png']);
+
+    await expect(cancelGeneration(user.id, gen.id)).rejects.toMatchObject({
+      statusCode: 409,
+    });
+    expect(await creditsOf(user.id)).toBe(3);
+    expect(cancel).not.toHaveBeenCalled();
+  });
+
+  it("reads another user's generation as not found", async () => {
+    const owner = await createUser({ credits: 5 });
+    const other = await createUser({ credits: 5 });
+    const gen = await createGeneration(owner.id);
+    await chargeGeneration(owner.id, gen.id, 2);
+
+    await expect(cancelGeneration(other.id, gen.id)).rejects.toMatchObject({
+      statusCode: 404,
+    });
+    expect(await creditsOf(owner.id)).toBe(3);
   });
 });

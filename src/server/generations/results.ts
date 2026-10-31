@@ -6,6 +6,7 @@ import { GEN_STATUS } from '@prisma/client';
 import { refundGeneration } from '@/server/credits';
 import { claimWindow } from '@/server/rateLimit';
 import { logGenerationEvent } from '@/server/generations/events';
+import { ApiError } from '@/server/errors';
 
 /**
  * Recording generation results.
@@ -87,6 +88,59 @@ export const markGenerationFailed = async (
 
   const refunded = await refundGeneration(thumbnail.id);
   if (refunded) await logGenerationEvent(thumbnail.id, 'REFUNDED');
+};
+
+export const CANCELLED_REASON = 'Cancelled by user';
+
+/**
+ * Stops one of the user's open generations and refunds it.
+ *
+ * Fal is asked to drop the job, but that is best effort: a job already
+ * running may still finish and deliver. It no longer matters, because the
+ * row is failed first and storeGenerationResult only completes open rows,
+ * so a late result can never turn a refunded generation into a free one.
+ */
+export const cancelGeneration = async (
+  userId: string,
+  id: string,
+): Promise<void> => {
+  // Scoped by user_id so another user's id reads as not found.
+  const row = await db.thumbnail.findFirst({
+    where: { id, user_id: userId },
+    select: { id: true, status: true, request_id: true, model_endpoint: true },
+  });
+  if (!row) throw new ApiError('Generation not found', 404);
+  if (!OPEN.includes(row.status)) {
+    throw new ApiError('This generation has already finished', 409);
+  }
+
+  await markGenerationFailed({ id: row.id }, CANCELLED_REASON);
+
+  // The row may have completed between the read and the claim.
+  const settled = await db.thumbnail.findUniqueOrThrow({
+    where: { id: row.id },
+    select: { status: true, error: true },
+  });
+  if (
+    settled.status !== GEN_STATUS.FAILED ||
+    settled.error !== CANCELLED_REASON
+  ) {
+    throw new ApiError('This generation has already finished', 409);
+  }
+
+  if (row.request_id && row.model_endpoint) {
+    try {
+      await fal.queue.cancel(row.model_endpoint, {
+        requestId: row.request_id,
+      });
+    } catch (err) {
+      // Usually "already running" or "already done"; the refund stands.
+      console.warn('Fal did not cancel the job', {
+        requestId: row.request_id,
+        err,
+      });
+    }
+  }
 };
 
 export type SyncOutcome =
