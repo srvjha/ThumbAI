@@ -284,8 +284,10 @@ export const Donut = ({
             nameKey='name'
             innerRadius='62%'
             outerRadius='100%'
+            // The separating ring only makes sense between slices; on a
+            // lone slice it draws a seam where the circle closes.
             stroke='var(--card)'
-            strokeWidth={2}
+            strokeWidth={items.length > 1 ? 2 : 0}
             paddingAngle={items.length > 1 ? 2 : 0}
           >
             {items.map((item) => (

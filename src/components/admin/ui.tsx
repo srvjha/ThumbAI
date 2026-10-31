@@ -157,19 +157,26 @@ export const BarList = ({
   return (
     <ul className='space-y-1.5'>
       {items.map((item) => (
-        <li key={item.name} className='relative flex h-8 items-center text-sm'>
-          <span
-            aria-hidden
-            className='absolute inset-y-0 left-0 rounded-md bg-[var(--viz-1)]/14'
-            style={{ width: `${(item.value / max) * 100}%` }}
-          />
-          <span className='relative min-w-0 flex-1 truncate px-2'>
-            {label(item.name)}
+        // The bar sits only under the label; the numbers get their own
+        // columns so they never collide with its rounded end.
+        <li
+          key={item.name}
+          className='grid grid-cols-[minmax(0,1fr)_3rem_3rem] items-center gap-3 text-sm'
+        >
+          <span className='relative flex h-8 min-w-0 items-center'>
+            <span
+              aria-hidden
+              className='absolute inset-y-0 left-0 rounded-md bg-[var(--viz-1)]/14'
+              style={{ width: `${Math.max((item.value / max) * 100, 2)}%` }}
+            />
+            <span className='relative min-w-0 truncate px-2'>
+              {label(item.name)}
+            </span>
           </span>
-          <span className='relative w-14 text-right font-mono text-xs tabular-nums'>
+          <span className='text-right font-mono text-xs tabular-nums'>
             {fmt(item.value)}
           </span>
-          <span className='relative w-12 text-right font-mono text-xs text-muted-foreground tabular-nums'>
+          <span className='text-right font-mono text-xs text-muted-foreground tabular-nums'>
             {total ? `${Math.round((item.value / total) * 100)}%` : ''}
           </span>
         </li>

@@ -25,12 +25,17 @@ export const adminRoute =
     try {
       const admin = await requireAdmin();
       const params = context?.params ? await context.params : ({} as P);
-      const body =
-        req.method === 'GET'
-          ? {}
-          : await req.json().catch(() => {
-              throw new ApiError('Invalid JSON body', 400);
-            });
+      // A DELETE (or any write) may carry no body at all; only a body that
+      // is present and malformed is an error.
+      const raw = req.method === 'GET' ? '' : await req.text();
+      let body: Record<string, unknown> = {};
+      if (raw.trim()) {
+        try {
+          body = JSON.parse(raw);
+        } catch {
+          throw new ApiError('Invalid JSON body', 400);
+        }
+      }
       const data = await handler({ req, admin, params, body: body ?? {} });
       return NextResponse.json(new ApiResponse(200, data, message), {
         status: 200,

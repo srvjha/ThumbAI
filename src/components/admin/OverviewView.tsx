@@ -47,8 +47,20 @@ const Kpis = ({
         icon={Users}
         loading={loading}
         value={fmt(k?.totalUsers)}
-        delta={k && <Delta {...k.newUsers} />}
-        hint={k && `${fmt(k.newUsers.current)} new · ${fmt(k.paidUsers)} paid`}
+        // Growth of the base, not new-vs-previous signups, which reads as
+        // users being lost when a quiet period follows a busy one.
+        delta={
+          k && (
+            <Delta
+              current={k.totalUsers}
+              previous={k.totalUsers - k.newUsers.current}
+            />
+          )
+        }
+        hint={
+          k &&
+          `${fmt(k.newUsers.current)} new (${fmt(k.newUsers.previous)} the period before) · ${fmt(k.paidUsers)} paid`
+        }
       />
       <KpiCard
         label='Unique visitors'
@@ -293,16 +305,18 @@ export const OverviewView = () => {
             bodyClassName='px-0 pb-2'
           >
             {data?.pages.length ? (
-              <table className='w-full text-sm'>
+              // Fixed layout: the counts take narrow columns and the path
+              // gets the rest, instead of auto layout starving it.
+              <table className='w-full table-fixed text-sm'>
                 <thead className='text-xs text-muted-foreground'>
                   <tr>
                     <th className='px-4 py-1.5 text-left font-normal sm:px-5'>
                       Path
                     </th>
-                    <th className='px-2 py-1.5 text-right font-normal'>
+                    <th className='w-14 px-2 py-1.5 text-right font-normal'>
                       Views
                     </th>
-                    <th className='px-4 py-1.5 text-right font-normal sm:px-5'>
+                    <th className='w-20 px-4 py-1.5 text-right font-normal sm:px-5'>
                       Visitors
                     </th>
                   </tr>
@@ -310,7 +324,10 @@ export const OverviewView = () => {
                 <tbody>
                   {data.pages.map((p) => (
                     <tr key={p.path} className='border-t'>
-                      <td className='max-w-0 truncate px-4 py-1.5 font-mono text-xs sm:px-5'>
+                      <td
+                        className='max-w-0 truncate px-4 py-1.5 font-mono text-xs sm:px-5'
+                        title={p.path}
+                      >
                         {p.path}
                       </td>
                       <td className='px-2 py-1.5 text-right font-mono text-xs tabular-nums'>
