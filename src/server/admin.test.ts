@@ -3,9 +3,12 @@ import { db } from '@/db';
 import {
   ADMIN_PAGE_SIZE,
   adjustCredits,
+  getGenerationDetail,
   getUserDetail,
   listUsers,
   parseUserListParams,
+  resetFlags,
+  setSuspended,
 } from '@/server/admin';
 import {
   createGeneration,
@@ -30,6 +33,7 @@ describe('parseUserListParams', () => {
       q: undefined,
       role: undefined,
       plan: undefined,
+      status: undefined,
       sort: 'createdAt',
       order: 'desc',
       page: 1,
@@ -105,8 +109,19 @@ describe('getUserDetail', () => {
   });
 });
 
+const makeAdmin = async () => {
+  const user = await createUser();
+  return db.user.update({
+    where: { id: user.id },
+    data: { role: 'ADMIN', email: 'admin@example.test' },
+  });
+};
+
 describe('adjustCredits', () => {
-  const adminEmail = 'admin@example.test';
+  let admin: { id: string; email: string };
+  beforeEach(async () => {
+    admin = await makeAdmin();
+  });
 
   it('adds and removes credits through the ledger, noting who and why', async () => {
     const user = await createUser({ credits: 2 });
@@ -115,13 +130,13 @@ describe('adjustCredits', () => {
       userId: user.id,
       amount: 10,
       reason: 'Support goodwill',
-      adminEmail,
+      admin,
     });
     const result = await adjustCredits({
       userId: user.id,
       amount: -5,
       reason: 'Correction',
-      adminEmail,
+      admin,
     });
 
     expect(result.credits).toBe(7);
@@ -135,13 +150,18 @@ describe('adjustCredits', () => {
       'Correction (by admin@example.test)',
     ]);
     await expectLedgerBalanced(user.id);
+    expect(
+      await db.adminAction.count({
+        where: { target_user_id: user.id, action: 'ADJUST_CREDITS' },
+      }),
+    ).toBe(2);
   });
 
   it('refuses to take the balance below zero', async () => {
     const user = await createUser({ credits: 2 });
 
     await expect(
-      adjustCredits({ userId: user.id, amount: -3, reason: 'x', adminEmail }),
+      adjustCredits({ userId: user.id, amount: -3, reason: 'x', admin }),
     ).rejects.toMatchObject({ statusCode: 402 });
     expect(await creditsOf(user.id)).toBe(2);
   });
@@ -156,7 +176,7 @@ describe('adjustCredits', () => {
   ])('rejects amount %s with reason %s', async (amount, reason) => {
     const user = await createUser();
     await expect(
-      adjustCredits({ userId: user.id, amount, reason, adminEmail }),
+      adjustCredits({ userId: user.id, amount, reason, admin }),
     ).rejects.toMatchObject({ statusCode: 400 });
   });
 
@@ -168,7 +188,103 @@ describe('adjustCredits', () => {
     });
 
     await expect(
-      adjustCredits({ userId: user.id, amount: 5, reason: 'x', adminEmail }),
+      adjustCredits({ userId: user.id, amount: 5, reason: 'x', admin }),
     ).rejects.toMatchObject({ statusCode: 409 });
+  });
+});
+
+describe('setSuspended', () => {
+  it('suspends and restores, logging both', async () => {
+    const admin = await makeAdmin();
+    const user = await createUser();
+
+    await setSuspended({
+      userId: user.id,
+      suspended: true,
+      reason: 'Abuse',
+      admin,
+    });
+    expect((await list('status=suspended')).users.map((u) => u.id)).toEqual([
+      user.id,
+    ]);
+    await expect(
+      setSuspended({ userId: user.id, suspended: true, reason: 'x', admin }),
+    ).rejects.toMatchObject({ statusCode: 409 });
+
+    await setSuspended({
+      userId: user.id,
+      suspended: false,
+      reason: null,
+      admin,
+    });
+    const actions = await db.adminAction.findMany({
+      where: { target_user_id: user.id },
+      orderBy: { createdAt: 'asc' },
+    });
+    expect(actions.map((a) => a.action)).toEqual(['SUSPEND', 'UNSUSPEND']);
+  });
+
+  it('needs a reason and never suspends an admin', async () => {
+    const admin = await makeAdmin();
+    const user = await createUser();
+    await expect(
+      setSuspended({ userId: user.id, suspended: true, reason: ' ', admin }),
+    ).rejects.toMatchObject({ statusCode: 400 });
+    await expect(
+      setSuspended({ userId: admin.id, suspended: true, reason: 'x', admin }),
+    ).rejects.toMatchObject({ statusCode: 409 });
+  });
+});
+
+describe('resetFlags', () => {
+  it('resolves open flags and keeps them on record', async () => {
+    const admin = await makeAdmin();
+    const user = await createUser();
+    await db.promptFlag.createMany({
+      data: [
+        {
+          user_id: user.id,
+          source: 'INJECTION',
+          categories: ['prompt_injection'],
+          severity: 'MEDIUM',
+        },
+        {
+          user_id: user.id,
+          source: 'MODERATION',
+          categories: ['sexual'],
+          severity: 'HIGH',
+          score: 0.97,
+        },
+      ],
+    });
+    expect((await list('status=flagged')).users[0]).toMatchObject({
+      openFlags: 2,
+      flagSeverity: 'HIGH',
+    });
+
+    expect(await resetFlags({ userId: user.id, admin })).toEqual({
+      resolved: 2,
+    });
+    expect((await list('status=flagged')).total).toBe(0);
+    expect((await getUserDetail(user.id)).flags).toHaveLength(2);
+  });
+});
+
+describe('getGenerationDetail', () => {
+  it('returns the log and sizes, never the prompt text', async () => {
+    const user = await createUser();
+    const gen = await db.thumbnail.update({
+      where: { id: (await createGeneration(user.id)).id },
+      data: { user_prompt: 'secret words', enhanced_ai_prompt: 'more words' },
+    });
+    await db.generationEvent.create({
+      data: { thumbnail_id: gen.id, type: 'CREATED' },
+    });
+
+    const detail = await getGenerationDetail(gen.id);
+
+    expect(detail.events.map((e) => e.type)).toEqual(['CREATED']);
+    expect(detail.promptChars).toBe(12);
+    expect(JSON.stringify(detail)).not.toContain('secret words');
   });
 });

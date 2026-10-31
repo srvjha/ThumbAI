@@ -5,6 +5,7 @@ import { db } from '@/db';
 import { GEN_STATUS } from '@prisma/client';
 import { refundGeneration } from '@/server/credits';
 import { claimWindow } from '@/server/rateLimit';
+import { logGenerationEvent } from '@/server/generations/events';
 
 /**
  * Recording generation results.
@@ -33,22 +34,39 @@ const OPEN: GEN_STATUS[] = [GEN_STATUS.PENDING, GEN_STATUS.IN_PROGRESS];
 export const storeGenerationResult = async (
   requestId: string,
   imageUrls: string[],
+  via: 'webhook' | 'poll' = 'webhook',
 ): Promise<void> => {
+  const completedAt = new Date();
   // Only an open row completes. A generation already given up on has been
   // refunded; flipping it to COMPLETED would hand out free images.
-  await db.thumbnail.updateMany({
+  const stored = await db.thumbnail.updateMany({
     where: { request_id: requestId, status: { in: OPEN } },
     data: {
       status: GEN_STATUS.COMPLETED,
       // Every image, not just the first.
       image_url: imageUrls,
+      completed_at: completedAt,
     },
   });
+  if (stored.count === 0) return;
+
+  const row = await db.thumbnail.findUnique({
+    where: { request_id: requestId },
+    select: { id: true, createdAt: true },
+  });
+  if (row) {
+    await logGenerationEvent(row.id, 'COMPLETED', {
+      via,
+      images: imageUrls.length,
+      latencyMs: completedAt.getTime() - row.createdAt.getTime(),
+    });
+  }
 };
 
 /** Marks a generation failed and returns exactly what it was charged. */
 export const markGenerationFailed = async (
   where: { request_id: string } | { id: string },
+  reason = 'Unknown failure',
 ): Promise<void> => {
   const thumbnail = await db.thumbnail.findFirst({
     where,
@@ -61,12 +79,14 @@ export const markGenerationFailed = async (
   // never failed. The refund itself is once-only via the ledger.
   const claimed = await db.thumbnail.updateMany({
     where: { id: thumbnail.id, status: { in: OPEN } },
-    data: { status: GEN_STATUS.FAILED },
+    data: { status: GEN_STATUS.FAILED, error: reason.slice(0, 500) },
   });
 
   if (claimed.count === 0) return;
+  await logGenerationEvent(thumbnail.id, 'FAILED', { reason });
 
-  await refundGeneration(thumbnail.id);
+  const refunded = await refundGeneration(thumbnail.id);
+  if (refunded) await logGenerationEvent(thumbnail.id, 'REFUNDED');
 };
 
 export type SyncOutcome =
@@ -113,20 +133,29 @@ export const syncGenerationFromFal = async (
       const imageUrls = extractImageUrls(result.data);
 
       if (imageUrls.length === 0) {
-        await markGenerationFailed({ request_id: requestId });
+        await markGenerationFailed(
+          { request_id: requestId },
+          'Provider finished with no images',
+        );
         return { status: 'FAILED' };
       }
 
-      await storeGenerationResult(requestId, imageUrls);
+      await storeGenerationResult(requestId, imageUrls, 'poll');
       return { status: 'COMPLETED', imageUrls };
     }
 
     if (queued.status === 'IN_PROGRESS' || queued.status === 'IN_QUEUE') {
       if (thumbnail.status !== GEN_STATUS.IN_PROGRESS) {
-        await db.thumbnail.updateMany({
+        const moved = await db.thumbnail.updateMany({
           where: { request_id: requestId, status: GEN_STATUS.PENDING },
           data: { status: GEN_STATUS.IN_PROGRESS },
         });
+        if (moved.count > 0) {
+          await logGenerationEvent(thumbnail.id, 'IN_PROGRESS', {
+            queue: queued.status,
+            position: 'queue_position' in queued ? queued.queue_position : null,
+          });
+        }
       }
       return { status: 'PENDING' };
     }
@@ -173,7 +202,10 @@ export const reconcileStaleGenerations = async (userId: string) => {
         // (the function died between charging and queueing). Nothing is
         // running at Fal, so refund now rather than after ABANDON_AFTER_MS.
         if (!request_id) {
-          await markGenerationFailed({ id });
+          await markGenerationFailed(
+            { id },
+            'Never reached the provider (submit did not finish)',
+          );
           return;
         }
 
@@ -182,7 +214,10 @@ export const reconcileStaleGenerations = async (userId: string) => {
           outcome.status === 'PENDING' &&
           now - createdAt.getTime() > ABANDON_AFTER_MS
         ) {
-          await markGenerationFailed({ request_id });
+          await markGenerationFailed(
+            { request_id },
+            'Abandoned: no result after 30 minutes',
+          );
         }
       }),
     );

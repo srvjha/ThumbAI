@@ -3,17 +3,22 @@
 import Link from 'next/link';
 import { useUser } from '@clerk/nextjs';
 import {
+  Activity,
   BarChart3,
   CreditCard,
   FileText,
+  Gauge,
   ImagePlus,
   LayoutGrid,
-  Shield,
+  ScrollText,
+  ShieldAlert,
   Type,
   UserRound,
+  Users,
   type LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/user/auth';
+import { useOpenFlagCount } from '@/hooks/admin';
 import { Logo } from '@/components/brand/Logo';
 import { NavUser } from './NavUser';
 import {
@@ -25,13 +30,19 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
 import type { ReactNode } from 'react';
 
-export type NavItem = { label: string; href: string; icon: LucideIcon };
+export type NavItem = {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+  badge?: number;
+};
 
 export const STUDIO_NAV: NavItem[] = [
   { label: 'Text to image', href: '/studio/text-to-image', icon: Type },
@@ -46,11 +57,19 @@ export const ACCOUNT_NAV: NavItem[] = [
   { label: 'Profile', href: '/profile', icon: UserRound },
 ];
 
-const ADMIN_NAV: NavItem[] = [{ label: 'Admin', href: '/admin', icon: Shield }];
+export const ADMIN_NAV: NavItem[] = [
+  { label: 'Overview', href: '/admin', icon: Gauge },
+  { label: 'Users', href: '/admin/users', icon: Users },
+  { label: 'Generations', href: '/admin/generations', icon: Activity },
+  { label: 'Moderation', href: '/admin/moderation', icon: ShieldAlert },
+  { label: 'Audit log', href: '/admin/audit', icon: ScrollText },
+];
 
-// /dashboard must not light up while on /dashboard/analytics.
+// Section roots must not light up while on one of their children.
+const EXACT = new Set(['/dashboard', '/admin']);
+
 export const isNavActive = (href: string, pathname: string) =>
-  href === '/dashboard' ? pathname === href : pathname.startsWith(href);
+  EXACT.has(href) ? pathname === href : pathname.startsWith(href);
 
 const compact = new Intl.NumberFormat('en', {
   notation: 'compact',
@@ -79,7 +98,7 @@ const NavGroup = ({
       </SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu>
-          {items.map(({ label, href, icon: Icon }) => (
+          {items.map(({ label, href, icon: Icon, badge }) => (
             <SidebarMenuItem key={href}>
               <SidebarMenuButton
                 asChild
@@ -95,12 +114,26 @@ const NavGroup = ({
                   <span>{label}</span>
                 </Link>
               </SidebarMenuButton>
+              {badge ? (
+                <SidebarMenuBadge className='rounded-full bg-destructive/10 px-1.5 text-destructive tabular-nums'>
+                  {badge > 99 ? '99+' : badge}
+                </SidebarMenuBadge>
+              ) : null}
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
   );
+};
+
+/** Only mounted for admins, so the flag count is never requested otherwise. */
+const AdminGroup = ({ pathname }: { pathname: string }) => {
+  const openFlags = useOpenFlagCount();
+  const items = ADMIN_NAV.map((item) =>
+    item.href === '/admin/moderation' ? { ...item, badge: openFlags } : item,
+  );
+  return <NavGroup title='Admin' items={items} pathname={pathname} />;
 };
 
 /** Full card when expanded; a balance chip on the icon rail. */
@@ -161,9 +194,7 @@ export const AppSidebar = ({
       <SidebarContent className='overflow-x-hidden'>
         <NavGroup title='Studio' items={STUDIO_NAV} pathname={pathname} />
         <NavGroup title='Account' items={ACCOUNT_NAV} pathname={pathname} />
-        {data?.role === 'ADMIN' ? (
-          <NavGroup title='Internal' items={ADMIN_NAV} pathname={pathname} />
-        ) : null}
+        {data?.role === 'ADMIN' ? <AdminGroup pathname={pathname} /> : null}
       </SidebarContent>
 
       <SidebarFooter className='gap-3 overflow-hidden'>

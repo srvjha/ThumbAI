@@ -12,7 +12,12 @@ import { ensureSignupCredits } from '@/server/signupCredits';
  * Every route must derive the acting user from here rather than from the
  * request body — a client-supplied user id is not a credential.
  */
-export const requireUser = async (): Promise<User> => {
+export const requireUser = async ({
+  allowSuspended = false,
+}: {
+  /** Only for reading the account itself, so the app can say why. */
+  allowSuspended?: boolean;
+} = {}): Promise<User> => {
   const { userId: clerkId } = await auth();
 
   if (!clerkId) {
@@ -41,6 +46,13 @@ export const requireUser = async (): Promise<User> => {
   if (user.deleted_at) {
     // The Clerk account is gone; a lingering session must not revive it.
     throw new ApiError('Unauthorized', 401);
+  }
+
+  if (user.suspended_at && !allowSuspended) {
+    throw new ApiError(
+      'Your account is suspended. Contact support if you think this is a mistake.',
+      403,
+    );
   }
 
   if (!user.signup_checked_at) {

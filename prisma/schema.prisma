@@ -25,12 +25,28 @@ model User {
   // When the free signup credits were decided, granted or refused. Null
   // until the user's first authenticated request.
   signup_checked_at   DateTime?
+  // Set by an admin. A suspended user can sign in but every API refuses
+  // them until it is cleared.
+  suspended_at        DateTime?
+  suspended_reason    String?
+  // First touch: copied from the first browser that signed in as this user.
+  country             String?
+  region              String?
+  city                String?
+  /// Referrer domain or utm_source of that first visit; 'direct' for none.
+  acquisition_source  String?
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   Thumbnail           Thumbnail[]
   Order               Order[]
   CreditTransaction   CreditTransaction[]
   SignupCreditAttempt SignupCreditAttempt?
+  Visitor             Visitor[]
+  PromptFlag          PromptFlag[]
+  AdminActionsTaken   AdminAction[]        @relation("AdminActionActor")
+  AdminActionsOn      AdminAction[]        @relation("AdminActionTarget")
+
+  @@index([createdAt])
 }
 
 model Thumbnail {
@@ -58,15 +74,48 @@ model Thumbnail {
   // The seed actually sent, when the endpoint honours one. Recorded so a
   // generation can be reproduced or re-rolled as a deliberate variation.
   seed               Int?
+  /// Why it failed, when it did: the provider's error or our own.
+  error              String?
+  /// When the images landed. With createdAt, the end-to-end latency.
+  completed_at       DateTime?
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt
 
   user              User                @relation(fields: [user_id], references: [id])
   CreditTransaction CreditTransaction[]
+  GenerationEvent   GenerationEvent[]
+  PromptFlag        PromptFlag[]
 
   // The library, detail, analytics and stale-sweep queries all filter by
   // user and order or range by time.
   @@index([user_id, createdAt])
+  @@index([createdAt])
+}
+
+/// Every step of a generation, in order: the admin log. Written best-effort;
+/// a failed write never fails the generation.
+model GenerationEvent {
+  id           String    @id @default(uuid())
+  thumbnail_id String
+  type         GEN_EVENT
+  detail       Json?
+  createdAt    DateTime  @default(now())
+
+  thumbnail Thumbnail @relation(fields: [thumbnail_id], references: [id], onDelete: Cascade)
+
+  @@index([thumbnail_id, createdAt])
+}
+
+enum GEN_EVENT {
+  CREATED
+  CHARGED
+  SUBMITTED
+  SUBMIT_FAILED
+  IN_PROGRESS
+  WEBHOOK_RECEIVED
+  COMPLETED
+  FAILED
+  REFUNDED
 }
 
 enum MODEL {
@@ -197,4 +246,103 @@ model SignupCreditAttempt {
 
   @@index([email_normalized])
   @@index([ip_hash, createdAt])
+}
+
+/// A browser, identified by a first-party cookie: in effect one device of
+/// one person. Raw IPs are never stored; location comes from Vercel's geo
+/// headers.
+model Visitor {
+  id              String   @id
+  user_id         String?
+  first_seen_at   DateTime @default(now())
+  last_seen_at    DateTime @default(now())
+  country         String?
+  region          String?
+  city            String?
+  referrer_domain String?
+  utm_source      String?
+  utm_medium      String?
+  utm_campaign    String?
+  landing_path    String?
+  /// desktop, mobile or tablet.
+  device          String
+  browser         String?
+  os              String?
+  pageviews       Int      @default(0)
+
+  user     User?      @relation(fields: [user_id], references: [id])
+  PageView PageView[]
+
+  @@index([user_id])
+  @@index([first_seen_at])
+}
+
+model PageView {
+  id         String   @id @default(uuid())
+  visitor_id String
+  user_id    String?
+  path       String
+  createdAt  DateTime @default(now())
+
+  visitor Visitor @relation(fields: [visitor_id], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+}
+
+/// A prompt that tripped moderation or the injection check. The prompt text
+/// is deliberately not copied here: admins see what kind of problem it was,
+/// never what the user wrote.
+model PromptFlag {
+  id           String        @id @default(uuid())
+  user_id      String
+  /// The generation it belonged to, when one was created.
+  thumbnail_id String?
+  source       FLAG_SOURCE
+  categories   String[]
+  /// Highest moderation score, 0 to 1. Null for the injection check.
+  score        Float?
+  severity     FLAG_SEVERITY
+  resolved_at  DateTime?
+  resolved_by  String?
+  createdAt    DateTime      @default(now())
+
+  user      User       @relation(fields: [user_id], references: [id])
+  thumbnail Thumbnail? @relation(fields: [thumbnail_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id, resolved_at])
+  @@index([createdAt])
+}
+
+enum FLAG_SOURCE {
+  MODERATION
+  INJECTION
+}
+
+enum FLAG_SEVERITY {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+/// What admins did, to whom, and why.
+model AdminAction {
+  id             String       @id @default(uuid())
+  admin_id       String
+  target_user_id String?
+  action         ADMIN_ACTION
+  detail         Json?
+  createdAt      DateTime     @default(now())
+
+  admin  User  @relation("AdminActionActor", fields: [admin_id], references: [id])
+  target User? @relation("AdminActionTarget", fields: [target_user_id], references: [id])
+
+  @@index([createdAt])
+  @@index([target_user_id, createdAt])
+}
+
+enum ADMIN_ACTION {
+  SUSPEND
+  UNSUSPEND
+  RESET_FLAGS
+  ADJUST_CREDITS
 }
