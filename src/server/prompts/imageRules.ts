@@ -122,7 +122,7 @@ export const assembleImagePrompt = ({
 /** Everything an edit keeps unless the requested change needs it. */
 export const EDIT_LOCKS = {
   composition: 'the composition, framing and crop',
-  person: "every person's face, features and pose",
+  person: "each person's identity, facial features and pose",
   expression: 'their facial expressions',
   text: 'all existing lettering and its exact wording',
   colours: 'the colour palette',
@@ -147,8 +147,12 @@ export const assembleEditPrompt = ({
   unlocked: EditLock[];
   referenceCount: number;
 }): string => {
+  // Removing or replacing a person takes their expression with them.
+  const open = new Set<EditLock>(
+    unlocked.includes('person') ? [...unlocked, 'expression'] : unlocked,
+  );
   const kept = (Object.keys(EDIT_LOCKS) as EditLock[])
-    .filter((lock) => !unlocked.includes(lock))
+    .filter((lock) => !open.has(lock))
     .map((lock) => EDIT_LOCKS[lock]);
   const refs =
     referenceCount > 0

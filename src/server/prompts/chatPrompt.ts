@@ -26,6 +26,9 @@ const schema = z.object({
     .describe(
       'True when the change adds a real logo, product or public figure.',
     ),
+  reply: z
+    .string()
+    .describe('One short first-person sentence telling the user the edit.'),
 });
 
 /**
@@ -42,13 +45,15 @@ const SYSTEM = `You turn a user's follow-up message about the attached thumbnail
 
 change: one or two imperative sentences stating exactly what differs, concretely ("Make the headline about 30% larger", "Replace the blue background with a deep red gradient"). Restate only what the user asked for and never widen it. Refer to people in the third person ("the person", "the presenter"), never "me" or "I".
 
-Text: read the lettering currently on the thumbnail. When the user says "title X", "headline X", "text X", "write X" or asks to remove or add words, X is the new lettering, not a design style: state the complete new headline in double quotes, in the same letter case as the current lettering, and say it is spelled exactly as written. Example: the thumbnail reads "DESIGN NETFLIX FAST" and the user says "have title design netflix, remove the word fast" → Change the headline to exactly "DESIGN NETFLIX".
+Text: read the lettering currently on the thumbnail. When the user says "title X", "headline X", "text X", "write X" or asks to remove or add words, X is the new lettering, not a design style: state the complete new headline in double quotes, in the same letter case as the current lettering, and say it is spelled exactly as written. Example: the thumbnail reads "LEARN RUST TODAY" and the user says "remove the word today" → Change the headline to exactly "LEARN RUST". If no thumbnail is attached or you cannot read its lettering, never guess the rest of the headline: state the change against the current lettering instead (Remove the word "TODAY" from the headline, keeping the other words exactly as they are).
 
 unlocked: the aspects the change itself necessarily alters, from: ${lockIds.join(', ')}. Everything not listed is preserved. Changing the headline unlocks "text"; making someone smile unlocks "expression"; a new background unlocks "background", and also "colours" when its colour changes; any colour change unlocks "colours". When in doubt, leave it locked.
 
 needs_web_search: true when the change adds or corrects a real logo, product, place or public figure that has to look accurate; otherwise false.
 
-valid: false only when the message is empty, gibberish, or contains no instruction about the image.`;
+reply: one short, friendly first-person sentence for the user saying what you will change, quoting any new text, e.g. I'll change the headline to "DESIGN NETFLIX" and keep everything else the same. Never promise how the result will look. "" when invalid.
+
+valid: true for any instruction about the image, however vague ("make it better", "more eye-catching"): turn a vague one into a concrete improvement that keeps the design, such as stronger contrast and a bolder headline. false only when the message is empty or gibberish.`;
 
 const askEditor = (chatPrompt: string, imageUrls: string[]) =>
   client.chat.completions.parse({
@@ -114,5 +119,6 @@ export const generateChatPrompt = async (
       referenceCount: Math.max(0, imageUrls.length - 1),
     }),
     needs_factual_grounding: parsed.needs_web_search,
+    reply: parsed.reply.trim() || undefined,
   };
 };

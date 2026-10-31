@@ -97,8 +97,18 @@ describe('assembleEditPrompt', () => {
       referenceCount: 0,
     });
     expect(prompt).toMatch(/^Using the provided image, make only this change/);
-    expect(prompt).toContain("every person's face");
+    expect(prompt).toContain("each person's identity");
     expect(prompt).not.toContain('lettering');
+  });
+
+  it('frees the expression along with the person it belongs to', () => {
+    const prompt = assembleEditPrompt({
+      change: 'Remove the person.',
+      unlocked: ['person'],
+      referenceCount: 0,
+    });
+    expect(prompt).not.toContain('facial expressions');
+    expect(prompt).not.toContain("each person's identity");
   });
 
   it('explains which image is being edited when references come along', () => {

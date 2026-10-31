@@ -21,7 +21,10 @@
     "db:backup:prod": "bash tools/backup-prod.sh",
     "test": "vitest run",
     "vercel-build": "bash tools/vercel-build.sh",
-    "eval:prompts": "node --env-file=.env node_modules/vitest/vitest.mjs run --config vitest.eval.config.ts"
+    "eval:prompts": "node --env-file=.env node_modules/vitest/vitest.mjs run --config vitest.eval.config.ts tools/evals/prompts.eval.ts",
+    "eval:production": "node --env-file=.env node_modules/vitest/vitest.mjs run --config vitest.eval.config.ts tools/evals/production.eval.ts",
+    "eval:checks": "vitest run --config vitest.eval.config.ts tools/evals/checks.test.ts",
+    "eval:pull": "node --env-file=.env.prod tools/evals/pullRequests.ts"
   },
   "dependencies": {
     "@ai-sdk/react": "^2.0.22",
