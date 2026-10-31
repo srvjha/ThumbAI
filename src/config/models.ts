@@ -147,9 +147,9 @@ export const TEXT_TO_IMAGE_MODELS: Record<ModelTier, ModelDefinition> = {
 };
 
 /**
- * Editing runs on nano-banana-2/edit regardless of tier: it accepts up to 14
- * reference images and preserves the subject's identity, which is the whole
- * point of the image-to-image workflow.
+ * Chat edits that leave people and layout alone (new wording, colours, a
+ * different background) run on nano-banana-2/edit: quick, cheap, and good at
+ * changing one thing. Anything that redraws a person goes to PHOTO_MODEL.
  */
 export const EDIT_MODEL: ModelDefinition = {
   endpointId: 'fal-ai/nano-banana-2/edit',
@@ -186,6 +186,45 @@ export const EDIT_MODEL: ModelDefinition = {
 };
 
 /**
+ * Designs built from the user's photos, and chat edits that redraw a person
+ * or the layout. Pro plans the whole image before drawing (its thinking
+ * cannot be turned off), which is what keeps a real face recognisable while
+ * relighting it into a new scene, and what lets "the arm is cut off" be
+ * repaired rather than patched; nano-banana-2 at 1K did neither well.
+ */
+export const PHOTO_MODEL: ModelDefinition = {
+  endpointId: 'fal-ai/nano-banana-pro/edit',
+  label: 'Photo',
+  modelName: 'Nano Banana Pro',
+  description: 'Designs around your photos and keeps your face.',
+  family: 'gemini',
+  creditsPerImage: 3,
+  usdPerImage: 0.15,
+  supportsSeed: true,
+  supportsWebSearch: true,
+  buildInput: ({
+    prompt,
+    aspectRatio,
+    numImages,
+    outputFormat,
+    imageUrls = [],
+    seed,
+    enableWebSearch,
+    systemPrompt = THUMBNAIL_SYSTEM_PROMPT,
+  }) => ({
+    prompt,
+    system_prompt: systemPrompt,
+    image_urls: imageUrls,
+    aspect_ratio: aspectRatio,
+    resolution: '2K',
+    num_images: numImages,
+    output_format: outputFormat,
+    enable_web_search: enableWebSearch ?? false,
+    ...(seed === undefined ? {} : { seed }),
+  }),
+};
+
+/**
  * Credits charged per image by the endpoint a generation ran on. Keyed by
  * endpoint rather than workflow because chat edits are recorded under the
  * workflow they started from but billed at the edit rate. Unknown endpoints
@@ -194,9 +233,11 @@ export const EDIT_MODEL: ModelDefinition = {
 export const creditsPerImageForEndpoint = (
   endpointId: string | null | undefined,
 ): number => {
-  const model = [...Object.values(TEXT_TO_IMAGE_MODELS), EDIT_MODEL].find(
-    (candidate) => candidate.endpointId === endpointId,
-  );
+  const model = [
+    ...Object.values(TEXT_TO_IMAGE_MODELS),
+    EDIT_MODEL,
+    PHOTO_MODEL,
+  ].find((candidate) => candidate.endpointId === endpointId);
   return model?.creditsPerImage ?? 1;
 };
 
@@ -245,17 +286,13 @@ export const randomSeed = (): number =>
   Math.floor(Math.random() * (MAX_SEED + 1));
 
 /**
- * Model used for prompt authoring (not image generation).
- *
- * Kept in one place so it can be bumped without touching agent files. The
- * default is deliberately conservative: gpt-4.1 is a known-good id and an
- * upgrade on the gpt-4o-mini / gpt-4.1-mini this code used before.
- *
- * Newer families (GPT-5.x, GPT-6) are available and would likely write better
- * design prompts — set OPENAI_PROMPT_MODEL to one once you have confirmed the
- * exact id against your account's /v1/models listing.
+ * Model used for prompt authoring (not image generation): the design writer
+ * and the chat editor. Vendor-prefixed ids run through Fal's OpenRouter proxy
+ * (see server/prompts/llm.ts); bare ids go to OpenAI directly, so
+ * PROMPT_MODEL=anthropic/claude-opus-5.5 tries Claude without a code change.
  */
-export const PROMPT_MODEL = process.env.OPENAI_PROMPT_MODEL ?? 'gpt-4.1';
+export const PROMPT_MODEL =
+  process.env.PROMPT_MODEL ?? process.env.OPENAI_PROMPT_MODEL ?? 'gpt-4.1';
 
 /**
  * Picks the design archetype from a one-line-per-archetype catalogue: a

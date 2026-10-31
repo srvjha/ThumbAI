@@ -11,6 +11,7 @@ export const TIER_LABELS: Record<string, string> = {
   DRAFT: 'Draft',
   QUALITY: 'Quality',
   EDIT: 'Edit model',
+  PHOTO: 'Photo (Pro)',
   UNKNOWN: 'Unknown',
 };
 

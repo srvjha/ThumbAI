@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '@/db';
-import { getTextToImageModel } from '@/config/models';
+import {
+  EDIT_MODEL,
+  PHOTO_MODEL,
+  getTextToImageModel,
+} from '@/config/models';
 import { submitEdit, submitGeneration } from '@/server/generations/submit';
 import { EDIT_SYSTEM_PROMPT } from '@/server/prompts/imageRules';
 import {
@@ -207,6 +211,41 @@ describe('submitEdit', () => {
     });
   });
 
+  it('moves edits that redraw a person to Pro, at the edit price', async () => {
+    const user = await createUser({ credits: 5 });
+    chatPrompt.mockResolvedValue({ ...validPrompt, unlocked: ['person'] });
+
+    const result = await submitEdit(user, {
+      mode: 'chat',
+      prompt: 'the left arm got cut off, fix it',
+      images_urls: ['https://fal.media/a.png'],
+    });
+
+    expect(result).toMatchObject({
+      creditsCharged: EDIT_MODEL.creditsPerImage,
+      modelName: PHOTO_MODEL.modelName,
+    });
+    expect(submit.mock.calls[0][0]).toBe(PHOTO_MODEL.endpointId);
+    expect(submit.mock.calls[0][1].input).toMatchObject({
+      system_prompt: EDIT_SYSTEM_PROMPT,
+      resolution: '2K',
+    });
+    expect(await creditsOf(user.id)).toBe(5 - EDIT_MODEL.creditsPerImage);
+  });
+
+  it('keeps text and colour edits on the quick model', async () => {
+    const user = await createUser({ credits: 5 });
+    chatPrompt.mockResolvedValue({ ...validPrompt, unlocked: ['text'] });
+
+    await submitEdit(user, {
+      mode: 'chat',
+      prompt: 'make the headline red',
+      images_urls: ['https://fal.media/a.png'],
+    });
+
+    expect(submit.mock.calls[0][0]).toBe(EDIT_MODEL.endpointId);
+  });
+
   it('briefs the prompt writer with the attached photos and answers', async () => {
     const user = await createUser({ credits: 5 });
     const photos = ['https://fal.media/me.png', 'https://fal.media/logo.png'];
@@ -226,5 +265,8 @@ describe('submitEdit', () => {
       answers: { face: ['keep'] },
       referenceImageUrls: photos,
     });
+    // A design from photos runs on Pro at 2K and is priced like Quality.
+    expect(submit.mock.calls[0][0]).toBe(PHOTO_MODEL.endpointId);
+    expect(await creditsOf(user.id)).toBe(5 - PHOTO_MODEL.creditsPerImage);
   });
 });

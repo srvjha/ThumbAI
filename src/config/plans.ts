@@ -104,5 +104,6 @@ export const savingsPercent = (plan: Plan): number =>
 export const CREDIT_COSTS = [
   { label: 'Draft thumbnail', credits: 1 },
   { label: 'Quality thumbnail', credits: 3 },
+  { label: 'Thumbnail from your photo', credits: 3 },
   { label: 'Edit an existing image', credits: 2 },
 ] as const;

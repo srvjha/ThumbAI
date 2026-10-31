@@ -5,6 +5,7 @@ import { db } from '@/db';
 import { env } from '@/config/env';
 import {
   EDIT_MODEL,
+  PHOTO_MODEL,
   MAX_IMAGES_PER_REQUEST,
   MAX_SEED,
   getTextToImageModel,
@@ -29,7 +30,13 @@ import {
 } from '@/server/generations/input';
 import { generateThumbnailPrompt } from '@/server/prompts/thumbnailPrompt';
 import { generateChatPrompt } from '@/server/prompts/chatPrompt';
-import { EDIT_SYSTEM_PROMPT } from '@/server/prompts/imageRules';
+import { EDIT_SYSTEM_PROMPT, type EditLock } from '@/server/prompts/imageRules';
+
+/**
+ * Edits that redraw a person or move things around need Pro; nano-banana-2
+ * patched them instead (a second arm next to the cut-off one).
+ */
+const REDRAWS: EditLock[] = ['person', 'expression', 'composition'];
 
 export interface FinalPrompt {
   valid_prompt: boolean;
@@ -40,6 +47,8 @@ export interface FinalPrompt {
   reply?: string;
   /** Human label of the design archetype; new designs only. */
   archetypeLabel?: string;
+  /** Chat edits: the aspects the change is allowed to alter. */
+  unlocked?: EditLock[];
   /** The lettering chosen for a new design, or null for none. */
   headline?: string | null;
 }
@@ -387,19 +396,23 @@ export const submitEdit = async (
     Array.isArray(numImages) ? numImages[numImages.length - 1] : numImages,
   );
 
-  // Refuse before the prompt agent, which runs on our account. The atomic
-  // charge is still the real guard.
-  const cost = imageCount * EDIT_MODEL.creditsPerImage;
-  assertCanAfford(user.credits, cost);
-
   // A chat edit sends the image being edited first, then any references.
   const isChatEdit = mode !== 'normal';
+
+  // Refuse before the prompt agent, which runs on our account. The atomic
+  // charge is still the real guard. A chat edit costs the same whichever
+  // model it lands on, so the price is known before the agent picks one.
+  const cost =
+    imageCount *
+    (isChatEdit ? EDIT_MODEL.creditsPerImage : PHOTO_MODEL.creditsPerImage);
+  assertCanAfford(user.credits, cost);
+
   const finalPrompt: FinalPrompt = isChatEdit
     ? await generateChatPrompt(prompt, imageUrls)
     : await generateThumbnailPrompt({
         request: prompt,
         kind: 'youtube',
-        family: EDIT_MODEL.family,
+        family: PHOTO_MODEL.family,
         answers: choices === 'random' ? undefined : userChoices,
         referenceImageUrls: imageUrls,
       });
@@ -413,13 +426,17 @@ export const submitEdit = async (
   }
 
   const enhancedPrompt = finalPrompt.response;
-  const usedSeed = EDIT_MODEL.supportsSeed ? (seed ?? randomSeed()) : undefined;
+  const model =
+    isChatEdit && !finalPrompt.unlocked?.some((lock) => REDRAWS.includes(lock))
+      ? EDIT_MODEL
+      : PHOTO_MODEL;
+  const usedSeed = model.supportsSeed ? (seed ?? randomSeed()) : undefined;
 
   const { requestId, generationId } = await chargeAndQueue(
     user.id,
     cost,
-    EDIT_MODEL.endpointId,
-    EDIT_MODEL.buildInput({
+    model.endpointId,
+    model.buildInput({
       prompt: enhancedPrompt,
       aspectRatio,
       numImages: imageCount,
@@ -439,7 +456,7 @@ export const submitEdit = async (
       aspect_ratio: aspectRatio,
       model_used:
         workflow || (mode === 'chat' ? 'TEXT_TO_IMAGE' : 'IMAGE_TO_IMAGE'),
-      model_endpoint: EDIT_MODEL.endpointId,
+      model_endpoint: model.endpointId,
       seed: usedSeed ?? null,
     },
   );
@@ -453,6 +470,6 @@ export const submitEdit = async (
     reply: finalPrompt.reply ?? null,
     archetype: isChatEdit ? null : (finalPrompt.archetypeLabel ?? null),
     headline: isChatEdit ? null : (finalPrompt.headline ?? null),
-    modelName: EDIT_MODEL.modelName,
+    modelName: model.modelName,
   };
 };
