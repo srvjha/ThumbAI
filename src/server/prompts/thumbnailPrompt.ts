@@ -96,6 +96,7 @@ If none fits clearly, pick the closest.`,
 const writerSchema = z.object({
   scene: z.string(),
   headline: z.string().nullable(),
+  tagline: z.string().nullable(),
   headline_style: z.string().nullable(),
   person_image: z
     .number()
@@ -150,10 +151,12 @@ PEOPLE
 ${peopleRules(prefs, photos)}
 ${photos > 0 ? `\nATTACHED IMAGES\n${photos} image(s) are attached, in order. Refer to them by position ("the first image"). Describe their contents accurately and never contradict what you see.\n` : ''}
 HEADLINE
-- If the request gives on-image text (in quotes, or after "Text on the thumbnail:"), headline is that text exactly, character for character.
-- Otherwise, if the request is a video title or topic, write a 1-4 word hook following the recipe's text guidance. Use only words, names and numbers that appear in the request (shortened or rearranged is fine, for example "5AM FOR 30 DAYS"); never add new ideas, claims, numbers or slogans.
+- If the request says what text goes on the image ("Text on the thumbnail:", "with the text", "write", "headline:"), headline is that text exactly, character for character.
+- Quotes alone do not make text a headline: a quoted video title or topic ('for topic "Lets design Netflix from first principles"') is the title, and the hook rule below applies.
+- Otherwise, if the request is a video title or topic, write a 1-4 word hook following the recipe's text guidance. Use only words, names and numbers that appear in the request (shortened or rearranged is fine, for example "5AM FOR 30 DAYS"), correcting obvious typos; never add new ideas, claims, numbers or slogans.
+- tagline: optional, at most 4 words, only when the title has a second part worth keeping that the headline left out, again in the user's own words. "Lets design Netflix from first principles" → headline "DESIGN NETFLIX", tagline "FROM FIRST PRINCIPLES". Otherwise null.
 - Otherwise headline is null: when the request describes a scene or artwork rather than naming a video topic (for example "show me afraid in a garage holding roller skates"), or asks for no text.
-- Never more than 5 words. headline_style gives font weight, colour, outline and placement, fitted to the composition (for example "heavy yellow sans-serif with a thick black outline, upper left beside the presenter"); null when headline is null.
+- Never more than 5 words in the headline. headline_style gives font weight, colour, outline and placement, fitted to the composition, and may colour the single most important word in an accent such as the brand's own colour (for example "heavy white condensed sans-serif with 'NETFLIX' in Netflix red, upper left; the tag line in yellow beneath"); null when headline is null.
 
 SCENE
 Write scene as 3-6 sentences of natural prose, 70-150 words:
@@ -251,6 +254,9 @@ export const generateThumbnailPrompt = async (
       scene: written.scene,
       headline: written.headline?.trim() || null,
       headlineStyle: written.headline_style,
+      tagline: written.headline?.trim()
+        ? written.tagline?.trim() || null
+        : null,
       face,
     }),
     needs_factual_grounding: written.needs_web_search,

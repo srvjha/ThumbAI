@@ -106,7 +106,7 @@ export const YOUTUBE_ARCHETYPES = {
     label: 'Coding / tech',
     signals:
       'a language or framework, "build", "from scratch", "internals", "system design", "performance"',
-    recipe: `Official technology logos (at most two) or one enlarged code fragment of 3-6 tokens on a dark editor-like background with one neon accent; the presenter thoughtful or sceptical on a third, never shocked. Headline: 1-3 words or a short code token ("10x FASTER", "useEffect?"). Never full screenshots of code.`,
+    recipe: `A visual of the actual system or technology: a simple architecture diagram built from icons and arrows (servers, databases, devices) for system design, official logos (at most two) for tools, or one enlarged 3-6 token code fragment, on a dark background lit with one accent colour, often the brand's own. The presenter is thoughtful, confident or sceptical on a third, never shocked. Headline: 1-3 words or a short code token ("10x FASTER", "useEffect?"). Never full screenshots of code.`,
   },
   mistakes: {
     label: 'Mistakes / warning',

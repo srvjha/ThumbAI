@@ -55,15 +55,21 @@ export const faceClause = (
   const features =
     'their face shape, eyes, nose, mouth, skin tone, hairline and hairstyle';
   if (mode === 'expression' && expression) {
-    return `Use ${who} as the presenter. Keep ${features} completely unchanged so they are unmistakably the same real person; only their facial expression changes, to ${expression}. Do not beautify, restyle or age their face.`;
+    return `Use ${who} as the presenter. Keep ${features} completely unchanged so they are unmistakably the same real person; only their facial expression changes, to ${expression}. Do not beautify, restyle or age their face. Light them to match the scene, and blend them in naturally rather than as a pasted cut-out.`;
   }
-  return `Use ${who} as the presenter. Keep their face exactly as it is in the photo: ${features}, as well as their natural facial expression, remain completely unchanged, so they are unmistakably the same real person. Do not beautify, restyle or re-pose their face.`;
+  return `Use ${who} as the presenter. Keep their face exactly as it is in the photo: ${features}, as well as their natural facial expression, remain completely unchanged, so they are unmistakably the same real person. Do not beautify, restyle or re-pose their face. Light them to match the scene, and blend them in naturally rather than as a pasted cut-out.`;
 };
 
+/**
+ * The lettering, quoted exactly. A thumbnail carries at most two text
+ * elements: the headline and an optional smaller tag line beneath it
+ * ("DESIGN NETFLIX" over "FROM FIRST PRINCIPLES").
+ */
 export const textClause = (
   family: ModelFamily,
   headline: string | null,
   style: string | null,
+  tagline: string | null = null,
 ): string => {
   if (!headline) {
     return family === 'openai'
@@ -73,9 +79,14 @@ export const textClause = (
   const look =
     style?.trim() ||
     'a heavy, bold sans-serif with a thick dark outline, large and high-contrast';
-  return family === 'openai'
-    ? `Text (EXACT, verbatim, appears once): "${headline}" set in ${look}. No other text.`
-    : `The only lettering in the image is the headline "${headline}", spelled exactly as written and appearing once, set in ${look}.`;
+  if (family === 'openai') {
+    return tagline
+      ? `Text (EXACT, verbatim, each appears once): headline "${headline}" set in ${look}; beneath it a smaller tag line "${tagline}". No other text, and no labels on icons or diagrams.`
+      : `Text (EXACT, verbatim, appears once): "${headline}" set in ${look}. No other text, and no labels on icons or diagrams.`;
+  }
+  return tagline
+    ? `The only lettering in the image is the headline "${headline}", set in ${look}, with a smaller tag line "${tagline}" directly beneath it. Both are spelled exactly as written and each appears once; icons and diagram shapes carry no labels.`
+    : `The only lettering in the image is the headline "${headline}", spelled exactly as written and appearing once, set in ${look}; icons and diagram shapes carry no labels.`;
 };
 
 /** Puts the writer's scene and the fixed clauses together for one family. */
@@ -84,15 +95,17 @@ export const assembleImagePrompt = ({
   scene,
   headline,
   headlineStyle,
+  tagline = null,
   face,
 }: {
   family: ModelFamily;
   scene: string;
   headline: string | null;
   headlineStyle: string | null;
+  tagline?: string | null;
   face: string | null;
 }): string => {
-  const text = textClause(family, headline, headlineStyle);
+  const text = textClause(family, headline, headlineStyle, tagline);
   if (family === 'openai') {
     return [
       OPENAI_RULES,

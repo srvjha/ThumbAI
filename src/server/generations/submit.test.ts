@@ -158,7 +158,9 @@ describe('submitEdit', () => {
     });
 
     expect(result.kind).toBe('submitted');
-    expect(chatPrompt).toHaveBeenCalledWith('brighter', 0);
+    expect(chatPrompt).toHaveBeenCalledWith('brighter', [
+      'https://fal.media/a.png',
+    ]);
     expect(thumbnailPrompt).not.toHaveBeenCalled();
     // An edit keeps the picture; the thumbnail design rules would restyle it.
     expect(submit.mock.calls[0][1].input).toMatchObject({

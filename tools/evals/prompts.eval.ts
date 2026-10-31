@@ -52,6 +52,13 @@ const cases = [
     referenceImageUrls: [PHOTO],
     answers: { category: ['coding'], face: ['excited'], appearance: ['right'] },
   },
+  {
+    name: 'quoted topic is a title, not the headline',
+    request: 'Make a youtube thumbnail for topic "Lets design netflix from first priniciples"',
+    family: 'gemini' as const,
+    referenceImageUrls: [PHOTO],
+    answers: { category: ['coding'], face: ['keep'], appearance: ['left'] },
+  },
   { name: 'gibberish', request: 'asdkjh qweoiu zzxq', family: 'gemini' as const, expectInvalid: true },
 ];
 
@@ -60,6 +67,7 @@ const edits = [
   'make me smile',
   'change the background to a red gradient',
   'add the word "FREE" in the top right',
+  'have title design netflix and use logo of it as well remove the word fast',
 ];
 
 describe('prompt evals', () => {
@@ -96,6 +104,9 @@ describe('prompt evals', () => {
       if (!r.valid_prompt) continue;
       expect(r.response, c.name).not.toMatch(/category:/i);
       if (c.expectHeadline) expect(r.headline, c.name).toBe(c.expectHeadline);
+      if (c.name.startsWith('quoted topic')) {
+        expect(r.headline, c.name).not.toMatch(/priniciples|lets design/i);
+      }
       if (c.referenceImageUrls && c.answers?.face?.[0] !== 'none') {
         expect(r.response, c.name).toContain('completely unchanged');
       }

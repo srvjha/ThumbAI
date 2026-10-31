@@ -27,6 +27,20 @@ describe('assembleImagePrompt', () => {
     expect(prompt).not.toMatch(/category:/i);
   });
 
+  it('sets a tag line beneath the headline, each quoted once', () => {
+    const prompt = assembleImagePrompt({
+      family: 'gemini',
+      scene,
+      headline: 'DESIGN NETFLIX',
+      headlineStyle: null,
+      tagline: 'FROM FIRST PRINCIPLES',
+      face: null,
+    });
+    expect(prompt.match(/"DESIGN NETFLIX"/g)).toHaveLength(1);
+    expect(prompt.match(/"FROM FIRST PRINCIPLES"/g)).toHaveLength(1);
+    expect(prompt).toContain('carry no labels');
+  });
+
   it('states there is no text when there is no headline', () => {
     expect(
       assembleImagePrompt({

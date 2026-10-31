@@ -377,7 +377,7 @@ export const submitEdit = async (
   // A chat edit sends the image being edited first, then any references.
   const isChatEdit = mode !== 'normal';
   const finalPrompt: FinalPrompt = isChatEdit
-    ? await generateChatPrompt(prompt, Math.max(0, imageUrls.length - 1))
+    ? await generateChatPrompt(prompt, imageUrls)
     : await generateThumbnailPrompt({
         request: prompt,
         kind: 'youtube',
@@ -407,8 +407,7 @@ export const submitEdit = async (
       numImages: imageCount,
       outputFormat,
       imageUrls,
-      enableWebSearch:
-        !isChatEdit && (finalPrompt.needs_factual_grounding ?? false),
+      enableWebSearch: finalPrompt.needs_factual_grounding ?? false,
       seed: usedSeed,
       ...(isChatEdit
         ? { systemPrompt: EDIT_SYSTEM_PROMPT, thinking: 'minimal' as const }
