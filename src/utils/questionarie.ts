@@ -6,76 +6,177 @@ export type BlogQuestionnaireData = {
   tone: string[];
 };
 
-// Mirrors the ids in youtubeQuestionarie below. It previously declared a
-// `tone` field that no question produces, and omitted `audience` and
-// `emotion`, which two of them do.
+/**
+ * A question shown in the studio before generating. One option per question:
+ * several picks per question used to reach the prompt as contradictions
+ * ("vibrant" and "minimal" at once).
+ *
+ * `when` limits a question to requests with (or without) an attached photo:
+ * how the user's own face is treated only makes sense when there is one.
+ */
+export type StudioQuestion = {
+  id: string;
+  title: string;
+  when?: 'photo' | 'no-photo';
+  options: { value: string; label: string; description: string }[];
+};
+
 export type YoutubeQuestionnaireData = {
   category: string[];
+  face: string[];
+  person: string[];
   appearance: string[];
   colorScheme: string[];
   thumbnailStyle: string[];
   audience: string[];
-  emotion: string[];
 };
 
-export const youtubeQuestionarie = [
+// Category values are archetype ids in src/server/prompts/archetypes.ts.
+export const youtubeQuestionarie: StudioQuestion[] = [
   {
     id: 'category',
-    title: 'For which category of video content are you creating?',
+    title: 'What kind of video is it?',
     options: [
       {
         value: 'tutorial',
-        label: 'Tutorial/Educational',
-        description: 'How-to guides, lessons, and explanations',
+        label: 'Tutorial / how-to',
+        description: 'Teaches a skill or walks through steps',
       },
       {
-        value: 'gaming',
-        label: 'Gaming Content',
-        description: 'Gameplay, reviews, and gaming news',
+        value: 'explainer',
+        label: 'Explainer',
+        description: 'Breaks down a concept or answers "why"',
       },
       {
-        value: 'vlog',
-        label: 'Vlog/Lifestyle',
-        description: 'Personal vlogs, daily life, and lifestyle tips',
-      },
-      {
-        value: 'business',
-        label: 'Business/Finance',
-        description: 'Entrepreneurship, investing, and business tips',
+        value: 'launch',
+        label: 'Launch / news',
+        description: 'Something new was released or announced',
       },
       {
         value: 'review',
-        label: 'Review/Reaction',
-        description: 'Reactions or reviews on a specific topic',
+        label: 'Review',
+        description: 'Your verdict on a product, tool or service',
       },
       {
-        value: 'entertainment',
-        label: 'Entertainment/Fun',
-        description: 'Comedy, challenges, memes, and fun content',
+        value: 'comparison',
+        label: 'Comparison',
+        description: 'X vs Y, which one wins',
+      },
+      {
+        value: 'listicle',
+        label: 'Top N list',
+        description: '"7 tools", "10 tips", a ranked list',
+      },
+      {
+        value: 'reaction',
+        label: 'Reaction / opinion',
+        description: 'Reacting to something or a hot take',
+      },
+      {
+        value: 'story',
+        label: 'Story / documentary',
+        description: 'What happened, told cinematically',
+      },
+      {
+        value: 'results',
+        label: 'Results / case study',
+        description: 'Numbers, growth, income, outcomes',
+      },
+      {
+        value: 'podcast',
+        label: 'Podcast / interview',
+        description: 'A conversation with a guest',
+      },
+      {
+        value: 'vlog',
+        label: 'Vlog / lifestyle',
+        description: 'Day in the life, travel, routines',
+      },
+      {
+        value: 'gaming',
+        label: 'Gaming',
+        description: 'Gameplay, builds, speedruns',
+      },
+      {
+        value: 'coding',
+        label: 'Coding / tech',
+        description: 'Programming, system design, dev tools',
+      },
+    ],
+  },
+  {
+    id: 'face',
+    title: 'How should you appear in the thumbnail?',
+    when: 'photo',
+    options: [
+      {
+        value: 'keep',
+        label: 'Exactly as in my photo',
+        description: 'Your real face and your original expression, untouched',
+      },
+      {
+        value: 'excited',
+        label: 'My face, excited',
+        description: 'Same face, high-energy expression',
+      },
+      {
+        value: 'curious',
+        label: 'My face, curious',
+        description: 'Same face, intrigued or surprised',
+      },
+      {
+        value: 'confident',
+        label: 'My face, confident',
+        description: 'Same face, calm and credible',
+      },
+      {
+        value: 'fun',
+        label: 'My face, playful',
+        description: 'Same face, smiling and lighthearted',
+      },
+      {
+        value: 'none',
+        label: "Don't feature me",
+        description: 'Use the photo only as a reference',
+      },
+    ],
+  },
+  {
+    id: 'person',
+    title: 'Should a person appear?',
+    when: 'no-photo',
+    options: [
+      {
+        value: 'none',
+        label: 'No person',
+        description: 'Objects, text and scene only',
+      },
+      {
+        value: 'presenter',
+        label: 'A presenter',
+        description: 'An AI-generated person reacting to the topic',
       },
     ],
   },
   {
     id: 'appearance',
-    title: 'On which side do you want your face to appear?',
+    title: 'Where should you appear?',
+    when: 'photo',
     options: [
       {
         value: 'left',
-        label: 'Left Side',
-        description:
-          'Your face will be positioned on the left side of the thumbnail',
+        label: 'Left side',
+        description: 'Headline on the right',
       },
       {
         value: 'right',
-        label: 'Right Side',
-        description:
-          'Your face will be positioned on the right side of the thumbnail',
+        label: 'Right side',
+        description: 'Headline on the left',
       },
       {
         value: 'center',
         label: 'Center',
-        description:
-          'Your face will be positioned in the center of the thumbnail',
+        description: 'Headline above or below',
       },
     ],
   },
@@ -107,27 +208,27 @@ export const youtubeQuestionarie = [
   },
   {
     id: 'thumbnailStyle',
-    title: 'What thumbnail style do you prefer?',
+    title: 'What should carry the thumbnail?',
     options: [
       {
         value: 'face',
-        label: 'Face-Focused',
-        description: 'Large face with expressive emotions',
+        label: 'A face',
+        description: 'Large face with a clear expression',
       },
       {
         value: 'text',
-        label: 'Text-Heavy',
-        description: 'Bold titles and text overlays',
+        label: 'The headline',
+        description: 'Big bold words do the work',
       },
       {
         value: 'product',
-        label: 'Product/Object Focus',
-        description: 'Highlighting items, gadgets, or tools',
+        label: 'An object',
+        description: 'A product, gadget, tool or logo',
       },
       {
         value: 'scene',
-        label: 'Cinematic Scene',
-        description: 'Full scenes or dramatic environments',
+        label: 'A scene',
+        description: 'A cinematic environment',
       },
     ],
   },
@@ -157,35 +258,9 @@ export const youtubeQuestionarie = [
       },
     ],
   },
-  {
-    id: 'emotion',
-    title: 'What emotion should your thumbnail convey?',
-    options: [
-      {
-        value: 'excitement',
-        label: 'Excitement',
-        description: 'High energy, enthusiasm, and wow factor',
-      },
-      {
-        value: 'curiosity',
-        label: 'Curiosity',
-        description: 'Mystery, intrigue, and thought-provoking visuals',
-      },
-      {
-        value: 'trust',
-        label: 'Trust & Authority',
-        description: 'Professional, credible, and reliable impression',
-      },
-      {
-        value: 'fun',
-        label: 'Fun & Playful',
-        description: 'Lighthearted, entertaining, and humorous vibe',
-      },
-    ],
-  },
 ];
 
-export const blogQuestionarie = [
+export const blogQuestionarie: StudioQuestion[] = [
   {
     id: 'blogType',
     title: 'What type of blog is your post?',

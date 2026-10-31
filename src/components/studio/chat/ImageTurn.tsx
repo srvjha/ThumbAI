@@ -15,6 +15,7 @@ import {
   Share,
   TriangleAlert,
   X,
+  CircleSlash,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -37,7 +38,17 @@ import { downloadImage, type ImageData } from '@/components/shared/imageUtils';
 import { EXPORT_SIZES, exportImage } from '../ExportMenu';
 import { AutoTextarea } from '../controls';
 import { cn } from '@/lib/utils';
-import type { GenerationPhase } from './types';
+import {
+  MS_PER_CHAR,
+  TurnActions,
+  TypedText,
+  WorkedFor,
+} from './AssistantText';
+import { RenderingCard } from './RenderingCard';
+import { frameClass } from './frame';
+import type { Turn } from './types';
+
+type GenerationTurn = Extract<Turn, { role: 'generation' }>;
 
 const QUICK_EDITS = [
   'Make the title bigger',
@@ -45,62 +56,6 @@ const QUICK_EDITS = [
   'Simplify the background',
   'Remove the text',
 ];
-
-/** Frame width per shape, so a Shorts cover isn't as wide as a thumbnail. */
-const frameClass = (ratio: string) =>
-  ratio === '9:16'
-    ? 'aspect-[9/16] w-full max-w-[min(15rem,100%)]'
-    : 'aspect-video w-full max-w-[min(34rem,100%)]';
-
-const useElapsed = (since: number, running: boolean) => {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    if (!running) return;
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, [running]);
-  const s = Math.max(0, Math.floor((now - since) / 1000));
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-};
-
-/** "Creating image" over a soft, shifting frame in the shape on its way. */
-const Pending = ({
-  phase,
-  ratios,
-  startedAt,
-}: {
-  phase: 'writing' | 'rendering';
-  ratios: string[];
-  startedAt: number;
-}) => {
-  const elapsed = useElapsed(startedAt, true);
-  return (
-    <div role='status' aria-live='polite'>
-      <p className='mb-3 flex items-center gap-2 text-sm'>
-        <span className='shimmer-text font-medium'>
-          {phase === 'writing' ? 'Writing the prompt' : 'Creating image'}
-        </span>
-        <span className='text-xs tabular-nums text-muted-foreground'>
-          {elapsed}
-        </span>
-      </p>
-      <div className='flex flex-wrap items-start gap-3'>
-        {ratios.map((ratio) => (
-          <div
-            key={ratio}
-            className={cn(
-              'relative overflow-hidden rounded-2xl bg-accent',
-              frameClass(ratio),
-            )}
-          >
-            <div className='absolute -inset-1/2 animate-[spin_9s_linear_infinite] bg-[conic-gradient(from_90deg,var(--brand-muted),transparent_30%,var(--brand-muted)_55%,transparent_80%)] blur-2xl motion-reduce:animate-none' />
-            <div className='absolute inset-0 backdrop-blur-xl' />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
 
 /** PNG on the clipboard where the browser allows it; the link otherwise. */
 const copyImage = async (url: string) => {
@@ -391,36 +346,108 @@ const ImageResult = ({
   );
 };
 
-/** One image turn: pending, failed, or the results with their actions. */
+/** What to say once the images land, pointing at a next step. */
+const followUp = (turn: GenerationTurn, kind: 'youtube' | 'blog') => {
+  if (turn.request.target) return 'Done. Want to change anything else?';
+  const n = turn.images.length;
+  if (n > 1) {
+    return `Here are your ${n} images. Pick one to edit, or ask for a different headline.`;
+  }
+  if (kind === 'blog') {
+    return 'Here’s your cover. Want a different headline or a bolder background?';
+  }
+  return turn.images[0]?.aspectRatio === '9:16'
+    ? 'Here’s your Shorts cover. Want a 16:9 version or a different headline?'
+    : 'Here’s your thumbnail. Want a vertical version for Shorts or a different headline?';
+};
+
+/**
+ * One image turn, laid out like an assistant reply: how long it worked, the
+ * frame (rendering, then the results), its note on the design typed out
+ * beneath, and actions for the turn.
+ */
 export const ImageTurn = ({
-  phase,
-  ratios,
-  images,
-  error,
-  startedAt,
-  format,
+  turn,
+  kind,
   busy,
   target,
   onEdit,
   onVary,
   onPreview,
+  onCancel,
+  onRate,
 }: {
-  phase: GenerationPhase;
-  ratios: string[];
-  images: ImageData[];
-  error?: string;
-  startedAt: number;
-  format: string;
+  turn: GenerationTurn;
+  kind: 'youtube' | 'blog';
   busy: boolean;
   target: ImageData | null;
   onEdit: (image: ImageData, text: string) => void;
   onVary: () => void;
   onPreview: (image: ImageData) => void;
+  onCancel: () => Promise<void>;
+  onRate: (value: 'up' | 'down') => void;
 }) => {
   const [open, setOpen] = useState<ImageData | null>(null);
+  const { phase, ratios, images, error, startedAt, writingMs, reply } = turn;
+  const format = turn.request.settings.outputFormat;
+  const pending = phase === 'writing' || phase === 'rendering';
+  const replyAt = startedAt + (writingMs ?? 0);
 
-  if (phase === 'writing' || phase === 'rendering') {
-    return <Pending phase={phase} ratios={ratios} startedAt={startedAt} />;
+  const details = [
+    turn.request.target ? { label: 'Task', value: 'Edit the selected image' } : null,
+    turn.archetype ? { label: 'Design', value: turn.archetype } : null,
+    turn.headline ? { label: 'Headline', value: `“${turn.headline}”` } : null,
+    { label: 'Format', value: ratios.join(' + ') },
+    turn.modelName ? { label: 'Model', value: turn.modelName } : null,
+  ].filter((d): d is { label: string; value: string } => d !== null);
+
+  const header = (
+    <WorkedFor
+      thinking={phase === 'writing'}
+      startedAt={startedAt}
+      writingMs={writingMs}
+      details={details}
+    />
+  );
+
+  const note = reply ? (
+    <TypedText text={reply} since={replyAt} className='mt-3' />
+  ) : null;
+
+  if (pending) {
+    return (
+      <div>
+        {header}
+        <RenderingCard
+          ratios={ratios}
+          startedAt={startedAt}
+          modelName={turn.modelName}
+          onCancel={onCancel}
+        />
+        {note}
+      </div>
+    );
+  }
+
+  if (phase === 'cancelled') {
+    return (
+      <div>
+        {header}
+        <div className='flex flex-wrap items-center gap-3 rounded-2xl border bg-card/60 px-4 py-3 text-sm text-muted-foreground'>
+          <CircleSlash className='size-4 shrink-0' />
+          <p className='min-w-0 flex-1'>Cancelled · credits refunded</p>
+          <Button
+            type='button'
+            size='sm'
+            variant='outline'
+            disabled={busy}
+            onClick={onVary}
+          >
+            <RefreshCw className='size-3.5' /> Run again
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   if (phase === 'failed') {
@@ -446,8 +473,12 @@ export const ImageTurn = ({
     );
   }
 
+  const finishedAt = turn.finishedAt ?? startedAt;
+  const closing = followUp(turn, kind);
+
   return (
-    <>
+    <div>
+      {header}
       <div
         className={cn(
           'grid gap-x-3 gap-y-4',
@@ -470,6 +501,24 @@ export const ImageTurn = ({
           />
         ))}
       </div>
+
+      {note}
+      {/* Only fresh turns have a reply; past ones opened from history don't. */}
+      {writingMs !== undefined && (
+        <TypedText
+          text={closing}
+          since={Math.max(finishedAt, replyAt + (reply?.length ?? 0) * MS_PER_CHAR)}
+          className='mt-3'
+        />
+      )}
+      <TurnActions
+        text={[reply, writingMs !== undefined ? closing : null]
+          .filter(Boolean)
+          .join('\n\n')}
+        at={finishedAt}
+        feedback={turn.feedback}
+        onRate={onRate}
+      />
 
       <Dialog open={!!open} onOpenChange={(v) => !v && setOpen(null)}>
         <DialogContent
@@ -496,6 +545,6 @@ export const ImageTurn = ({
           </Button>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 };

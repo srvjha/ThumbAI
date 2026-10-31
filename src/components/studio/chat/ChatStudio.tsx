@@ -335,6 +335,7 @@ export const ChatStudio = ({ mode }: { mode: StudioMode }) => {
                     ) : turn.role === 'questions' ? (
                       <QuestionCard
                         kind={questionKind}
+                        hasPhoto={turn.request.attachments.length > 0}
                         state={turn.state}
                         answers={turn.answers}
                         onDone={(answers) =>
@@ -343,12 +344,8 @@ export const ChatStudio = ({ mode }: { mode: StudioMode }) => {
                       />
                     ) : (
                       <ImageTurn
-                        phase={turn.phase}
-                        ratios={turn.ratios}
-                        images={turn.images}
-                        error={turn.error}
-                        startedAt={turn.startedAt}
-                        format={turn.request.settings.outputFormat}
+                        turn={turn}
+                        kind={questionKind}
                         busy={chat.busy}
                         target={chat.target}
                         onEdit={(image, text) =>
@@ -358,6 +355,8 @@ export const ChatStudio = ({ mode }: { mode: StudioMode }) => {
                         onPreview={(image) =>
                           setPreview({ image, title: promptBefore(index) })
                         }
+                        onCancel={() => chat.cancel(turn.id)}
+                        onRate={(value) => chat.rate(turn.id, value)}
                       />
                     )}
                   </motion.div>
