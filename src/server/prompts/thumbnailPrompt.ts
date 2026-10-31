@@ -168,8 +168,18 @@ HEADLINE
 - Otherwise, if the request is a video title or topic, write a 1-4 word hook following the recipe's text guidance. Every word in it must appear in the request: shortening, reordering, plurals and fixing obvious typos are fine ("5AM FOR 30 DAYS"), but keep a number the user wrote when it is the hook ("7 MISTAKES"), and never add a word, idea, claim, slogan or number the user did not write ("best budget laptops" is "BEST BUDGET LAPTOPS", never "10 BEST LAPTOPS").
 - tagline: optional, at most 4 words, only when the title has a second part worth keeping that the headline left out, again using only the user's words. "Lets design Netflix from first principles" → headline "DESIGN NETFLIX", tagline "FROM FIRST PRINCIPLES". Otherwise null: never a symbol, a dash or the whole request.
 - Otherwise headline is null: when the request describes a scene or artwork rather than naming a video topic (for example "show me afraid in a garage holding roller skates"), or asks for no text.
-- Never more than 5 words in the headline. headline_style gives font weight, colour, outline and placement, fitted to the composition, and may colour the single most important word in an accent such as the brand's own colour (for example "heavy white condensed sans-serif with 'NETFLIX' in Netflix red, upper left; the tag line in yellow beneath"); It describes the look only: refer to "the tag line" rather than repeating its words. null when headline is null.
-
+- Never more than 5 words in the headline. headline_style gives font weight, colour, outline and placement, fitted to the composition, and may colour the single most important word in an accent such as the brand's own colour (for example "heavy white condensed sans-serif with 'NETFLIX' in Netflix red, upper left; the tag line in yellow beneath"). It describes the look only: refer to "the tag line" rather than repeating its words. null when headline is null.
+${
+  brief.kind === 'youtube'
+    ? `
+LOOK (the default finish; the user's request and preferences override it)
+- Bold and high-contrast: a deep, rich background such as a dark gradient, a saturated colour field or a moody themed setting, with a soft glow or vignette for depth. Avoid flat white or pale grey backdrops.
+- The subject is large, filling most of its half of the frame; small floating objects read as noise at feed size.
+- One clear layout: the headline block, the subject and any person each own a region, aligned to the frame edges or thirds and overlapping slightly so the image reads as one designed piece. Supporting objects sit behind or beside the subject, anchored to it, never floating detached in empty space.
+- A presenter is lit to match the scene with a coloured rim light that separates them from the background, framed from the chest up, with arms either fully inside the frame or cropped cleanly by its edge.
+`
+    : ''
+}
 SCENE
 Write scene as 3-6 sentences of natural prose, 70-150 words:
 1. Open with the purpose: "${purpose}".

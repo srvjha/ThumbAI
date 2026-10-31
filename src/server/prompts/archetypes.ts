@@ -24,7 +24,7 @@ export const YOUTUBE_ARCHETYPES = {
   tutorial: {
     label: 'Tutorial / how-to',
     signals: '"how to", "step by step", "guide", "beginner", "in N minutes"',
-    recipe: `Show the finished result as the hero, about 60% of the frame; the process is not the thumbnail. A presenter is optional, on one third, calm and confident. Headline: 1-3 words naming the outcome or the time ("IN 5 MIN"), never "How to". Clean background, at most one arrow pointing at the result. Avoid illegible software screenshots.`,
+    recipe: `Show the finished result as the hero, about 60% of the frame; the process is not the thumbnail. A presenter is optional, on one third, calm and confident. Headline: 1-3 words naming the outcome or the time ("IN 5 MIN"), never "How to". An uncluttered background with depth (a dark or saturated themed backdrop), at most one arrow pointing at the result. Avoid illegible software screenshots.`,
   },
   explainer: {
     label: 'Explainer / concept',
@@ -50,7 +50,7 @@ export const YOUTUBE_ARCHETYPES = {
   listicle: {
     label: 'Top N list',
     signals: 'a number of items in the title, "best", "top", "things", "tools"',
-    recipe: `An oversized numeral on one third plus one to three item visuals; never all N items. Optionally tease the top pick behind a blur or "?". A presenter is optional, excited or pointing. Headline: the number, or the number plus one word. Avoid grids of tiny logos.`,
+    recipe: `When the title gives a count, an oversized numeral of that count on one third plus one to three item visuals; never all N items. With no count in the title, no numeral: one to three standout items instead. Optionally tease the top pick behind a blur or "?". A presenter is optional, excited or pointing. Headline: the number plus one word, or one to three of the title's words when it has no number. Avoid grids of tiny logos.`,
   },
   reaction: {
     label: 'Reaction',
