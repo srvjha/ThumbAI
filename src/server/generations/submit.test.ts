@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '@/db';
 import { getTextToImageModel } from '@/config/models';
 import { submitEdit, submitGeneration } from '@/server/generations/submit';
+import { EDIT_SYSTEM_PROMPT } from '@/server/prompts/imageRules';
 import {
   createUser,
   creditsOf,
@@ -157,7 +158,33 @@ describe('submitEdit', () => {
     });
 
     expect(result.kind).toBe('submitted');
-    expect(chatPrompt).toHaveBeenCalledWith('brighter');
+    expect(chatPrompt).toHaveBeenCalledWith('brighter', 0);
     expect(thumbnailPrompt).not.toHaveBeenCalled();
+    // An edit keeps the picture; the thumbnail design rules would restyle it.
+    expect(submit.mock.calls[0][1].input).toMatchObject({
+      system_prompt: EDIT_SYSTEM_PROMPT,
+      thinking_level: 'minimal',
+    });
+  });
+
+  it('briefs the prompt writer with the attached photos and answers', async () => {
+    const user = await createUser({ credits: 5 });
+    const photos = ['https://fal.media/me.png', 'https://fal.media/logo.png'];
+
+    await submitEdit(user, {
+      mode: 'normal',
+      prompt: 'my React course',
+      images_urls: photos,
+      choices: 'form',
+      userChoices: { face: ['keep'] },
+    });
+
+    expect(thumbnailPrompt).toHaveBeenCalledWith({
+      request: 'my React course',
+      kind: 'youtube',
+      family: 'gemini',
+      answers: { face: ['keep'] },
+      referenceImageUrls: photos,
+    });
   });
 });

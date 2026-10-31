@@ -29,6 +29,7 @@ import {
 } from '@/server/generations/input';
 import { generateThumbnailPrompt } from '@/server/prompts/thumbnailPrompt';
 import { generateChatPrompt } from '@/server/prompts/chatPrompt';
+import { EDIT_SYSTEM_PROMPT } from '@/server/prompts/imageRules';
 
 export interface FinalPrompt {
   valid_prompt: boolean;
@@ -264,13 +265,12 @@ export const submitGeneration = async (
     recordedPrompt = blogUrl;
   }
 
-  // Run through the selected workflow architecture (Random vs Personalized)
-  const finalPrompt: FinalPrompt = await generateThumbnailPrompt(
-    brief,
-    workflow || 'TEXT_TO_IMAGE',
-    choices === 'random' ? 'random' : 'personalized',
-    choices === 'random' ? undefined : userChoices,
-  );
+  const finalPrompt: FinalPrompt = await generateThumbnailPrompt({
+    request: brief,
+    kind: isBlogWorkflow ? 'blog' : 'youtube',
+    family: model.family,
+    answers: choices === 'random' ? undefined : userChoices,
+  });
 
   if (!finalPrompt.valid_prompt) {
     // Nothing was charged — the prompt never reached the image model.
@@ -374,15 +374,17 @@ export const submitEdit = async (
   const cost = imageCount * EDIT_MODEL.creditsPerImage;
   assertCanAfford(user.credits, cost);
 
-  const finalPrompt: FinalPrompt =
-    mode === 'normal'
-      ? await generateThumbnailPrompt(
-          prompt,
-          workflow || 'IMAGE_TO_IMAGE',
-          choices === 'random' ? 'random' : 'personalized',
-          choices === 'random' ? undefined : userChoices,
-        )
-      : await generateChatPrompt(prompt);
+  // A chat edit sends the image being edited first, then any references.
+  const isChatEdit = mode !== 'normal';
+  const finalPrompt: FinalPrompt = isChatEdit
+    ? await generateChatPrompt(prompt, Math.max(0, imageUrls.length - 1))
+    : await generateThumbnailPrompt({
+        request: prompt,
+        kind: 'youtube',
+        family: EDIT_MODEL.family,
+        answers: choices === 'random' ? undefined : userChoices,
+        referenceImageUrls: imageUrls,
+      });
 
   if (!finalPrompt.valid_prompt) {
     return {
@@ -406,8 +408,11 @@ export const submitEdit = async (
       outputFormat,
       imageUrls,
       enableWebSearch:
-        mode === 'normal' && (finalPrompt.needs_factual_grounding ?? false),
+        !isChatEdit && (finalPrompt.needs_factual_grounding ?? false),
       seed: usedSeed,
+      ...(isChatEdit
+        ? { systemPrompt: EDIT_SYSTEM_PROMPT, thinking: 'minimal' as const }
+        : {}),
     }),
     {
       user_prompt: prompt,

@@ -10,7 +10,10 @@
  * Schemas verified against the live queue OpenAPI documents.
  */
 
-import { DESIGN_SYSTEM_PROMPT } from '@/utils/instructions/shared';
+import {
+  THUMBNAIL_SYSTEM_PROMPT,
+  type ModelFamily,
+} from '@/server/prompts/imageRules';
 
 export type ModelTier = 'draft' | 'quality';
 
@@ -37,12 +40,24 @@ export interface ModelInputOptions {
    * real product, a logo — and wasteful otherwise.
    */
   enableWebSearch?: boolean;
+  /**
+   * Gemini system instruction. Defaults to the thumbnail rules; edits pass
+   * EDIT_SYSTEM_PROMPT so design rules can't restyle what should stay put.
+   */
+  systemPrompt?: string;
+  /**
+   * Gemini's planning effort. Composing a new design from photos benefits;
+   * a targeted chat edit does not, and Google advises the low setting there.
+   */
+  thinking?: 'minimal' | 'high';
 }
 
 export interface ModelDefinition {
   endpointId: string;
   label: string;
   description: string;
+  /** Which prompt style the model reads best; see imageRules.ts. */
+  family: ModelFamily;
   /** App credits charged per generated image. */
   creditsPerImage: number;
   /** Approximate Fal cost per image, in USD. For budgeting and admin views. */
@@ -73,16 +88,17 @@ const draftModel: ModelDefinition = {
   endpointId: 'openai/gpt-image-2',
   label: 'Draft',
   description: 'Fast, strong text rendering. Best value per image.',
+  family: 'openai',
   creditsPerImage: 1,
   usdPerImage: 0.04,
   supportsSeed: false,
   supportsWebSearch: false,
   buildInput: ({ prompt, aspectRatio, numImages, outputFormat }) => ({
-    // gpt-image-2 exposes no system_prompt field, so the invariant rules are
-    // prepended. It also has no seed or web-search parameter — those are
-    // silently unavailable on this tier, which is a reason to prefer Quality
-    // when reproducibility or factual accuracy matters.
-    prompt: `${DESIGN_SYSTEM_PROMPT}\n\n---\n\n${prompt}`,
+    // gpt-image-2 has no system_prompt field; its rules lead the prompt
+    // itself (assembleImagePrompt). It also has no seed or web-search
+    // parameter, which is a reason to prefer Quality when reproducibility or
+    // factual accuracy matters.
+    prompt,
     image_size: GPT_IMAGE_SIZES[aspectRatio],
     // 'high' costs ~4x 'medium'. Text renders cleanly at medium in practice,
     // which is the only part of the difference that survives downscaling.
@@ -96,6 +112,7 @@ const qualityModel: ModelDefinition = {
   endpointId: 'fal-ai/nano-banana-pro',
   label: 'Quality',
   description: 'Sharpest typography and face consistency. Slower.',
+  family: 'gemini',
   creditsPerImage: 3,
   usdPerImage: 0.15,
   supportsSeed: true,
@@ -107,9 +124,10 @@ const qualityModel: ModelDefinition = {
     outputFormat,
     seed,
     enableWebSearch,
+    systemPrompt = THUMBNAIL_SYSTEM_PROMPT,
   }) => ({
     prompt,
-    system_prompt: DESIGN_SYSTEM_PROMPT,
+    system_prompt: systemPrompt,
     aspect_ratio: aspectRatio,
     resolution: '2K',
     num_images: numImages,
@@ -133,6 +151,7 @@ export const EDIT_MODEL: ModelDefinition = {
   endpointId: 'fal-ai/nano-banana-2/edit',
   label: 'Edit',
   description: 'Edits and composites up to 14 reference images.',
+  family: 'gemini',
   creditsPerImage: 2,
   usdPerImage: 0.08,
   supportsSeed: true,
@@ -145,17 +164,17 @@ export const EDIT_MODEL: ModelDefinition = {
     imageUrls = [],
     seed,
     enableWebSearch,
+    systemPrompt = THUMBNAIL_SYSTEM_PROMPT,
+    thinking = 'high',
   }) => ({
     prompt,
-    system_prompt: DESIGN_SYSTEM_PROMPT,
+    system_prompt: systemPrompt,
     image_urls: imageUrls,
     aspect_ratio: aspectRatio,
     resolution: '1K',
     num_images: numImages,
     output_format: outputFormat,
-    // Reason about the composition before rendering. Editing has to respect
-    // an existing subject, which is exactly where planning pays off.
-    thinking_level: 'high',
+    thinking_level: thinking,
     enable_web_search: enableWebSearch ?? false,
     ...(seed === undefined ? {} : { seed }),
   }),
@@ -232,3 +251,10 @@ export const randomSeed = (): number =>
  * exact id against your account's /v1/models listing.
  */
 export const PROMPT_MODEL = process.env.OPENAI_PROMPT_MODEL ?? 'gpt-4.1';
+
+/**
+ * Picks the design archetype from a one-line-per-archetype catalogue: a
+ * classification, so a small fast model is enough.
+ */
+export const CLASSIFIER_MODEL =
+  process.env.OPENAI_CLASSIFIER_MODEL ?? 'gpt-4.1-mini';

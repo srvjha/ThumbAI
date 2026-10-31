@@ -4,20 +4,21 @@ import { useState } from 'react';
 import { Check, ChevronLeft, ListChecks } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { blogQuestionarie, youtubeQuestionarie } from '@/utils/questionarie';
+import {
+  blogQuestionarie,
+  youtubeQuestionarie,
+  type StudioQuestion,
+} from '@/utils/questionarie';
 import { cn } from '@/lib/utils';
 import type { StyleAnswers } from './types';
 
-type Question = {
-  id: string;
-  title: string;
-  options: { value: string; label: string; description: string }[];
-};
+/** The questions that apply: photo-only ones need an attached photo. */
+const questionsFor = (kind: 'youtube' | 'blog', hasPhoto = false) =>
+  (kind === 'blog' ? blogQuestionarie : youtubeQuestionarie).filter(
+    (q) => !q.when || q.when === (hasPhoto ? 'photo' : 'no-photo'),
+  );
 
-const questionsFor = (kind: 'youtube' | 'blog') =>
-  (kind === 'blog' ? blogQuestionarie : youtubeQuestionarie) as Question[];
-
-const labelFor = (questions: Question[], id: string, value: string) =>
+const labelFor = (questions: StudioQuestion[], id: string, value: string) =>
   questions.find((q) => q.id === id)?.options.find((o) => o.value === value)
     ?.label ?? value;
 
@@ -29,7 +30,8 @@ const Summary = ({
   kind: 'youtube' | 'blog';
   answers?: StyleAnswers;
 }) => {
-  const questions = questionsFor(kind);
+  // Every question, so a photo-only answer still gets its label.
+  const questions = kind === 'blog' ? blogQuestionarie : youtubeQuestionarie;
   const picked = answers
     ? Object.entries(answers).flatMap(([id, values]) =>
         values.map((v) => labelFor(questions, id, v)),
@@ -51,20 +53,23 @@ const Summary = ({
 
 /**
  * The style questions, asked in the thread one at a time like a reply.
- * Several options can be picked per question; with none picked, Next skips.
+ * One option per question; picking it again clears it, and with none picked,
+ * Next skips.
  */
 export const QuestionCard = ({
   kind,
+  hasPhoto = false,
   state,
   answers: saved,
   onDone,
 }: {
   kind: 'youtube' | 'blog';
+  hasPhoto?: boolean;
   state: 'asking' | 'done' | 'skipped';
   answers?: StyleAnswers;
   onDone: (answers: StyleAnswers | null) => void;
 }) => {
-  const questions = questionsFor(kind);
+  const questions = questionsFor(kind, hasPhoto);
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<StyleAnswers>({});
 
@@ -79,9 +84,7 @@ export const QuestionCard = ({
       const current = prev[question.id] ?? [];
       return {
         ...prev,
-        [question.id]: current.includes(value)
-          ? current.filter((v) => v !== value)
-          : [...current, value],
+        [question.id]: current.includes(value) ? [] : [value],
       };
     });
 
@@ -121,7 +124,7 @@ export const QuestionCard = ({
           {question.title}
         </p>
         <p className='mt-0.5 text-xs text-muted-foreground'>
-          Question {step + 1} of {questions.length} · pick any that fit
+          Question {step + 1} of {questions.length} · pick one
         </p>
         <div
           role='group'

@@ -1,81 +1,76 @@
 import 'server-only';
 import { OpenAI } from 'openai';
+import { zodResponseFormat } from 'openai/helpers/zod';
+import { z } from 'zod';
 import { PROMPT_MODEL } from '@/config/models';
+import {
+  EDIT_LOCKS,
+  assembleEditPrompt,
+  type EditLock,
+} from '@/server/prompts/imageRules';
 
 const client = new OpenAI();
 
+const lockIds = Object.keys(EDIT_LOCKS) as [EditLock, ...EditLock[]];
+
+const schema = z.object({
+  valid: z.boolean(),
+  change: z
+    .string()
+    .describe('The edit as one or two imperative sentences. "" when invalid.'),
+  unlocked: z
+    .array(z.enum(lockIds))
+    .describe('Only the aspects the change itself must alter.'),
+});
+
 /**
- * Turns a follow-up chat instruction into a targeted edit instruction.
+ * Turns a follow-up chat message into a targeted edit.
  *
- * The important part is the Preserve clause. Previously this only cleaned up
- * the user's wording, so the image model received a bare instruction like
- * "make the text bigger" with no statement of what had to stay the same — and
- * responded by regenerating the whole image. Asking for one change and getting
- * a different picture is the drift users read as unreliability.
- *
- * Both OpenAI's and fal's prompting guidance converge on the same shape for
- * edits: state the change, restate what is locked, then constrain the rest.
+ * The LLM only restates the change and says which aspects that change must
+ * touch; the "keep everything else exactly the same" sentence is assembled
+ * in code from Google's edit template, so a vague message can never become
+ * permission to redraw the whole thumbnail.
  */
-const CHAT_SYSTEM_PROMPT = `
-You convert a user's requested change into a precise image-editing
-instruction.
+const SYSTEM = `You turn a user's follow-up message about an existing thumbnail into a precise edit instruction.
 
-Output exactly three labelled lines, nothing else:
+change: one or two imperative sentences stating exactly what differs, concretely ("Make the headline about 30% larger", "Replace the blue background with a deep red gradient"). Restate only what the user asked for and never widen it. Refer to people in the third person ("the person", "the presenter"), never "me" or "I". If the user gives text to render, quote it exactly and say it is spelled exactly as written.
 
-Change: <only what should differ, stated concretely>
-Preserve: <everything that must stay identical>
-Constraints: <what the model must not do>
+unlocked: the aspects the change itself necessarily alters, from: ${lockIds.join(', ')}. Everything not listed is preserved. Changing the headline unlocks "text"; making someone smile unlocks "expression"; a new background unlocks "background", and also "colours" when its colour changes; any colour change unlocks "colours". When in doubt, leave it locked.
 
-Rules for each line:
+valid: false only when the message is empty, gibberish, or contains no instruction about the image.`;
 
-Change
-- Restate only what the user actually asked for. Never widen it. "Make the
-  text bigger" is a type-size change, not permission to redesign.
-- If they name text to render, quote it exactly and say it must be spelled as
-  written.
-
-Preserve
-- Default to locking everything the user did not mention: the subject's face
-  and identity, their pose and expression, the background, the lighting, the
-  framing and crop, the colour palette, the existing text and its wording, and
-  the overall layout.
-- Remove an item from this list only when the requested change necessarily
-  alters it.
-
-Constraints
-- No new subjects or objects that were not requested.
-- No wholesale redesign or restyling.
-- No added watermarks, signatures or borders.
-- Keep text legible and correctly spelled.
-
-If the input is empty, gibberish, or contains no discernible instruction,
-return exactly: INVALID
-`;
-
-export const generateChatPrompt = async (chatPrompt: string) => {
+export const generateChatPrompt = async (
+  chatPrompt: string,
+  referenceCount = 0,
+) => {
   if (!chatPrompt?.trim()) {
-    return {
-      valid_prompt: false,
-      response: 'Please give a meaningful prompt.',
-    };
+    return { valid_prompt: false, response: 'Tell me what to change.' };
   }
 
-  const completion = await client.chat.completions.create({
+  const completion = await client.chat.completions.parse({
     model: PROMPT_MODEL,
+    temperature: 0,
     messages: [
-      { role: 'system', content: CHAT_SYSTEM_PROMPT },
+      { role: 'system', content: SYSTEM },
       { role: 'user', content: chatPrompt },
     ],
+    response_format: zodResponseFormat(schema, 'edit'),
   });
 
-  const response = completion.choices[0]?.message?.content?.trim() ?? '';
-
-  if (!response || response === 'INVALID') {
+  const parsed = completion.choices[0]?.message.parsed;
+  if (!parsed?.valid || !parsed.change.trim()) {
     return {
       valid_prompt: false,
-      response: 'Please give a meaningful prompt.',
+      response: 'Tell me what to change, for example "make the headline red".',
     };
   }
 
-  return { valid_prompt: true, response };
+  return {
+    valid_prompt: true,
+    response: assembleEditPrompt({
+      change: parsed.change,
+      unlocked: parsed.unlocked,
+      referenceCount,
+    }),
+  };
 };

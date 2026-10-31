@@ -335,6 +335,7 @@ export const ChatStudio = ({ mode }: { mode: StudioMode }) => {
                     ) : turn.role === 'questions' ? (
                       <QuestionCard
                         kind={questionKind}
+                        hasPhoto={turn.request.attachments.length > 0}
                         state={turn.state}
                         answers={turn.answers}
                         onDone={(answers) =>
