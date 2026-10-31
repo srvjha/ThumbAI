@@ -1,62 +1,78 @@
 import 'server-only';
-import { Ratelimit, type Duration } from '@upstash/ratelimit';
-import { redis } from '@/server/redis';
+import { db } from '@/db';
 import { RateLimitError } from '@/server/errors';
 
 /**
- * Per-user request limits on the endpoints that spend money.
+ * Rate limits and throttles, counted in Postgres.
  *
- * Generous for a person clicking through the studio; tight enough that one
- * abusive account has a bounded daily cost. Generate and edit share buckets
- * because both reach the same paid models.
+ * Every Vercel instance has its own memory, so counts kept in-process don't
+ * add up across instances. A RateLimitCounter row per (key, window) does:
+ * one INSERT ... ON CONFLICT DO UPDATE increments it atomically and returns
+ * the new count, so concurrent requests can never both see a free slot.
+ *
+ * Windows are fixed and aligned to the epoch (minutes on the minute, days at
+ * 00:00 UTC). A burst straddling a boundary can reach twice a limit, which
+ * is fine for these limits.
+ */
+
+const MINUTE = 60_000;
+const DAY = 24 * 60 * MINUTE;
+
+/**
+ * Per-user limits on the endpoints that spend money. Generous for a person
+ * clicking through the studio; tight enough that one abusive account has a
+ * bounded daily cost. Generate and edit share buckets because both reach the
+ * same paid models.
  */
 const POLICIES = {
   generate: [
-    { limit: 10, window: '1 m' },
-    { limit: 200, window: '1 d' },
+    { limit: 10, windowMs: MINUTE },
+    { limit: 200, windowMs: DAY },
   ],
-  upload: [{ limit: 30, window: '1 m' }],
-} as const satisfies Record<string, { limit: number; window: Duration }[]>;
+  upload: [{ limit: 30, windowMs: MINUTE }],
+} as const satisfies Record<string, { limit: number; windowMs: number }[]>;
 
 export type RateLimitKind = keyof typeof POLICIES;
 
-const WINDOW_MS: Record<string, number> = {
-  '1 m': 60_000,
-  '1 d': 86_400_000,
-};
+/** Share of calls that also delete expired counters. */
+const PRUNE_CHANCE = 0.01;
 
-const upstash = redis
-  ? Object.fromEntries(
-      Object.entries(POLICIES).map(([kind, rules]) => [
-        kind,
-        rules.map(
-          ({ limit, window }) =>
-            new Ratelimit({
-              redis: redis!,
-              limiter: Ratelimit.slidingWindow(limit, window),
-              prefix: `thumbai:rl:${kind}:${window.replace(' ', '')}`,
-              analytics: false,
-            }),
-        ),
-      ]),
-    )
-  : null;
+interface Hit {
+  key: string;
+  windowMs: number;
+}
 
 /**
- * Per-instance fallback for when Upstash isn't configured: a fixed window
- * per server instance. Weaker than the global limit, never stricter.
+ * Counts one hit against each key's current window, in one round trip.
+ * Returns the counts in order, with when each window resets.
  */
-const local = new Map<string, { count: number; resetAt: number }>();
-
-const checkLocal = (key: string, limit: number, windowMs: number) => {
+const hit = async (hits: Hit[]) => {
   const now = Date.now();
-  const entry = local.get(key);
-  if (!entry || entry.resetAt <= now) {
-    local.set(key, { count: 1, resetAt: now + windowMs });
-    return { success: true, reset: now + windowMs };
+  const rows = hits.map(({ key, windowMs }) => {
+    const start = Math.floor(now / windowMs) * windowMs;
+    return { key, start: new Date(start), reset: new Date(start + windowMs) };
+  });
+
+  const counts = await db.$queryRawUnsafe<{ key: string; count: number }[]>(
+    `INSERT INTO "RateLimitCounter" ("key", "window_start", "count", "expires_at")
+     SELECT k, s, 1, e
+     FROM unnest($1::text[], $2::timestamp(3)[], $3::timestamp(3)[]) AS t(k, s, e)
+     ON CONFLICT ("key", "window_start")
+     DO UPDATE SET "count" = "RateLimitCounter"."count" + 1
+     RETURNING "key", "count"`,
+    rows.map((r) => r.key),
+    rows.map((r) => r.start),
+    rows.map((r) => r.reset),
+  );
+
+  if (Math.random() < PRUNE_CHANCE) {
+    await db.rateLimitCounter
+      .deleteMany({ where: { expires_at: { lt: new Date(now) } } })
+      .catch((err) => console.error('[rateLimit] prune failed', err));
   }
-  entry.count += 1;
-  return { success: entry.count <= limit, reset: entry.resetAt };
+
+  const byKey = new Map(counts.map((c) => [c.key, c.count]));
+  return rows.map((r) => ({ count: byKey.get(r.key) ?? 0, reset: r.reset }));
 };
 
 /** Throws a 429 with Retry-After when the user is over any limit for kind. */
@@ -65,32 +81,42 @@ export const enforceRateLimit = async (
   userId: string,
 ): Promise<void> => {
   const rules = POLICIES[kind];
+  const results = await hit(
+    rules.map(({ windowMs }) => ({
+      key: `rl:${kind}:${windowMs}:${userId}`,
+      windowMs,
+    })),
+  );
 
-  for (let i = 0; i < rules.length; i++) {
-    const { limit, window } = rules[i];
-    let result: { success: boolean; reset: number };
+  rules.forEach(({ limit, windowMs }, i) => {
+    const { count, reset } = results[i];
+    if (count <= limit) return;
 
-    try {
-      result = upstash
-        ? await upstash[kind][i].limit(userId)
-        : checkLocal(`${kind}:${window}:${userId}`, limit, WINDOW_MS[window]);
-    } catch (err) {
-      // An unreachable Redis must not take generation down with it.
-      console.error('[rateLimit] check failed, allowing request', err);
-      continue;
-    }
+    const retryAfter = Math.max(
+      1,
+      Math.ceil((reset.getTime() - Date.now()) / 1000),
+    );
+    throw new RateLimitError(
+      windowMs === DAY
+        ? `Daily limit of ${limit} reached. Try again tomorrow.`
+        : `Too many requests. Try again in ${retryAfter}s.`,
+      retryAfter,
+    );
+  });
+};
 
-    if (!result.success) {
-      const retryAfter = Math.max(
-        1,
-        Math.ceil((result.reset - Date.now()) / 1000),
-      );
-      throw new RateLimitError(
-        window === '1 d'
-          ? `Daily limit of ${limit} reached. Try again tomorrow.`
-          : `Too many requests. Try again in ${retryAfter}s.`,
-        retryAfter,
-      );
-    }
-  }
+/**
+ * Returns true for the first caller per key in each window of ttlSeconds,
+ * false for everyone else until the window rolls over. Used to run
+ * housekeeping at most once per window however many requests trigger it.
+ */
+export const claimWindow = async (
+  key: string,
+  ttlSeconds: number,
+): Promise<boolean> => {
+  if (ttlSeconds <= 0) return true;
+  const [{ count }] = await hit([
+    { key: `claim:${key}`, windowMs: ttlSeconds * 1000 },
+  ]);
+  return count === 1;
 };

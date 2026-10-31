@@ -6,6 +6,7 @@ export const resetDb = async () => {
   await db.$transaction([
     db.creditTransaction.deleteMany(),
     db.signupCreditAttempt.deleteMany(),
+    db.rateLimitCounter.deleteMany(),
     db.thumbnail.deleteMany(),
     db.order.deleteMany(),
     db.user.deleteMany(),

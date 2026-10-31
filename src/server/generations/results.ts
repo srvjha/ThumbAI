@@ -4,7 +4,7 @@ import { fal } from '@fal-ai/client';
 import { db } from '@/db';
 import { GEN_STATUS } from '@prisma/client';
 import { refundGeneration } from '@/server/credits';
-import { claimWindow } from '@/server/redis';
+import { claimWindow } from '@/server/rateLimit';
 
 /**
  * Recording generation results.

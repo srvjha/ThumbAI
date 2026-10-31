@@ -165,6 +165,19 @@ enum OrderStatus {
   refunded
 }
 
+/// Fixed-window request counters shared by every server instance: per-user
+/// rate limits, and "at most once per window" housekeeping throttles.
+/// Rows are pruned once expired; see src/server/rateLimit.ts.
+model RateLimitCounter {
+  key          String
+  window_start DateTime
+  count        Int      @default(0)
+  expires_at   DateTime
+
+  @@id([key, window_start])
+  @@index([expires_at])
+}
+
 /// One decision per user on the free signup credits, granted or refused,
 /// with the signals it was made on. Doubles as the log for judging abuse.
 model SignupCreditAttempt {
