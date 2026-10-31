@@ -6,6 +6,7 @@ import { Toaster } from 'react-hot-toast';
 import { ClerkProvider } from '@clerk/nextjs';
 import { QueryProvider } from '@/components/providers/query';
 import { ThemeProvider } from '@/components/providers/theme';
+import { PageTracker } from '@/components/analytics/PageTracker';
 
 // One family for the whole interface. The optical-size axis tightens Inter's
 // letterforms at display sizes, so headlines need no second typeface.
@@ -110,6 +111,7 @@ export default function RootLayout({
                 }}
               />
               <Header />
+              <PageTracker />
               {children}
             </QueryProvider>
           </ThemeProvider>

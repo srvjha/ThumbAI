@@ -4,6 +4,11 @@ import { db } from '@/db';
 /** Empties every table, children first. Call in beforeEach. */
 export const resetDb = async () => {
   await db.$transaction([
+    db.adminAction.deleteMany(),
+    db.promptFlag.deleteMany(),
+    db.generationEvent.deleteMany(),
+    db.pageView.deleteMany(),
+    db.visitor.deleteMany(),
     db.creditTransaction.deleteMany(),
     db.signupCreditAttempt.deleteMany(),
     db.rateLimitCounter.deleteMany(),

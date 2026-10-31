@@ -17,6 +17,7 @@ import {
 import { ArticleFetchError, fetchArticle } from '@/server/articles';
 import { chargeGeneration } from '@/server/credits';
 import { markGenerationFailed } from '@/server/generations/results';
+import { describeError, logGenerationEvent } from '@/server/generations/events';
 import { ApiError } from '@/server/errors';
 import {
   MAX_URL_CHARS,
@@ -104,10 +105,21 @@ const chargeAndQueue = async (
       image_url: [],
     },
   });
+  await logGenerationEvent(thumbnail.id, 'CREATED', {
+    workflow: row.model_used ?? null,
+    tier: row.model_tier ?? null,
+    endpoint: endpointId,
+    images: row.num_of_images ?? null,
+    aspectRatio: row.aspect_ratio ?? null,
+    format: row.content_type ?? null,
+    seed: row.seed ?? null,
+    promptChars: row.user_prompt?.length ?? 0,
+  });
 
   try {
     // Charge before submitting so concurrent requests cannot overdraw.
     await chargeGeneration(userId, thumbnail.id, cost);
+    await logGenerationEvent(thumbnail.id, 'CHARGED', { credits: cost });
   } catch (err) {
     // Nothing was charged and nothing will run: the row is just noise.
     await db.thumbnail.delete({ where: { id: thumbnail.id } });
@@ -117,6 +129,7 @@ const chargeAndQueue = async (
   try {
     // Queue rather than block: quality-tier generations routinely outlast a
     // serverless function's timeout. Completion arrives via the Fal webhook.
+    const startedAt = Date.now();
     const { request_id } = await fal.queue.submit(endpointId, {
       input,
       webhookUrl: webhookUrl(),
@@ -130,10 +143,20 @@ const chargeAndQueue = async (
       where: { id: thumbnail.id },
       data: { request_id },
     });
+    await logGenerationEvent(thumbnail.id, 'SUBMITTED', {
+      requestId: request_id,
+      submitMs: Date.now() - startedAt,
+    });
     return { requestId: request_id, generationId: thumbnail.id };
   } catch (err) {
+    await logGenerationEvent(thumbnail.id, 'SUBMIT_FAILED', {
+      error: describeError(err),
+    });
     // Don't keep the user's money if we never produced an image.
-    await markGenerationFailed({ id: thumbnail.id });
+    await markGenerationFailed(
+      { id: thumbnail.id },
+      `Submit failed: ${describeError(err)}`,
+    );
     throw err;
   }
 };

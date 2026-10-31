@@ -30,6 +30,8 @@ const POLICIES = {
     { limit: 200, windowMs: DAY },
   ],
   upload: [{ limit: 30, windowMs: MINUTE }],
+  // The page-view beacon is public; this bounds what one client can write.
+  track: [{ limit: 60, windowMs: MINUTE }],
 } as const satisfies Record<string, { limit: number; windowMs: number }[]>;
 
 export type RateLimitKind = keyof typeof POLICIES;

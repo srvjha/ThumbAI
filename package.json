@@ -68,6 +68,7 @@
     "react-hook-form": "^7.62.0",
     "react-hot-toast": "^2.6.0",
     "react-syntax-highlighter": "^15.6.3",
+    "recharts": "3.8.0",
     "server-only": "^0.0.1",
     "sharp": "^0.34.4",
     "streamdown": "^1.0.12",

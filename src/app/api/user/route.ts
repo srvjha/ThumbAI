@@ -6,7 +6,7 @@ import { signupRefusal } from '@/server/signupCredits';
 
 export const GET = async (req: NextRequest) => {
   try {
-    const existingUser = await requireUser();
+    const existingUser = await requireUser({ allowSuspended: true });
     const signupCreditsRefused = await signupRefusal(existingUser.id);
 
     return NextResponse.json(

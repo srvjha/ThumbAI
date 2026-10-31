@@ -11,6 +11,7 @@ import {
   storeGenerationResult,
   syncGenerationFromFal,
 } from '@/server/generations/results';
+import { describeError, logGenerationEvent } from '@/server/generations/events';
 
 export const POST = async (req: NextRequest) => {
   // Raw body: the signature covers the exact bytes Fal sent, so this must be
@@ -51,6 +52,12 @@ export const POST = async (req: NextRequest) => {
     );
   }
 
+  await logGenerationEvent(thumbnail.id, 'WEBHOOK_RECEIVED', {
+    status: typeof body.status === 'string' ? body.status : null,
+    images: extractImageUrls(body.payload).length,
+    ...(body.error && { error: describeError(body.error) }),
+  });
+
   try {
     // Fal includes the result in the delivery, so the happy path needs no
     // follow-up API call. status 'OK' means the generation succeeded.
@@ -71,7 +78,10 @@ export const POST = async (req: NextRequest) => {
 
     if (body.status === 'ERROR') {
       console.error('Fal generation failed', { requestId, error: body.error });
-      await markGenerationFailed({ request_id: requestId });
+      await markGenerationFailed(
+        { request_id: requestId },
+        `Provider error: ${describeError(body.error ?? body.payload?.detail ?? 'no detail')}`,
+      );
 
       return NextResponse.json(new ApiResponse(200, null, 'Failure recorded'), {
         status: 200,
