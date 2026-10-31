@@ -53,7 +53,7 @@ const clerkAppearance = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'ThumbAI — AI thumbnail generator',
+    default: 'ThumbAI · AI thumbnail generator',
     template: '%s · ThumbAI',
   },
   description:
@@ -62,14 +62,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     siteName: 'ThumbAI',
-    title: 'ThumbAI — AI thumbnail generator',
+    title: 'ThumbAI · AI thumbnail generator',
     description:
       'Generate YouTube thumbnails and blog cover images from a prompt, an image, or a blog URL.',
     url: siteUrl,
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'ThumbAI — AI thumbnail generator',
+    title: 'ThumbAI · AI thumbnail generator',
     description:
       'Generate YouTube thumbnails and blog cover images from a prompt, an image, or a blog URL.',
   },
