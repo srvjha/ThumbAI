@@ -5,7 +5,11 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
-import type { Plan } from '@/config/plans';
+import {
+  CHECKOUT_DISABLED_MESSAGE,
+  CHECKOUT_ENABLED,
+  type Plan,
+} from '@/config/plans';
 
 /**
  * Buying credits, shared by /pricing and /billing.
@@ -22,6 +26,10 @@ export const useCreditCheckout = () => {
   const startCheckout = async (plan: Plan) => {
     if (isLoaded && !isSignedIn) {
       router.push('/sign-in');
+      return;
+    }
+    if (!CHECKOUT_ENABLED) {
+      toast(CHECKOUT_DISABLED_MESSAGE, { id: 'checkout-disabled' });
       return;
     }
     try {
