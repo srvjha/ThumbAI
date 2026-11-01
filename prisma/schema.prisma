@@ -146,10 +146,14 @@ model Order {
   // Credits this purchase grants, resolved from the server-side plan
   // catalogue at creation time so the amount can never be set by a client.
   credits           Int         @default(0)
-  currency          String      @default("INR")
-  razorpayOrderId   String?     @unique
-  razorpayPaymentId String?
-  razorpaySignature String?
+  // Minor units of `currency`: paise for the Razorpay-era INR orders, cents
+  // for Dodo's USD ones.
+  currency          String      @default("USD")
+  // Which processor took the payment. Rows before the switch are razorpay.
+  provider          String      @default("dodo")
+  // Dodo checkout session id (Razorpay order id on older rows).
+  providerOrderId   String?     @unique
+  providerPaymentId String?
   status            OrderStatus @default(created)
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt

@@ -11,7 +11,7 @@ type CountUpProps = {
   from?: number;
   prefix?: string;
   suffix?: string;
-  /** Formats with this locale's digit grouping, e.g. 'en-IN'. */
+  /** Formats with this locale's digit grouping, e.g. 'en-US'. */
   locale?: string;
   duration?: number;
   /** Which edge stays put while the digits change. */
@@ -28,7 +28,7 @@ export const CountUp = ({
   from = 0,
   prefix = '',
   suffix = '',
-  locale = 'en-IN',
+  locale = 'en-US',
   duration = 1.1,
   align = 'start',
   className,

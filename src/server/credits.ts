@@ -169,17 +169,17 @@ export const refundGeneration = async (
 /**
  * Tops up the buyer for a paid order. Safe to call more than once.
  *
- * Both signature-verified payment paths call this — the Razorpay webhook and
- * the checkout's verify call — because either one can be the only one that
+ * Both verified payment paths call this — the Dodo webhook and the checkout
+ * return page's verify call — because either one can be the only one that
  * arrives. The PURCHASE row's unique constraint decides which one grants.
  */
 export const grantCreditsForOrder = async (
-  razorpayOrderId: string,
+  orderId: string,
 ): Promise<{ granted: boolean; credits: number }> => {
-  const order = await db.order.findUnique({ where: { razorpayOrderId } });
+  const order = await db.order.findUnique({ where: { id: orderId } });
 
   if (!order) {
-    console.error('grantCreditsForOrder: unknown order', razorpayOrderId);
+    console.error('grantCreditsForOrder: unknown order', orderId);
     return { granted: false, credits: 0 };
   }
 

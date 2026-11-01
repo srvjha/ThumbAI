@@ -3,7 +3,7 @@ import { requireAdmin, requireUser } from '@/server/auth';
 import { ApiError, apiErrorResponse } from '@/server/errors';
 import {
   cancelOrder,
-  createOrderForPlan,
+  createCheckoutForPlan,
   refundPayment,
   verifyCheckout,
 } from '@/server/payments';
@@ -19,17 +19,22 @@ export async function POST(
       case 'order': {
         const user = await requireUser();
         const { productId } = await req.json();
-        const order = await createOrderForPlan(user.id, productId);
+        const { orderId, checkoutUrl } = await createCheckoutForPlan(
+          user,
+          productId,
+          req.nextUrl.origin,
+        );
         return NextResponse.json({
           success: true,
-          order,
-          message: 'Order created successfully',
+          orderId,
+          checkoutUrl,
+          message: 'Checkout created',
         });
       }
       case 'verify': {
         const user = await requireUser();
-        const { credits } = await verifyCheckout(user.id, await req.json());
-        return NextResponse.json({ status: 'success', credits });
+        const result = await verifyCheckout(user.id, await req.json());
+        return NextResponse.json(result);
       }
       case 'cancel': {
         const user = await requireUser();

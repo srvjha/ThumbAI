@@ -3,8 +3,7 @@ import { Linkedin, Mail, Twitter } from 'lucide-react';
 import { Logo } from '@/components/brand/Logo';
 import { Reveal, RevealItem } from '@/components/motion/Reveal';
 import { FooterArt } from './FooterArt';
-
-const CONTACT_EMAIL = 'jhasaurav0209001@gmail.com';
+import { CONTACT_EMAIL, LEGAL_PAGES } from '@/components/legal/LegalPage';
 
 const COLUMNS = [
   {
@@ -102,9 +101,23 @@ export const Footer = () => {
           </nav>
         </Reveal>
 
-        <p className='mt-14 text-sm text-muted-foreground'>
-          &copy; {currentYear} ThumbAI. All rights reserved.
-        </p>
+        <div className='mt-14 flex flex-col gap-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between'>
+          <p>&copy; {currentYear} ThumbAI. All rights reserved.</p>
+          <nav aria-label='Legal'>
+            <ul className='flex flex-wrap gap-x-5 gap-y-2'>
+              {LEGAL_PAGES.map((page) => (
+                <li key={page.href}>
+                  <Link
+                    href={page.href}
+                    className='transition-colors hover:text-brand'
+                  >
+                    {page.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
       </div>
 
       <FooterArt />

@@ -19,7 +19,7 @@ Every workflow outputs YouTube (16:9, 1280×720) and Shorts (9:16, 720×1280).
 - Clerk for authentication
 - Prisma and PostgreSQL
 - Fal AI for image generation, OpenAI for prompt authoring
-- Razorpay for payments
+- Dodo Payments for checkout (USD, merchant of record)
 - Tailwind CSS v4 with shadcn/ui
 
 ## Image models
@@ -133,7 +133,7 @@ Two endpoints need to be reachable from the internet, so use a tunnel
 | Provider | Endpoint                | Purpose                                                                                               |
 | -------- | ----------------------- | ----------------------------------------------------------------------------------------------------- |
 | Clerk    | `/api/webhook/register` | Creates the local `User` row on sign-up. Without it, sign-in succeeds but every API call returns 401. |
-| Razorpay | `/api/webhook/payment`  | Grants credits after a verified payment.                                                              |
+| Dodo     | `/api/webhook/payment`  | Grants credits after a verified payment.                                                              |
 | Fal      | `/api/fal/webhook`      | Receives finished generations. Set `NEXT_PUBLIC_FAL_WEBHOOK_URL` to the tunnel origin.                |
 
 Fal deliveries are verified against Fal's ED25519 JWKS, so they must arrive with

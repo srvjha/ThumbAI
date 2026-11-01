@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import axios from 'axios';
 import { useQuery } from '@tanstack/react-query';
+import { formatMoney } from '@/config/plans';
 import { cn } from '@/lib/utils';
 
 export type OrderStatus =
@@ -16,8 +17,9 @@ export type OrderStatus =
 export interface OrderRow {
   id: string;
   productName: string | null;
-  /** In paise, as charged by Razorpay. */
+  /** Minor units of `currency` (cents; paise on Razorpay-era orders). */
   amount: number | null;
+  currency: string;
   credits: number;
   status: OrderStatus;
   createdAt: string;
@@ -68,18 +70,18 @@ const StatusLabel = ({ status }: { status: OrderStatus }) => {
   );
 };
 
-const dateFmt = new Intl.DateTimeFormat('en-IN', {
+const dateFmt = new Intl.DateTimeFormat(undefined, {
   day: 'numeric',
   month: 'short',
   year: 'numeric',
 });
-const timeFmt = new Intl.DateTimeFormat('en-IN', {
+const timeFmt = new Intl.DateTimeFormat(undefined, {
   hour: 'numeric',
   minute: '2-digit',
 });
 
-const rupees = (paise: number | null) =>
-  paise == null ? '—' : `₹${(paise / 100).toLocaleString('en-IN')}`;
+const price = (order: OrderRow) =>
+  order.amount == null ? '—' : formatMoney(order.amount, order.currency);
 
 export const OrderHistory = () => {
   const { data, isLoading, isError } = useOrders();
@@ -145,7 +147,7 @@ export const OrderHistory = () => {
                   +{order.credits}
                 </td>
                 <td className='px-4 py-3 text-right font-mono tabular-nums'>
-                  {rupees(order.amount)}
+                  {price(order)}
                 </td>
                 <td className='px-4 py-3'>
                   <StatusLabel status={order.status} />
@@ -158,7 +160,10 @@ export const OrderHistory = () => {
 
       <ul className='divide-y sm:hidden'>
         {data.map((order) => (
-          <li key={order.id} className='flex items-start justify-between gap-3 p-4'>
+          <li
+            key={order.id}
+            className='flex items-start justify-between gap-3 p-4'
+          >
             <div className='min-w-0'>
               <div className='truncate text-sm font-medium'>
                 {order.productName ?? 'Credits'}
@@ -173,7 +178,7 @@ export const OrderHistory = () => {
             <div className='shrink-0 text-right font-mono text-sm tabular-nums'>
               <div>+{order.credits} cr</div>
               <div className='mt-0.5 text-xs text-muted-foreground'>
-                {rupees(order.amount)}
+                {price(order)}
               </div>
             </div>
           </li>

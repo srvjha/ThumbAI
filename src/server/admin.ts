@@ -267,10 +267,9 @@ export const getUserDetail = async (id: string) => {
       open: statusCount('PENDING') + statusCount('IN_PROGRESS'),
       creditsSpent: -(spent._sum.amount ?? 0),
       paid:
-        user.Order.filter((o) => o.status === 'paid').reduce(
-          (total, o) => total + (o.amount ?? 0),
-          0,
-        ) / 100,
+        user.Order.filter(
+          (o) => o.status === 'paid' && o.currency === 'USD',
+        ).reduce((total, o) => total + (o.amount ?? 0), 0) / 100,
     },
     thumbnails: user.Thumbnail.map((thumb) => ({
       id: thumb.id,
@@ -323,6 +322,7 @@ export const getUserDetail = async (id: string) => {
       id: o.id,
       product: o.productName ?? o.productId,
       amount: (o.amount ?? 0) / 100,
+      currency: o.currency,
       credits: o.credits,
       status: o.status,
       createdAt: o.createdAt,

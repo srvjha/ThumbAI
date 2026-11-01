@@ -7,7 +7,7 @@ import {
   Coins,
   Eye,
   Flag,
-  IndianRupee,
+  DollarSign,
   Timer,
   UserPlus,
   Users,
@@ -21,7 +21,7 @@ import {
   duration,
   fmt,
   percent,
-  rupees,
+  money,
   WORKFLOWS,
 } from './format';
 import { BarList, Country, Delta, KpiCard, Panel, Segmented } from './ui';
@@ -93,13 +93,13 @@ const Kpis = ({
       />
       <KpiCard
         label='Revenue'
-        icon={IndianRupee}
+        icon={DollarSign}
         loading={loading}
-        value={k ? rupees(k.revenue.current) : '—'}
+        value={k ? money(k.revenue.current) : '—'}
         delta={k && <Delta {...k.revenue} />}
         hint={
           k &&
-          `${fmt(k.orders.current)} orders · ${rupees(k.lifetimeRevenue)} all time`
+          `${fmt(k.orders.current)} orders · ${money(k.lifetimeRevenue)} all time`
         }
       />
       <KpiCard
@@ -363,10 +363,10 @@ export const OverviewView = () => {
               ]}
             />
           </Panel>
-          <Panel title='Revenue' description='Paid orders per day'>
+          <Panel title='Revenue' description='Paid USD orders per day'>
             <DailyChart
               data={series}
-              format={(n) => rupees(n)}
+              format={(n) => money(n)}
               series={[
                 { key: 'revenue', label: 'Revenue', color: 'var(--viz-3)' },
               ]}

@@ -1,11 +1,9 @@
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
-import { CREDIT_COSTS, FREE_PLAN, PLANS } from '@/config/plans';
+import { CREDIT_COSTS, FREE_PLAN, PLANS, formatMoney } from '@/config/plans';
 import { CountUp } from '@/components/motion/CountUp';
 import { Reveal, RevealItem } from '@/components/motion/Reveal';
 import { H2 } from './type';
-
-const rupees = (n: number) => `₹${n.toLocaleString('en-IN')}`;
 
 export const PricingTeaser = () => {
   const plans = Object.values(PLANS);
@@ -45,15 +43,13 @@ export const PricingTeaser = () => {
               <h3 className='text-lg font-medium'>{plan.name}</h3>
               <p className='row-span-2 text-right'>
                 <span className='block font-serif text-4xl leading-none tabular-nums'>
-                  {plan.priceInRupees === 0 ? (
-                    'Free'
-                  ) : (
-                    <CountUp to={plan.priceInRupees} prefix='₹' align='end' />
-                  )}
+                  {plan.priceCents === 0
+                    ? 'Free'
+                    : formatMoney(plan.priceCents)}
                 </span>
-                {plan.originalPriceInRupees && (
-                  <span className='text-sm text-muted-foreground line-through'>
-                    {rupees(plan.originalPriceInRupees)}
+                {plan.priceCents > 0 && (
+                  <span className='text-sm text-muted-foreground'>
+                    USD, one-time
                   </span>
                 )}
               </p>

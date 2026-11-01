@@ -125,7 +125,7 @@ const SampleWall = () => (
           <dt className='text-white/60'>video and Shorts</dt>
         </div>
         <div>
-          <dd className='font-mono text-xl tabular-nums'>₹0</dd>
+          <dd className='font-mono text-xl tabular-nums'>$0</dd>
           <dt className='text-white/60'>no card needed</dt>
         </div>
       </dl>

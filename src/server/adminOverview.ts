@@ -115,8 +115,8 @@ export const getOverview = async (days: RangeDays) => {
       since,
     ),
     db.$queryRawUnsafe<DayRow[]>(
-      `SELECT ${day('"createdAt"')} AS day, sum(amount) AS paise, count(*) AS orders
-       FROM "Order" WHERE status = 'paid' AND "createdAt" >= $1 AND ${day('"createdAt"')} >= $2::date
+      `SELECT ${day('"createdAt"')} AS day, sum(amount) AS cents, count(*) AS orders
+       FROM "Order" WHERE status = 'paid' AND currency = 'USD' AND "createdAt" >= $1 AND ${day('"createdAt"')} >= $2::date
        GROUP BY 1`,
       loose,
       since,
@@ -212,7 +212,11 @@ export const getOverview = async (days: RangeDays) => {
         where: { resolved_at: null },
       }),
       db.thumbnail.count(),
-      db.order.aggregate({ where: { status: 'paid' }, _sum: { amount: true } }),
+      // USD only: Razorpay-era INR orders are in another currency.
+      db.order.aggregate({
+        where: { status: 'paid', currency: 'USD' },
+        _sum: { amount: true },
+      }),
     ]),
     db.$queryRawUnsafe<{ category: string; flags: bigint }[]>(
       `SELECT unnest(categories) AS category, count(*) AS flags
@@ -255,7 +259,7 @@ export const getOverview = async (days: RangeDays) => {
       images: num(g?.images),
       creditsSpent: num(c?.spent),
       creditsGranted: num(c?.granted),
-      revenue: num(r?.paise) / 100,
+      revenue: num(r?.cents) / 100,
       orders: num(r?.orders),
     };
   });

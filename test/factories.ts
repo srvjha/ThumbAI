@@ -74,16 +74,18 @@ export const expectLedgerBalanced = async (userId: string) => {
 
 export const createOrder = (
   userId: string,
-  overrides: { credits?: number; razorpayOrderId?: string } = {},
+  overrides: { credits?: number; providerOrderId?: string } = {},
 ) =>
   db.order.create({
     data: {
       user_id: userId,
       productId: 'creator-pro',
       productName: 'Creator Pro',
-      amount: 8000,
+      amount: 299,
+      currency: 'USD',
+      provider: 'dodo',
       credits: overrides.credits ?? 8,
-      razorpayOrderId: overrides.razorpayOrderId ?? `order_${randomUUID()}`,
+      providerOrderId: overrides.providerOrderId ?? `cks_${randomUUID()}`,
     },
   });
 

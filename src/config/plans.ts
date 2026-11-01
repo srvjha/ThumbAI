@@ -3,17 +3,15 @@
  * costs and how many credits it grants.
  *
  * Price and credits must never come from the request body: a client that can
- * name its own amount can buy 20 credits for one rupee.
+ * name its own amount can buy 20 credits for one cent.
  */
 export interface Plan {
   id: string;
   name: string;
-  /** Credits granted once payment is confirmed by the webhook. */
+  /** Credits granted once payment is confirmed. */
   credits: number;
-  /** Price in rupees, for display. */
-  priceInRupees: number;
-  /** Pre-discount price, for display only. Omit when there is no discount. */
-  originalPriceInRupees?: number;
+  /** Price in US cents. Also the amount recorded on the order. */
+  priceCents: number;
   /** One line on who the plan is for. */
   tagline: string;
   features: string[];
@@ -24,77 +22,78 @@ export const PLANS: Record<string, Plan> = {
     id: 'creator-pro',
     name: 'Creator Pro',
     credits: 8,
-    priceInRupees: 80,
-    originalPriceInRupees: 200,
+    priceCents: 299,
     tagline: 'For a steady upload schedule.',
     features: [
-      'YouTube (16:9) and Shorts (9:16) sizes',
-      'Conversational editing on every image',
-      'Full-resolution downloads',
-      'Every version kept, nothing overwritten',
+      'Put your own face in, with your likeness kept',
+      'Headlines spelled exactly as you type them',
+      'Edit by chatting; every version is kept',
+      'Export for YouTube, Shorts, HD and blog cards',
     ],
   },
   'business-elite': {
     id: 'business-elite',
     name: 'Business Elite',
     credits: 20,
-    priceInRupees: 150,
-    originalPriceInRupees: 300,
+    priceCents: 499,
     tagline: 'For teams and channels shipping daily.',
     features: [
       'Everything in Creator Pro',
-      'Best value per credit',
-      'Blog cover generation from a URL',
-      'Priority queue',
+      'Lowest price per credit',
+      'Blog covers designed from any article URL',
+      'One balance for every channel you run',
     ],
   },
 };
 
 /**
  * Not part of PLANS: everything in that record is purchasable, and a plan
- * priced at zero must never reach createOrder.
+ * priced at zero must never reach checkout.
  */
 export const FREE_PLAN: Plan = {
   id: 'free',
   name: 'Free',
   credits: 3,
-  priceInRupees: 0,
+  priceCents: 0,
   tagline: 'Enough to judge the output yourself.',
   features: [
-    '3 credits on signup',
-    'Both YouTube and Shorts sizes',
-    'Full-resolution downloads',
     'No card required',
+    'Thumbnails from a prompt, your photos or a blog URL',
+    'YouTube (16:9) and Shorts (9:16) sizes',
+    'Full-resolution downloads',
   ],
 };
 
-/** Razorpay bills in paise. */
-/**
- * Tag set on every Razorpay order and checkout ThumbAI creates. The Razorpay
- * account is shared with another project, and its webhook receives every
- * payment on the account; this is how the webhook tells ours apart.
- */
-export const RAZORPAY_APP_TAG = { app: 'thumbai' } as const;
+/** Prices are set in US dollars; Dodo localises them at checkout. */
+export const PLAN_CURRENCY = 'USD';
 
-export const toPaise = (rupees: number): number => rupees * 100;
+/**
+ * Set as metadata on every checkout ThumbAI creates, so the webhook can skip
+ * payments made on the same Dodo business by anything else.
+ */
+export const PAYMENT_APP_TAG = { app: 'thumbai' } as const;
 
 export const getPlan = (planId: unknown): Plan | null => {
   if (typeof planId !== 'string') return null;
   return PLANS[planId] ?? null;
 };
 
-/** Whole-rupee saving against the pre-discount price. */
-export const savingsInRupees = (plan: Plan): number =>
-  plan.originalPriceInRupees
-    ? plan.originalPriceInRupees - plan.priceInRupees
-    : 0;
-
-export const savingsPercent = (plan: Plan): number =>
-  plan.originalPriceInRupees
-    ? Math.round(
-        (savingsInRupees(plan) / plan.originalPriceInRupees) * 100,
-      )
-    : 0;
+/**
+ * Formats minor units of a currency: 299 USD → "$2.99", 0 → "$0".
+ * Whole amounts drop their decimals so "$0" and "$5" read cleanly.
+ */
+export const formatMoney = (
+  minor: number,
+  currency: string = PLAN_CURRENCY,
+): string => {
+  const major = minor / 100;
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: Number.isInteger(major) ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(major);
+};
 
 /**
  * What a credit actually buys. Costs come from the model registry, and are
