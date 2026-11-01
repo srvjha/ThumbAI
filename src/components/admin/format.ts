@@ -25,10 +25,11 @@ const number = new Intl.NumberFormat('en-IN');
 export const fmt = (n: number | null | undefined) =>
   n == null ? '—' : number.format(n);
 
-export const rupees = (n: number) =>
-  new Intl.NumberFormat('en-IN', {
+/** Major units of a currency; USD unless the order says otherwise. */
+export const money = (n: number, currency = 'USD') =>
+  new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'INR',
+    currency,
     maximumFractionDigits: n % 1 ? 2 : 0,
   }).format(n);
 

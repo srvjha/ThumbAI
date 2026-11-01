@@ -5,10 +5,8 @@ import { CreditCostTable } from '@/components/billing/CreditCostTable';
 import { CreditEstimator } from '@/components/billing/CreditEstimator';
 import { PlanGrid } from '@/components/billing/PlanGrid';
 import { Button } from '@/components/ui/button';
-import { FREE_PLAN, type Plan } from '@/config/plans';
-
-/** Kept as the public name for consumers like RenderRazorpay. */
-export type PricingDetails = Plan;
+import { FREE_PLAN } from '@/config/plans';
+import { CheckoutReturn } from '@/components/billing/CheckoutReturn';
 
 export const metadata: Metadata = {
   title: 'Pricing',
@@ -32,12 +30,16 @@ const FAQ = [
     a: 'The credits it took are returned to your balance automatically. You do not need to contact anyone.',
   },
   {
+    q: 'Can I get a refund?',
+    a: 'No. Credit packs are delivered instantly and are non-refundable, which is why you get free credits to try first. If you are charged twice or your credits never arrive, email us and we will fix it.',
+  },
+  {
     q: 'Draft or Quality?',
     a: 'Draft is fast, renders text cleanly and costs 1 credit, which suits most thumbnails. Quality costs 3 credits and uses a slower model with sharper typography and stronger face consistency, which is worth it when a design leans on a recognisable person.',
   },
   {
     q: 'How do I pay?',
-    a: 'Checkout runs through Razorpay in rupees, with card, UPI or netbanking. Credits are added as soon as the payment is confirmed.',
+    a: 'Prices are in US dollars. Checkout runs through Dodo Payments, which takes cards, Apple Pay and Google Pay plus local methods such as UPI where available, and handles sales tax and VAT for your country. Credits are added as soon as the payment is confirmed.',
   },
   {
     q: 'What do I get for free?',
@@ -48,6 +50,7 @@ const FAQ = [
 export default function PricingPage() {
   return (
     <main className='min-h-screen bg-background'>
+      <CheckoutReturn />
       <div className='mx-auto max-w-6xl px-4 pt-28 pb-24 sm:px-6 sm:pt-32 lg:px-8'>
         <header className='max-w-3xl'>
           <h1 className='font-serif text-5xl leading-[1.02] tracking-tight sm:text-6xl lg:text-7xl'>
@@ -57,8 +60,8 @@ export default function PricingPage() {
           </h1>
           <p className='mt-5 max-w-xl text-base text-muted-foreground sm:text-lg'>
             No subscription and no monthly bill. Pick a pack, and each image
-            draws from your balance: one credit for a draft thumbnail, three
-            for quality.
+            draws from your balance: one credit for a draft thumbnail, three for
+            quality.
           </p>
         </header>
 
@@ -86,8 +89,8 @@ export default function PricingPage() {
             Not sure which pack?
           </h2>
           <p className='mt-3 mb-8 max-w-xl text-muted-foreground'>
-            Tell us what you make in a typical week and we will suggest the
-            pack that lasts about a month.
+            Tell us what you make in a typical week and we will suggest the pack
+            that lasts about a month.
           </p>
           <CreditEstimator compact />
         </section>

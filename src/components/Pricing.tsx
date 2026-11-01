@@ -4,8 +4,12 @@ import Link from 'next/link';
 import { Check, Loader2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
-import { type Plan, savingsInRupees, savingsPercent } from '@/config/plans';
-import { perCreditPrice, whatCreditsBuy } from './billing/creditMath';
+import { formatMoney, type Plan } from '@/config/plans';
+import {
+  perCreditPrice,
+  perCreditSavingsPercent,
+  whatCreditsBuy,
+} from './billing/creditMath';
 
 interface PricingCardProps {
   plan: Plan;
@@ -36,7 +40,7 @@ export const PricingCard = ({
   ctaHref,
   compact = false,
 }: PricingCardProps) => {
-  const saved = savingsInRupees(plan);
+  const saved = perCreditSavingsPercent(plan);
   const perCredit = perCreditPrice(plan);
   const buys = whatCreditsBuy(plan.credits);
 
@@ -67,41 +71,38 @@ export const PricingCard = ({
         <span className='text-sm text-muted-foreground'>credits</span>
       </div>
       <p className='mt-1 text-xs text-muted-foreground'>
-        ≈ <span className='font-mono tabular-nums'>{buys.drafts}</span> draft
-        or <span className='font-mono tabular-nums'>{buys.quality}</span>{' '}
-        quality thumbnails
+        ≈ <span className='font-mono tabular-nums'>{buys.drafts}</span> draft or{' '}
+        <span className='font-mono tabular-nums'>{buys.quality}</span> quality
+        thumbnails
       </p>
 
       <div className='mt-5 border-t pt-4'>
-        {plan.priceInRupees === 0 ? (
+        {plan.priceCents === 0 ? (
           <div className='flex items-baseline gap-2'>
-            <span className='font-mono text-2xl tabular-nums'>₹0</span>
+            <span className='font-mono text-2xl tabular-nums'>$0</span>
             <span className='text-sm text-muted-foreground'>on signup</span>
           </div>
         ) : (
           <>
             <div className='flex flex-wrap items-baseline gap-x-2 gap-y-1'>
               <span className='font-mono text-2xl tabular-nums'>
-                ₹{plan.priceInRupees}
+                {formatMoney(plan.priceCents)}
               </span>
-              {plan.originalPriceInRupees && (
-                <span className='font-mono text-sm text-muted-foreground tabular-nums line-through'>
-                  ₹{plan.originalPriceInRupees}
-                </span>
-              )}
-              <span className='text-sm text-muted-foreground'>one-time</span>
+              <span className='text-sm text-muted-foreground'>
+                USD, one-time
+              </span>
             </div>
             <div className='mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs'>
               {perCredit && (
                 <span className='text-muted-foreground'>
-                  <span className='font-mono tabular-nums'>₹{perCredit}</span>{' '}
+                  <span className='font-mono tabular-nums'>{perCredit}</span>{' '}
                   per credit
                 </span>
               )}
               {saved > 0 && (
                 <span className='font-medium text-brand'>
-                  Save <span className='font-mono tabular-nums'>₹{saved}</span>{' '}
-                  ({savingsPercent(plan)}%)
+                  <span className='font-mono tabular-nums'>{saved}%</span> less
+                  per credit
                 </span>
               )}
             </div>
@@ -126,7 +127,12 @@ export const PricingCard = ({
 
       <div className={cn(compact ? 'mt-5' : 'mt-8')}>
         {ctaHref ? (
-          <Button asChild variant='outline' size='lg' className='w-full rounded-lg'>
+          <Button
+            asChild
+            variant='outline'
+            size='lg'
+            className='w-full rounded-lg'
+          >
             <Link href={ctaHref}>{ctaText}</Link>
           </Button>
         ) : (

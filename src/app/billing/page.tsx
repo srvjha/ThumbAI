@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { AppPageHeader } from '@/components/app/AppShell';
+import { CheckoutReturn } from '@/components/billing/CheckoutReturn';
 import { CreditCostTable } from '@/components/billing/CreditCostTable';
 import { CreditEstimator } from '@/components/billing/CreditEstimator';
 import { OrderHistory } from '@/components/billing/OrderHistory';
@@ -83,6 +84,7 @@ const BalanceCard = () => {
 
 const BillingPage = () => (
   <div>
+    <CheckoutReturn />
     <AppPageHeader
       title='Credits & billing'
       description='Your balance, what it buys, and every purchase. Credits are one-time, not a subscription.'
@@ -114,14 +116,11 @@ const BillingPage = () => (
             Top up
           </h2>
           <p className='mt-1 text-sm text-muted-foreground'>
-            Pay once with card, UPI or netbanking. Credits land in your
-            balance as soon as the payment is confirmed.
+            Pay once with card, UPI or netbanking. Credits land in your balance
+            as soon as the payment is confirmed.
           </p>
         </div>
-        <Link
-          href='/pricing'
-          className='text-sm text-brand hover:underline'
-        >
+        <Link href='/pricing' className='text-sm text-brand hover:underline'>
           Compare plans
         </Link>
       </div>

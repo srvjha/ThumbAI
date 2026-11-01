@@ -3,9 +3,15 @@
 import { useMemo, useState } from 'react';
 import { Check, Loader2, Minus, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { savingsPercent, type Plan } from '@/config/plans';
+import { formatMoney, type Plan } from '@/config/plans';
 import { cn } from '@/lib/utils';
-import { DRAFT_COST, EDIT_COST, PAID_PLANS, QUALITY_COST } from './creditMath';
+import {
+  DRAFT_COST,
+  EDIT_COST,
+  PAID_PLANS,
+  QUALITY_COST,
+  perCreditSavingsPercent,
+} from './creditMath';
 import { useCreditCheckout } from './useCreditCheckout';
 
 /**
@@ -13,11 +19,36 @@ import { useCreditCheckout } from './useCreditCheckout';
  * picked, and the studio defaults to Draft, so they are estimated at Draft.
  */
 const OPTIONS = [
-  { id: 'yt-draft', label: 'YouTube thumbnails', detail: 'Draft', cost: DRAFT_COST },
-  { id: 'yt-quality', label: 'YouTube thumbnails', detail: 'Quality', cost: QUALITY_COST },
-  { id: 'shorts', label: 'Shorts covers', detail: 'Draft, 9:16', cost: DRAFT_COST },
-  { id: 'blog', label: 'Blog covers', detail: 'Draft, from a URL', cost: DRAFT_COST },
-  { id: 'edit', label: 'Edits of an existing image', detail: 'Image to image', cost: EDIT_COST },
+  {
+    id: 'yt-draft',
+    label: 'YouTube thumbnails',
+    detail: 'Draft',
+    cost: DRAFT_COST,
+  },
+  {
+    id: 'yt-quality',
+    label: 'YouTube thumbnails',
+    detail: 'Quality',
+    cost: QUALITY_COST,
+  },
+  {
+    id: 'shorts',
+    label: 'Shorts covers',
+    detail: 'Draft, 9:16',
+    cost: DRAFT_COST,
+  },
+  {
+    id: 'blog',
+    label: 'Blog covers',
+    detail: 'Draft, from a URL',
+    cost: DRAFT_COST,
+  },
+  {
+    id: 'edit',
+    label: 'Edits of an existing image',
+    detail: 'Image to image',
+    cost: EDIT_COST,
+  },
 ] as const;
 
 type OptionId = (typeof OPTIONS)[number]['id'];
@@ -77,7 +108,7 @@ export const CreditEstimator = ({ compact = false }: { compact?: boolean }) => {
   const [perWeek, setPerWeek] = useState<Partial<Record<OptionId, number>>>({
     'yt-draft': 3,
   });
-  const { startCheckout, loadingPlanId, checkout } = useCreditCheckout();
+  const { startCheckout, loadingPlanId } = useCreditCheckout();
 
   const weekly = OPTIONS.reduce(
     (sum, o) => sum + (perWeek[o.id] ?? 0) * o.cost,
@@ -101,7 +132,9 @@ export const CreditEstimator = ({ compact = false }: { compact?: boolean }) => {
     <div className='overflow-hidden rounded-2xl border bg-card md:grid md:grid-cols-[1.1fr_1fr]'>
       {/* Left: what you make, and how often. */}
       <div className={cn('p-5', compact ? 'sm:p-6' : 'sm:p-7')}>
-        <h3 className='font-serif text-2xl tracking-tight'>What do you make?</h3>
+        <h3 className='font-serif text-2xl tracking-tight'>
+          What do you make?
+        </h3>
         <p className='mt-1 text-sm text-muted-foreground'>
           Pick everything that applies, then set how many per week.
         </p>
@@ -130,13 +163,17 @@ export const CreditEstimator = ({ compact = false }: { compact?: boolean }) => {
                       aria-hidden
                       className={cn(
                         'grid size-5 shrink-0 place-items-center rounded-md border',
-                        on ? 'border-brand bg-brand text-brand-foreground' : 'bg-card',
+                        on
+                          ? 'border-brand bg-brand text-brand-foreground'
+                          : 'bg-card',
                       )}
                     >
                       {on && <Check className='size-3.5' strokeWidth={3} />}
                     </span>
                     <span className='min-w-0'>
-                      <span className='block text-sm font-medium'>{o.label}</span>
+                      <span className='block text-sm font-medium'>
+                        {o.label}
+                      </span>
                       <span className='block text-xs text-muted-foreground'>
                         {o.detail} ·{' '}
                         <span className='font-mono tabular-nums'>{o.cost}</span>{' '}
@@ -146,7 +183,9 @@ export const CreditEstimator = ({ compact = false }: { compact?: boolean }) => {
                   </button>
                   {on && (
                     <div className='ml-8 flex items-center gap-2 sm:ml-0'>
-                      <span className='text-xs text-muted-foreground'>per week</span>
+                      <span className='text-xs text-muted-foreground'>
+                        per week
+                      </span>
                       <Stepper
                         value={count}
                         label={`${o.label} (${o.detail}) per week`}
@@ -164,7 +203,9 @@ export const CreditEstimator = ({ compact = false }: { compact?: boolean }) => {
 
         <p className='mt-4 text-sm text-muted-foreground'>
           Estimated use:{' '}
-          <span className='font-mono text-foreground tabular-nums'>{weekly}</span>{' '}
+          <span className='font-mono text-foreground tabular-nums'>
+            {weekly}
+          </span>{' '}
           credits a week
         </p>
       </div>
@@ -186,25 +227,29 @@ export const CreditEstimator = ({ compact = false }: { compact?: boolean }) => {
             <div className='mt-1 flex flex-wrap items-baseline justify-between gap-x-3'>
               <h3 className='font-serif text-3xl tracking-tight'>
                 {packs > 1 && (
-                  <span className='font-mono text-2xl tabular-nums'>{packs}× </span>
+                  <span className='font-mono text-2xl tabular-nums'>
+                    {packs}×{' '}
+                  </span>
                 )}
                 {plan.name}
               </h3>
               <div className='flex items-baseline gap-2'>
                 <span className='font-mono text-xl tabular-nums'>
-                  ₹{plan.priceInRupees}
+                  {formatMoney(plan.priceCents)}
                 </span>
-                {plan.originalPriceInRupees && (
-                  <span className='font-mono text-sm text-muted-foreground tabular-nums line-through'>
-                    ₹{plan.originalPriceInRupees}
-                  </span>
-                )}
+                <span className='text-xs text-muted-foreground'>USD</span>
               </div>
             </div>
             <p className='mt-1 text-xs text-muted-foreground'>
               One-time pack
-              {savingsPercent(plan) > 0 && (
-                <> · <span className='text-brand'>{savingsPercent(plan)}% off</span></>
+              {perCreditSavingsPercent(plan) > 0 && (
+                <>
+                  {' '}
+                  ·{' '}
+                  <span className='text-brand'>
+                    {perCreditSavingsPercent(plan)}% less per credit
+                  </span>
+                </>
               )}
               {packs > 1 && <> · price shown is per pack</>}
             </p>
@@ -223,11 +268,15 @@ export const CreditEstimator = ({ compact = false }: { compact?: boolean }) => {
               </div>
               <div className='mt-2 flex justify-between gap-3 text-xs text-muted-foreground'>
                 <span>
-                  <span className='font-mono text-foreground tabular-nums'>{monthly}</span>{' '}
+                  <span className='font-mono text-foreground tabular-nums'>
+                    {monthly}
+                  </span>{' '}
                   used in {TARGET_WEEKS} weeks
                 </span>
                 <span>
-                  <span className='font-mono text-foreground tabular-nums'>{total}</span>{' '}
+                  <span className='font-mono text-foreground tabular-nums'>
+                    {total}
+                  </span>{' '}
                   credits in {packs > 1 ? 'packs' : 'pack'}
                 </span>
               </div>
@@ -235,7 +284,9 @@ export const CreditEstimator = ({ compact = false }: { compact?: boolean }) => {
 
             <p className='mt-5 text-sm'>
               ≈{' '}
-              <span className='font-mono text-lg tabular-nums'>{weeksCovered}</span>{' '}
+              <span className='font-mono text-lg tabular-nums'>
+                {weeksCovered}
+              </span>{' '}
               {weeksCovered === 1 ? 'week' : 'weeks'} at this pace
             </p>
             {packs > 1 && (
@@ -261,27 +312,26 @@ export const CreditEstimator = ({ compact = false }: { compact?: boolean }) => {
             )}
 
             <div className='mt-auto pt-6'>
-            <Button
-              variant='brand'
-              size='lg'
-              className='w-full cursor-pointer rounded-lg'
-              disabled={loadingPlanId === plan.id}
-              onClick={() => startCheckout(plan)}
-            >
-              {loadingPlanId === plan.id ? (
-                <>
-                  <Loader2 className='size-4 animate-spin' />
-                  Starting checkout
-                </>
-              ) : (
-                `Get ${plan.name}`
-              )}
-            </Button>
+              <Button
+                variant='brand'
+                size='lg'
+                className='w-full cursor-pointer rounded-lg'
+                disabled={loadingPlanId === plan.id}
+                onClick={() => startCheckout(plan)}
+              >
+                {loadingPlanId === plan.id ? (
+                  <>
+                    <Loader2 className='size-4 animate-spin' />
+                    Starting checkout
+                  </>
+                ) : (
+                  `Get ${plan.name}`
+                )}
+              </Button>
             </div>
           </>
         )}
       </div>
-      {checkout}
     </div>
   );
 };

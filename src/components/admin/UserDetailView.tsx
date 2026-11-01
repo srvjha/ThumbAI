@@ -8,7 +8,7 @@ import {
   CheckCircle2,
   Coins,
   FlagOff,
-  IndianRupee,
+  DollarSign,
   MonitorSmartphone,
   ShieldCheck,
   ShieldOff,
@@ -37,7 +37,7 @@ import {
   dateTime,
   duration,
   fmt,
-  rupees,
+  money,
   WORKFLOWS,
 } from './format';
 import {
@@ -197,8 +197,8 @@ export const UserDetailView = ({ id }: { id: string }) => {
         />
         <KpiCard
           label='Paid'
-          icon={IndianRupee}
-          value={rupees(user.stats.paid)}
+          icon={DollarSign}
+          value={money(user.stats.paid)}
           hint={`${user.orders.filter((o) => o.status === 'paid').length} orders`}
         />
         <KpiCard
@@ -499,7 +499,7 @@ export const UserDetailView = ({ id }: { id: string }) => {
                       </TableCell>
                       <TableCell className='text-sm'>{o.product}</TableCell>
                       <TableCell className='text-right font-mono text-xs tabular-nums'>
-                        {rupees(o.amount)}
+                        {money(o.amount, o.currency)}
                       </TableCell>
                       <TableCell className='text-right font-mono text-xs tabular-nums'>
                         {o.credits}

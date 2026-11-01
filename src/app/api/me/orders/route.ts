@@ -8,7 +8,7 @@ import { ApiResponse } from '@/utils/ApiResponse';
  * The signed-in user's purchase history, newest first.
  *
  * Scoped by the session's user id, never by anything in the request, so one
- * user can never list another's orders. Razorpay ids and signatures stay
+ * user can never list another's orders. Payment provider ids stay
  * server-side; the billing page only needs what it displays.
  */
 export const GET = async () => {
@@ -23,6 +23,7 @@ export const GET = async () => {
         id: true,
         productName: true,
         amount: true,
+        currency: true,
         credits: true,
         status: true,
         createdAt: true,

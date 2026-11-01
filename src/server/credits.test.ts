@@ -122,7 +122,7 @@ describe('grantCreditsForOrder', () => {
     const user = await createUser({ credits: 1 });
     const order = await createOrder(user.id, { credits: 8 });
 
-    const result = await grantCreditsForOrder(order.razorpayOrderId!);
+    const result = await grantCreditsForOrder(order.id);
 
     expect(result).toEqual({ granted: true, credits: 8 });
     const after = await db.user.findUniqueOrThrow({ where: { id: user.id } });
@@ -137,7 +137,7 @@ describe('grantCreditsForOrder', () => {
 
     const results = await Promise.all(
       Array.from({ length: 5 }, () =>
-        grantCreditsForOrder(order.razorpayOrderId!),
+        grantCreditsForOrder(order.id),
       ),
     );
 
@@ -159,7 +159,7 @@ describe('grantCreditsForOrder', () => {
       },
     });
 
-    const result = await grantCreditsForOrder(order.razorpayOrderId!);
+    const result = await grantCreditsForOrder(order.id);
 
     expect(result.granted).toBe(false);
     expect(await creditsOf(user.id)).toBe(8);
@@ -177,7 +177,7 @@ describe('clawBackOrder', () => {
   it('takes the credits back even if that leaves the balance negative', async () => {
     const user = await createUser({ credits: 0 });
     const order = await createOrder(user.id, { credits: 8 });
-    await grantCreditsForOrder(order.razorpayOrderId!);
+    await grantCreditsForOrder(order.id);
     await db.user.update({ where: { id: user.id }, data: { credits: 3 } });
     await db.creditTransaction.create({
       data: {
@@ -207,8 +207,8 @@ describe('clawBackOrder', () => {
     const kept = await createOrder(user.id);
     const refunded = await createOrder(user.id);
     await db.order.update({ where: { id: kept.id }, data: { status: 'paid' } });
-    await grantCreditsForOrder(kept.razorpayOrderId!);
-    await grantCreditsForOrder(refunded.razorpayOrderId!);
+    await grantCreditsForOrder(kept.id);
+    await grantCreditsForOrder(refunded.id);
 
     await clawBackOrder(refunded.id);
 

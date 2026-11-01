@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useUser } from '@clerk/nextjs';
 import { PricingCard } from '@/components/Pricing';
 import { FREE_PLAN } from '@/config/plans';
@@ -19,10 +20,10 @@ export const PlanGrid = ({
   compact?: boolean;
 }) => {
   const { isSignedIn } = useUser();
-  const { startCheckout, loadingPlanId, checkout } = useCreditCheckout();
+  const { startCheckout, loadingPlanId } = useCreditCheckout();
 
   return (
-    <>
+    <div>
       <div
         className={cn(
           'grid gap-4 sm:gap-5',
@@ -49,7 +50,25 @@ export const PlanGrid = ({
           />
         ))}
       </div>
-      {checkout}
-    </>
+      <p className='mt-4 text-xs text-muted-foreground'>
+        One-time payments in USD, processed by Dodo Payments. Taxes may apply at
+        checkout. All sales are final: credit packs are non-refundable. By
+        buying you agree to our{' '}
+        <Link
+          href='/terms'
+          className='underline underline-offset-2 hover:text-brand'
+        >
+          Terms
+        </Link>{' '}
+        and{' '}
+        <Link
+          href='/refund-policy'
+          className='underline underline-offset-2 hover:text-brand'
+        >
+          Refund Policy
+        </Link>
+        .
+      </p>
+    </div>
   );
 };
