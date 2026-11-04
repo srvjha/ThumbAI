@@ -73,15 +73,6 @@ export const PLAN_CURRENCY = 'USD';
  */
 export const PAYMENT_APP_TAG = { app: 'thumbai' } as const;
 
-/**
- * Off while Dodo reviews the account: Buy shows a "coming soon" toast and the
- * order route refuses to open checkouts. Flip to true once Dodo approves.
- */
-export const CHECKOUT_ENABLED = false;
-
-export const CHECKOUT_DISABLED_MESSAGE =
-  'Payments are coming soon. Your free credits work in the meantime.';
-
 export const getPlan = (planId: unknown): Plan | null => {
   if (typeof planId !== 'string') return null;
   return PLANS[planId] ?? null;

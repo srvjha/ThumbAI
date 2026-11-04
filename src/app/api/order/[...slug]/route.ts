@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin, requireUser } from '@/server/auth';
 import { ApiError, apiErrorResponse } from '@/server/errors';
-import { CHECKOUT_DISABLED_MESSAGE, CHECKOUT_ENABLED } from '@/config/plans';
 import {
   cancelOrder,
   createCheckoutForPlan,
@@ -19,9 +18,6 @@ export async function POST(
     switch (action) {
       case 'order': {
         const user = await requireUser();
-        if (!CHECKOUT_ENABLED) {
-          throw new ApiError(CHECKOUT_DISABLED_MESSAGE, 503);
-        }
         const { productId } = await req.json();
         const { orderId, checkoutUrl } = await createCheckoutForPlan(
           user,
