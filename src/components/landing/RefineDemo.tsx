@@ -55,7 +55,7 @@ export const RefineDemo = () => {
           />
         )}
       </div>
-      <div className='mt-3 flex items-center gap-2 rounded-lg bg-background p-2 pl-3 text-sm'>
+      <div className='mt-3 flex items-center gap-2 rounded-lg bg-secondary p-2 pl-3 text-sm'>
         <TypedText
           text={INSTRUCTION}
           mode={mode}

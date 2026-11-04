@@ -1,84 +1,112 @@
+import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
 import { Reveal, RevealItem } from '@/components/motion/Reveal';
-import { H2, H2_ONE_LINE } from './type';
+import { SAMPLES } from './samples';
+import { Tile, TileArrow, TileTitle } from './Tile';
+import { FRAME, H2, H2_ONE_LINE, SECTION } from './type';
 import {
   BlogCoverDemo,
   ImageToImageDemo,
   TextToImageDemo,
 } from './WorkflowDemos';
 
-const StudioLink = ({ href, label }: { href: string; label: string }) => (
-  <Link
-    href={href}
-    className='group inline-flex items-center gap-1.5 text-sm font-medium text-brand'
-  >
-    {label}
-    <ArrowRight className='size-4 transition-transform group-hover:translate-x-0.5' />
-  </Link>
-);
+const KINDS = [
+  { label: 'Coding tutorial', sample: SAMPLES.techApi },
+  { label: 'Recipe', sample: SAMPLES.cooking },
+  { label: 'Travel vlog', sample: SAMPLES.travel },
+  { label: 'Product review', sample: SAMPLES.review },
+  { label: 'Gaming series', sample: SAMPLES.gaming },
+  { label: 'Podcast', sample: SAMPLES.podcast },
+];
 
 export const Workflows = () => (
-  // On dark a full-bleed band reads as a slab; it eases in and out instead.
-  <section className='bg-secondary py-24 md:py-36 dark:bg-transparent dark:bg-[linear-gradient(to_bottom,transparent,var(--card)_10rem,var(--card)_calc(100%-10rem),transparent)]'>
-    <div className='mx-auto max-w-6xl px-4 sm:px-6 lg:px-8'>
+  <section className={SECTION}>
+    <div className={FRAME}>
       <Reveal stagger={0.08}>
         <RevealItem as='h2' className={`${H2} ${H2_ONE_LINE}`}>
           Three ways in, one studio.
         </RevealItem>
-        <RevealItem as='p' className='mt-5 text-lg leading-relaxed'>
-          Start from words, a photo, or a post you already wrote.
-        </RevealItem>
       </Reveal>
 
-      {/* Each card runs a short loop of its own workflow while on screen. */}
-      <Reveal stagger={0.09} className='mt-14 grid gap-4 lg:grid-cols-12'>
-        <RevealItem
-          as='article'
-          className='flex flex-col rounded-2xl bg-card p-5 sm:p-7 lg:col-span-7'
+      {/* Each tile runs a short loop of its own workflow while on screen. */}
+      <Reveal
+        stagger={0.09}
+        className='mt-8 grid gap-4 lg:grid-cols-2 md:mt-10'
+      >
+        <Tile
+          label='Start from words'
+          title='Describe the video, name the title.'
+          href='/studio/text-to-image'
+          linkLabel='Open text to image'
         >
-          <h3 className='text-xl font-medium'>Text to image</h3>
-          <p className='mt-1.5 text-muted-foreground'>
-            Describe the video, name the title, get the thumbnail.
-          </p>
           <TextToImageDemo />
-          <div className='mt-6'>
-            <StudioLink href='/studio/text-to-image' label='Write a prompt' />
-          </div>
-        </RevealItem>
+        </Tile>
 
-        <RevealItem
-          as='article'
-          className='flex flex-col rounded-2xl bg-card p-5 sm:p-7 lg:col-span-5'
+        <Tile
+          label='Start from a photo'
+          title='Your face or product, built into the frame.'
+          href='/studio/image-to-image'
+          linkLabel='Open image to image'
         >
-          <h3 className='text-xl font-medium'>Image to image</h3>
-          <p className='mt-1.5 text-muted-foreground'>
-            Your face or product, built into the frame.
-          </p>
           <ImageToImageDemo />
-          <div className='mt-auto pt-6'>
-            <StudioLink href='/studio/image-to-image' label='Upload a photo' />
-          </div>
-        </RevealItem>
+        </Tile>
 
         <RevealItem
           as='article'
-          className='rounded-2xl bg-card p-5 sm:p-7 lg:col-span-12'
+          className='group rounded-2xl bg-secondary p-5 sm:p-6 lg:col-span-2'
         >
           <BlogCoverDemo
             intro={
-              <>
-                <h3 className='text-xl font-medium'>Blog cover from a URL</h3>
-                <p className='mt-1.5 text-muted-foreground'>
-                  Paste a post, get an editorial cover.
-                </p>
-              </>
+              <TileTitle
+                label='Start from a post'
+                title='Paste a link, get an editorial cover.'
+              />
             }
             action={
-              <StudioLink href='/studio/blog-cover' label='Paste a link' />
+              <TileArrow href='/studio/blog-cover' label='Open blog cover' />
             }
           />
         </RevealItem>
+      </Reveal>
+
+      <Reveal stagger={0.06} amount={0.15} className='mt-14'>
+        <RevealItem as='h3' className='text-sm text-muted-foreground'>
+          Start with a kind of video
+        </RevealItem>
+        {/* Six divide evenly at two and three across; five fill the row at lg. */}
+        <ul className='mt-3 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5'>
+          {KINDS.map(({ label, sample }, i) => (
+            <RevealItem
+              as='li'
+              key={label}
+              className={i === KINDS.length - 1 ? 'lg:hidden' : undefined}
+            >
+              <Link
+                href='/studio/text-to-image'
+                className='group block rounded-xl bg-secondary p-2.5 pb-4 transition-transform duration-200 hover:-translate-y-1'
+              >
+                <span className='relative block aspect-video overflow-hidden rounded-lg'>
+                  <Image
+                    src={sample.src}
+                    alt=''
+                    fill
+                    sizes='(min-width: 1024px) 220px, (min-width: 768px) 33vw, 50vw'
+                    className='object-cover'
+                  />
+                </span>
+                <span className='mt-3 block px-1.5 font-bold tracking-[-0.01em]'>
+                  {label}{' '}
+                  <span
+                    aria-hidden
+                    className='inline-block transition-transform duration-200 group-hover:translate-x-0.5'
+                  >
+                    &rarr;
+                  </span>
+                </span>
+              </Link>
+            </RevealItem>
+          ))}
+        </ul>
       </Reveal>
     </div>
   </section>

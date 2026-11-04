@@ -4,20 +4,19 @@ import { Hero } from '@/components/landing/Hero';
 import { YouTubeSection } from '@/components/landing/YouTubeSection';
 import { Workflows } from '@/components/landing/Workflows';
 import { SamplesGallery } from '@/components/landing/SamplesGallery';
-import { HowItWorks } from '@/components/landing/HowItWorks';
 import { PricingTeaser } from '@/components/landing/PricingTeaser';
 import { FinalCta } from '@/components/landing/FinalCta';
 
 // Still a server component: MotionRoot only provides the motion features to
-// the client islands inside it.
+// the client islands inside it. `.landing` puts the page on white, with the
+// usual paper kept for its tiles and for the footer it runs into.
 const Home = () => (
   <MotionRoot>
-    <main className='overflow-x-clip'>
+    <main className='landing overflow-x-clip bg-background'>
       <Hero />
-      <YouTubeSection />
       <Workflows />
+      <YouTubeSection />
       <SamplesGallery />
-      <HowItWorks />
       <PricingTeaser />
       <FinalCta />
     </main>

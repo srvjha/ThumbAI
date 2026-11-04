@@ -55,7 +55,7 @@ export const TextToImageDemo = () => {
 
   return (
     <div ref={ref}>
-      <div className='mt-6 rounded-lg bg-background px-4 py-3 text-sm'>
+      <div className='mt-6 flex items-center rounded-lg bg-background px-4 py-3 text-sm lg:min-h-[72px]'>
         <TypedText
           text={TEXT_PROMPTS[idx]}
           mode={mode}
@@ -93,14 +93,14 @@ export const ImageToImageDemo = () => {
   return (
     <div
       ref={ref}
-      className='mt-6 grid grid-cols-[0.8fr_auto_1fr] items-center gap-3 lg:grid-cols-1'
+      className='mt-6 grid grid-cols-[0.8fr_auto_1fr] items-center gap-3 lg:grid-cols-[72px_auto_1fr]'
     >
-      <div className='relative aspect-square w-full overflow-hidden rounded-lg lg:w-32'>
+      <div className='relative aspect-square w-full overflow-hidden rounded-lg'>
         <Image
           src={SAMPLES.sourcePortrait.src}
           alt={SAMPLES.sourcePortrait.alt}
           fill
-          sizes='(min-width: 1024px) 128px, 30vw'
+          sizes='(min-width: 1024px) 72px, 30vw'
           className='object-cover'
         />
         {/* The scan: a full-height track moved down by its own height. */}
@@ -113,7 +113,7 @@ export const ImageToImageDemo = () => {
             transition={{ duration: 1.5, ease: 'easeInOut' }}
           >
             <div className='absolute inset-x-0 bottom-0 h-8 bg-brand/15' />
-            <div className='absolute inset-x-0 bottom-0 h-0.5 bg-brand shadow-[0_0_10px_rgb(62_99_221/0.8)]' />
+            <div className='absolute inset-x-0 bottom-0 h-0.5 bg-brand' />
           </m.div>
         )}
       </div>
@@ -121,13 +121,13 @@ export const ImageToImageDemo = () => {
         aria-hidden
         className='size-5 text-muted-foreground lg:rotate-90'
       />
-      <div className='relative aspect-video w-full overflow-hidden rounded-lg bg-muted'>
+      <div className='relative aspect-video w-full overflow-hidden rounded-lg bg-muted lg:col-span-3'>
         {/* Before the edit lands, the frame holds a soft copy of the upload. */}
         <Image
           src={SAMPLES.sourcePortrait.src}
           alt=''
           fill
-          sizes='(min-width: 1024px) 440px, 55vw'
+          sizes='(min-width: 1024px) 520px, 55vw'
           className='scale-110 object-cover blur-md'
         />
         <m.div
@@ -140,7 +140,7 @@ export const ImageToImageDemo = () => {
             src={SAMPLES.editNotes.src}
             alt={SAMPLES.editNotes.alt}
             fill
-            sizes='(min-width: 1024px) 440px, 55vw'
+            sizes='(min-width: 1024px) 520px, 55vw'
             className='object-cover'
           />
         </m.div>
@@ -184,7 +184,10 @@ export const BlogCoverDemo = ({
       className='grid gap-6 md:grid-cols-[1fr_1.3fr] md:items-center lg:gap-12'
     >
       <div>
-        {intro}
+        <div className='flex items-start justify-between gap-4'>
+          {intro}
+          {action}
+        </div>
         <div className='mt-6 flex items-center gap-2 rounded-lg bg-background px-3 py-2.5 text-sm'>
           <Link2
             aria-hidden
@@ -231,7 +234,6 @@ export const BlogCoverDemo = ({
             );
           })}
         </ul>
-        <div className='mt-6'>{action}</div>
       </div>
       <WipeStack
         samples={[SAMPLES.blogOpenSource]}

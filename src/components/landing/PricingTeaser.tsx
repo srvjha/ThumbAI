@@ -3,14 +3,16 @@ import { ArrowRight } from 'lucide-react';
 import { CREDIT_COSTS, FREE_PLAN, PLANS, formatMoney } from '@/config/plans';
 import { CountUp } from '@/components/motion/CountUp';
 import { Reveal, RevealItem } from '@/components/motion/Reveal';
-import { H2 } from './type';
+import { FRAME, H2 } from './type';
 
 export const PricingTeaser = () => {
   const plans = Object.values(PLANS);
 
   return (
-    <section className='py-24 md:py-40'>
-      <div className='mx-auto grid max-w-6xl gap-12 px-4 sm:px-6 lg:grid-cols-[1fr_1.2fr] lg:gap-20 lg:px-8'>
+    <section className='pb-20 md:pb-28'>
+      <div
+        className={`${FRAME} grid gap-12 lg:grid-cols-[1fr_1.2fr] lg:gap-20`}
+      >
         <Reveal stagger={0.08}>
           <RevealItem as='h2' className={H2}>
             Pay per thumbnail, not per month.
@@ -38,11 +40,11 @@ export const PricingTeaser = () => {
           {[FREE_PLAN, ...plans].map((plan) => (
             <RevealItem
               key={plan.id}
-              className='grid grid-cols-[1fr_auto] items-center gap-x-6 gap-y-1 rounded-2xl bg-card p-6'
+              className='grid grid-cols-[1fr_auto] items-center gap-x-6 gap-y-1 rounded-2xl bg-secondary p-6'
             >
               <h3 className='text-lg font-medium'>{plan.name}</h3>
               <p className='row-span-2 text-right'>
-                <span className='block font-serif text-4xl leading-none tabular-nums'>
+                <span className='block font-serif text-4xl leading-none font-bold tabular-nums'>
                   {plan.priceCents === 0
                     ? 'Free'
                     : formatMoney(plan.priceCents)}

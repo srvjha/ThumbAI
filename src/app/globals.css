@@ -195,34 +195,34 @@
 }
 
 @layer components {
-  /* The primary CTA: a raised royal-blue pill with an inner highlight and a
-     darker rim, matching the reference button. */
+  /*
+   * The primary CTA, tactile: a soft top-lit gradient, a light inner edge, a
+   * crisp darker rim and a small shadow that flattens as it presses down 1px.
+   * The neutral variants in ui/button.tsx follow the same recipe. A class
+   * rather than a variant, so the mock buttons in the demos can wear it too.
+   * Fixed to Indigo 9 in both themes: dark's lighter --brand is for accents,
+   * and white text needs this one.
+   */
   .btn-brand {
-    background: linear-gradient(180deg, #5277ea 0%, #3e63dd 55%, #3657cf 100%);
-    border: 1px solid var(--brand-strong);
+    --btn-fill: #3e63dd;
+    background: linear-gradient(
+      to bottom,
+      color-mix(in oklch, var(--btn-fill), white 10%),
+      var(--btn-fill)
+    );
+    border: 1px solid color-mix(in oklch, var(--btn-fill), black 22%);
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 28%),
-      0 1px 2px rgb(18 23 43 / 18%),
-      0 6px 16px -6px rgb(62 99 221 / 55%);
+      inset 0 1px 0 rgb(255 255 255 / 25%),
+      0 1px 2px rgb(0 0 0 / 16%),
+      0 3px 8px -3px color-mix(in oklch, var(--btn-fill), transparent 40%);
     color: #fff;
   }
   .btn-brand:hover {
-    background: linear-gradient(180deg, #5a7eee 0%, #4369e2 55%, #3a5bd3 100%);
+    filter: brightness(1.06);
   }
   .btn-brand:active {
-    box-shadow: inset 0 1px 2px rgb(18 23 43 / 25%);
-  }
-  /* On dark the button carries a faint blue glow instead of a drop shadow. */
-  .dark .btn-brand {
-    background: linear-gradient(180deg, #5f7deb 0%, #4a6be2 55%, #3e63dd 100%);
-    border-color: rgb(255 255 255 / 10%);
-    box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 22%),
-      0 0 0 1px rgb(62 99 221 / 50%),
-      0 8px 24px -10px rgb(62 99 221 / 70%);
-  }
-  .dark .btn-brand:hover {
-    background: linear-gradient(180deg, #6a86ee 0%, #5472e4 55%, #4568df 100%);
+    box-shadow: inset 0 1px 3px rgb(0 0 0 / 22%);
+    translate: 0 1px;
   }
 }
 
@@ -272,6 +272,30 @@
       transform: translate(calc(-50% - 0.5rem));
     }
   }
+}
+
+/*
+ * The landing page sits on white; the paper steps down to its tiles and the
+ * closing band, so that band runs into the footer without a seam. The hero
+ * pill takes one tint per verb, each picked from the render beside it.
+ */
+:root {
+  --hero-pill-1: #dfe6ff;
+  --hero-pill-2: #d6eef5;
+  --hero-pill-3: #ffe4cc;
+  --hero-pill-4: #dff3d9;
+  --hero-pill-5: #fff0b8;
+}
+.dark {
+  --hero-pill-1: #232c55;
+  --hero-pill-2: #173a45;
+  --hero-pill-3: #4a2c17;
+  --hero-pill-4: #1f3d22;
+  --hero-pill-5: #453a12;
+}
+html:not(.dark) .landing {
+  --background: #ffffff;
+  --secondary: #f7f6f2;
 }
 
 /*

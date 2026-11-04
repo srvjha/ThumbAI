@@ -9,14 +9,15 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default:
-          'bg-primary text-primary-foreground shadow-xs hover:bg-primary/90',
+        // Tactile, like .btn-brand: top-lit, a light inner edge, a shadow that
+        // flattens as the button presses down 1px. Built on the theme tokens.
+        default: 'btn-brand',
         destructive:
           'bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60',
         outline:
-          'border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50',
+          'border border-border bg-[linear-gradient(to_bottom,var(--card),var(--background))] shadow-[inset_0_1px_0_rgb(255_255_255/0.7),0_1px_2px_rgb(0_0_0/0.07)] hover:brightness-[0.98] hover:text-foreground active:translate-y-px active:shadow-[inset_0_1px_2px_rgb(0_0_0/0.08)] dark:border-input dark:shadow-[inset_0_1px_0_rgb(255_255_255/0.06),0_1px_2px_rgb(0_0_0/0.4)] dark:hover:brightness-[1.12]',
         secondary:
-          'bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80',
+          'border border-[color-mix(in_oklch,var(--secondary),var(--foreground)_10%)] bg-[linear-gradient(to_bottom,var(--card),var(--secondary))] text-secondary-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.7),0_1px_2px_rgb(0_0_0/0.07)] hover:brightness-[0.98] active:translate-y-px active:shadow-[inset_0_1px_2px_rgb(0_0_0/0.08)] dark:shadow-[inset_0_1px_0_rgb(255_255_255/0.06),0_1px_2px_rgb(0_0_0/0.4)] dark:hover:brightness-[1.12]',
         ghost:
           'hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50',
         link: 'text-primary underline-offset-4 hover:underline',
