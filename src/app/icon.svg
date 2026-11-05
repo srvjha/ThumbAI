@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ThumbAI">
-  <!-- The Logo mark (components/brand/Logo.tsx): a thumbnail frame with a
-       caption bar. Same proportions, but a heavier stroke so the frame
-       still reads at 16 device pixels in a browser tab. -->
-  <rect x="5.5" y="14.5" width="53" height="35" rx="9" fill="#3E63DD" fill-opacity="0.14" stroke="#3E63DD" stroke-width="5"/>
-  <rect x="15" y="32" width="20" height="11" rx="3" fill="#3E63DD"/>
-</svg>

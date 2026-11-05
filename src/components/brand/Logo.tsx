@@ -1,7 +1,8 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
-/** Wordmark: a small blue frame (a thumbnail) beside the name in the serif. */
+/** Wordmark: the app icon beside the name in the serif. */
 export const Logo = ({
   className,
   inverted = false,
@@ -14,12 +15,14 @@ export const Logo = ({
     className={cn('inline-flex items-center gap-2', className)}
     aria-label='ThumbAI home'
   >
-    <span
+    <Image
+      src='/logo-mark.png'
+      alt=''
       aria-hidden
-      className='relative inline-block h-[18px] w-[26px] rounded-[5px] border-[1.5px] border-brand bg-brand-muted'
-    >
-      <span className='absolute bottom-[3px] left-[3px] h-[5px] w-[9px] rounded-[1.5px] bg-brand' />
-    </span>
+      width={28}
+      height={28}
+      className='size-7'
+    />
     <span
       className={cn(
         'font-serif text-[22px] leading-none tracking-tight',
