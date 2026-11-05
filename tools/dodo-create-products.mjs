@@ -28,17 +28,17 @@ const BRAND = {
 const PACKS = [
   {
     env: 'DODO_PRODUCT_CREATOR_PRO',
-    name: 'ThumbAI Creator Pro: 8 credits',
+    name: 'ThumbAI Creator Pro: 25 credits',
     description:
-      'One-time pack of 8 AI thumbnail credits. Credits never expire.',
-    priceCents: 299,
+      'One-time pack of 25 AI thumbnail credits. Credits never expire.',
+    priceCents: 799,
   },
   {
     env: 'DODO_PRODUCT_BUSINESS_ELITE',
-    name: 'ThumbAI Business Elite: 20 credits',
+    name: 'ThumbAI Business Elite: 60 credits',
     description:
-      'One-time pack of 20 AI thumbnail credits. Credits never expire.',
-    priceCents: 499,
+      'One-time pack of 60 AI thumbnail credits. Credits never expire.',
+    priceCents: 1499,
   },
 ];
 

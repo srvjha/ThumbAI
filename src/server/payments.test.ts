@@ -79,9 +79,9 @@ describe('createCheckoutForPlan', () => {
     expect(checkoutUrl).toBe('https://checkout.test/cks_1');
     const order = await db.order.findUniqueOrThrow({ where: { id: orderId } });
     expect(order).toMatchObject({
-      amount: 499,
+      amount: 1499,
       currency: 'USD',
-      credits: 20,
+      credits: 60,
       provider: 'dodo',
       providerOrderId: 'cks_1',
       status: 'created',

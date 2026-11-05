@@ -21,8 +21,8 @@ export const PLANS: Record<string, Plan> = {
   'creator-pro': {
     id: 'creator-pro',
     name: 'Creator Pro',
-    credits: 8,
-    priceCents: 299,
+    credits: 25,
+    priceCents: 799,
     tagline: 'For a steady upload schedule.',
     features: [
       'Put your own face in, with your likeness kept',
@@ -34,8 +34,8 @@ export const PLANS: Record<string, Plan> = {
   'business-elite': {
     id: 'business-elite',
     name: 'Business Elite',
-    credits: 20,
-    priceCents: 499,
+    credits: 60,
+    priceCents: 1499,
     tagline: 'For teams and channels shipping daily.',
     features: [
       'Everything in Creator Pro',
