@@ -1,6 +1,7 @@
 import 'server-only';
 import dns from 'dns/promises';
 import net from 'net';
+import { SITE_URL } from '@/config/site';
 
 /**
  * Fetches a public web page and pulls out the bits that describe it.
@@ -166,7 +167,7 @@ export const fetchArticle = async (rawUrl: string): Promise<Article> => {
     headers: {
       // Some publishers serve a challenge page to unknown agents.
       'User-Agent':
-        'Mozilla/5.0 (compatible; ThumbAI/1.0; +https://thumbai.app)',
+        `Mozilla/5.0 (compatible; ThumbAI/1.0; +${SITE_URL})`,
       Accept: 'text/html,application/xhtml+xml',
     },
   }).catch(() => {
@@ -221,7 +222,7 @@ const fetchArticleFollowingOneRedirect = async (
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     headers: {
       'User-Agent':
-        'Mozilla/5.0 (compatible; ThumbAI/1.0; +https://thumbai.app)',
+        `Mozilla/5.0 (compatible; ThumbAI/1.0; +${SITE_URL})`,
       Accept: 'text/html,application/xhtml+xml',
     },
   }).catch(() => {

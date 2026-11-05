@@ -2,6 +2,7 @@ import 'server-only';
 import { OpenAI } from 'openai';
 import { FLAG_SEVERITY, FLAG_SOURCE } from '@prisma/client';
 import { db } from '@/db';
+import { SITE_URL } from '@/config/site';
 import { env } from '@/config/env';
 import { ApiError } from '@/server/errors';
 
@@ -275,8 +276,7 @@ const alertAdmin = async (
       where: { user_id: user.id, resolved_at: null },
     });
     const categories = [...new Set(detections.flatMap((d) => d.categories))];
-    const site = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://thumbai.app';
-    const message = `ThumbAI blocked a request from ${user.email}: ${categories.join(', ')}. Open flags: ${openFlags}. ${site}/admin/users/${user.id}`;
+    const message = `ThumbAI blocked a request from ${user.email}: ${categories.join(', ')}. Open flags: ${openFlags}. ${SITE_URL}/admin/users/${user.id}`;
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

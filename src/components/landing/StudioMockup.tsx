@@ -177,7 +177,7 @@ export const StudioMockup = () => {
           <span className='size-2.5 rounded-full bg-border' />
           <span className='size-2.5 rounded-full bg-border' />
           <span className='ml-3 truncate text-xs text-muted-foreground'>
-            thumbai.app/studio/text-to-image
+            thumbai.srvjha.in/studio/text-to-image
           </span>
         </div>
 

@@ -1,0 +1,1 @@
+ThumbAI: thumbnails that spell your title right, made from a prompt, your photo, or a blog link.
