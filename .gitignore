@@ -58,3 +58,7 @@ next-env.d.ts
 
 # database dumps - contain real user data, never commit
 /backups
+
+# private business notes
+/pricing.md
+/todo.md
