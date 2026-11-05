@@ -12,6 +12,8 @@ export const env = createEnv({
     NEXT_CLERK_WEBHOOK_SECRET: z.string(),
     // Dodo Payments. Optional so a deploy without them still boots; checkout
     // answers 503 until they are set.
+    // A Slack or Discord webhook that hears about blocked requests at once.
+    ADMIN_ALERT_WEBHOOK_URL: z.string().url().optional(),
     DODO_PAYMENTS_API_KEY: z.string().optional(),
     DODO_PAYMENTS_WEBHOOK_KEY: z.string().optional(),
     DODO_PAYMENTS_ENVIRONMENT: z
@@ -30,6 +32,7 @@ export const env = createEnv({
   runtimeEnv: {
     AI_GATEWAY_API_KEY: process.env.AI_GATEWAY_API_KEY,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    ADMIN_ALERT_WEBHOOK_URL: process.env.ADMIN_ALERT_WEBHOOK_URL,
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
     FAL_KEY: process.env.FAL_KEY,
     CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY,

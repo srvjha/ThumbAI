@@ -3,7 +3,7 @@ import { ApiResponse } from '@/utils/ApiResponse';
 import { requireUser } from '@/server/auth';
 import { enforceRateLimit } from '@/server/rateLimit';
 import { apiErrorResponse } from '@/server/errors';
-import { screenPrompt } from '@/server/moderation';
+import { guardRequest, recordFlags } from '@/server/moderation';
 import { submitGeneration } from '@/server/generations/submit';
 
 export const POST = async (req: NextRequest) => {
@@ -14,16 +14,13 @@ export const POST = async (req: NextRequest) => {
     await enforceRateLimit('generate', user.id);
     const body = await req.json();
 
-    // Screened after the response, so moderation never slows a generation.
-    // Runs for rejected prompts too: those are often the ones worth seeing.
+    // Refuses clear violations here, before any credit or model is touched.
+    const detections = await guardRequest(user, body);
+
+    // Lesser flags are written after the response, linked to the generation.
+    // Rejected prompts count too: those are often the ones worth seeing.
     let generationId: string | null = null;
-    after(() =>
-      screenPrompt({
-        userId: user.id,
-        text: body?.prompt,
-        thumbnailId: generationId,
-      }),
-    );
+    after(() => recordFlags(user.id, detections, generationId));
 
     const result = await submitGeneration(user, body);
     if (result.kind === 'submitted') generationId = result.generationId;
