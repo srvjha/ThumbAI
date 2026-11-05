@@ -100,6 +100,10 @@ export const formatMoney = (
  * repeated here as display copy so the pricing page can explain that "8
  * credits" is not the same as "8 thumbnails" once tiers exist.
  */
+/** A credit amount in words, for labels: "1 credit", "3 credits". */
+export const formatCredits = (credits: number): string =>
+  `${credits} ${credits === 1 ? 'credit' : 'credits'}`;
+
 export const CREDIT_COSTS = [
   { label: 'Draft thumbnail', credits: 1 },
   { label: 'Quality thumbnail', credits: 3 },

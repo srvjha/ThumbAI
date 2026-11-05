@@ -20,6 +20,7 @@ import type { ModelDefinition, ModelTier } from '@/config/models';
 import { RATIO_OPTIONS, RatioGlyph } from './AspectRatioPicker';
 import { IMAGE_COUNT_OPTIONS } from './options';
 import { cn } from '@/lib/utils';
+import { formatCredits } from '@/config/plans';
 
 /** Shared look for the compact buttons in the controls row. */
 export const chipClass = (active?: boolean, invalid?: boolean) =>
@@ -127,7 +128,7 @@ export const ModelSelect = ({
             <span className='font-medium'>
               {models[key].label}{' '}
               <span className='font-normal tabular-nums text-muted-foreground'>
-                · {models[key].creditsPerImage} cr
+                · {formatCredits(models[key].creditsPerImage)}
               </span>
             </span>
             <span className='text-xs text-muted-foreground in-data-[slot=select-value]:hidden'>

@@ -37,6 +37,7 @@ import { useGeneration } from '@/hooks/user/generations';
 import type { ImageData } from '@/components/shared/imageUtils';
 import { HistoryRail } from '../HistoryRail';
 import { STUDIO_MODES, modeById, type StudioMode } from '../modes';
+import { STARTER_COOKIE, starterPrompt } from '@/config/starters';
 import { ChatComposer, type ChatComposerHandle } from './ChatComposer';
 import { ImageTurn } from './ImageTurn';
 import { QuestionCard } from './QuestionCard';
@@ -199,6 +200,28 @@ export const ChatStudio = ({ mode }: { mode: StudioMode }) => {
   useEffect(() => {
     if (deepLink.isError) toast.error('Couldn’t open that generation.');
   }, [deepLink.isError]);
+
+  // ?starter=<id>, or the cookie it left when sign-in dropped the URL: fill in
+  // a landing card's prompt, once. Only filled, since sending spends credits.
+  const appliedStarter = useRef(false);
+  useEffect(() => {
+    if (mode !== 'text' || appliedStarter.current) return;
+    appliedStarter.current = true;
+    const param = searchParams.get('starter');
+    const cookie = document.cookie
+      .split('; ')
+      .find((c) => c.startsWith(`${STARTER_COOKIE}=`))
+      ?.slice(STARTER_COOKIE.length + 1);
+    document.cookie = `${STARTER_COOKIE}=; path=/; max-age=0`;
+    if (param) {
+      // A reload keeps what they have typed rather than refilling the prompt.
+      const url = new URL(window.location.href);
+      url.searchParams.delete('starter');
+      window.history.replaceState(null, '', url);
+    }
+    const prompt = starterPrompt(param ?? cookie);
+    if (prompt) composer.current?.setText(prompt);
+  }, [mode, searchParams]);
 
   // ⌘/Ctrl+H toggles history (⇧ too, since macOS keeps ⌘H for itself).
   useEffect(() => {

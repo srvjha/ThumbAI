@@ -5,6 +5,7 @@ import axios from 'axios';
 import { useQuery } from '@tanstack/react-query';
 import { formatMoney } from '@/config/plans';
 import { cn } from '@/lib/utils';
+import { formatCredits } from '@/config/plans';
 
 export type OrderStatus =
   | 'created'
@@ -176,7 +177,7 @@ export const OrderHistory = () => {
               </div>
             </div>
             <div className='shrink-0 text-right font-mono text-sm tabular-nums'>
-              <div>+{order.credits} cr</div>
+              <div>+{formatCredits(order.credits)}</div>
               <div className='mt-0.5 text-xs text-muted-foreground'>
                 {price(order)}
               </div>

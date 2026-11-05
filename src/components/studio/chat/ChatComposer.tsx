@@ -32,6 +32,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { TEXT_TO_IMAGE_MODELS, type OutputFormat } from '@/config/models';
+import { formatCredits } from '@/config/plans';
 import { cn } from '@/lib/utils';
 import {
   AspectToggle,
@@ -456,10 +457,10 @@ export const ChatComposer = forwardRef<
               href='/billing'
               className='underline-offset-2 hover:underline'
             >
-              {cost} cr · top up
+              {formatCredits(cost)} · top up
             </Link>
           ) : (
-            `${cost} cr`
+            formatCredits(cost)
           )}
         </span>
         <Button
