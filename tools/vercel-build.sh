@@ -37,4 +37,9 @@ case "${VERCEL_ENV:-}" in
     ;;
 esac
 
+# The postinstall hook generates the Prisma client, but pnpm skips it when
+# Vercel restores a cached install, leaving a client that predates the
+# schema. Generate it every time.
+prisma generate
+
 next build
