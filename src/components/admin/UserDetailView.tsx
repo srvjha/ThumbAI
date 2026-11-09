@@ -48,6 +48,7 @@ import {
   SeverityBadge,
   TableEmpty,
 } from './ui';
+import { FlagRequest } from './ModerationView';
 
 const Fact = ({ label, children }: { label: string; children: ReactNode }) => (
   <div className='min-w-0'>
@@ -436,6 +437,7 @@ export const UserDetailView = ({ id }: { id: string }) => {
                     <TableHead className='pl-4'>When</TableHead>
                     <TableHead>Severity</TableHead>
                     <TableHead>Check</TableHead>
+                    <TableHead>Prompt</TableHead>
                     <TableHead>Categories</TableHead>
                     <TableHead className='text-right'>Score</TableHead>
                     <TableHead className='pr-4'>Review</TableHead>
@@ -452,6 +454,12 @@ export const UserDetailView = ({ id }: { id: string }) => {
                       </TableCell>
                       <TableCell className='text-sm'>
                         {f.source === 'MODERATION' ? 'Content' : 'Injection'}
+                      </TableCell>
+                      <TableCell className='min-w-64 max-w-96 align-top'>
+                        <FlagRequest
+                          prompt={f.prompt}
+                          imageUrls={f.imageUrls}
+                        />
                       </TableCell>
                       <TableCell>
                         <div className='flex flex-wrap gap-1'>

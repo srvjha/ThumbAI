@@ -34,6 +34,62 @@ import {
   TableEmpty,
 } from './ui';
 
+/** What the user sent: the prompt, expandable when long, and any images. */
+export const FlagRequest = ({
+  prompt,
+  imageUrls,
+}: {
+  prompt: string | null;
+  imageUrls: string[];
+}) => {
+  const [expanded, setExpanded] = useState(false);
+  if (!prompt && imageUrls.length === 0) {
+    return (
+      <span className='text-xs text-muted-foreground'>
+        Not recorded (flagged before prompts were kept)
+      </span>
+    );
+  }
+  const long = (prompt?.length ?? 0) > 160;
+  return (
+    <div className='space-y-1.5'>
+      {prompt && (
+        <p
+          className={cn(
+            'text-sm whitespace-pre-wrap break-words',
+            !expanded && 'line-clamp-3',
+          )}
+        >
+          {prompt}
+        </p>
+      )}
+      {long && (
+        <button
+          type='button'
+          onClick={() => setExpanded((v) => !v)}
+          className='text-xs text-muted-foreground hover:text-foreground hover:underline'
+        >
+          {expanded ? 'Show less' : 'Show all'}
+        </button>
+      )}
+      {imageUrls.length > 0 && (
+        <div className='flex flex-wrap gap-1'>
+          {imageUrls.map((url) => (
+            <a key={url} href={url} target='_blank' rel='noreferrer'>
+              <img
+                src={url}
+                alt=''
+                loading='lazy'
+                className='h-10 w-14 rounded border object-cover'
+              />
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const STATES = [
   { value: 'open', label: 'Open' },
   { value: 'resolved', label: 'Reviewed' },
@@ -60,7 +116,7 @@ export const ModerationView = () => {
     <>
       <AppPageHeader
         title='Moderation'
-        description='Prompts that tripped the content check or the injection check. Only the kind of problem is kept; prompts are never shown.'
+        description='Requests that tripped the content check or the injection check, with what the user sent, so you can judge whether each flag was right.'
       />
 
       <div className='mb-4 grid grid-cols-3 gap-3'>
@@ -140,6 +196,7 @@ export const ModerationView = () => {
                 <TableHead>User</TableHead>
                 <TableHead>Severity</TableHead>
                 <TableHead>Check</TableHead>
+                <TableHead>Prompt</TableHead>
                 <TableHead>Categories</TableHead>
                 <TableHead className='text-right'>Score</TableHead>
                 <TableHead>Generation</TableHead>
@@ -173,6 +230,9 @@ export const ModerationView = () => {
                   </TableCell>
                   <TableCell className='text-sm whitespace-nowrap'>
                     {f.source === 'MODERATION' ? 'Content' : 'Injection'}
+                  </TableCell>
+                  <TableCell className='min-w-64 max-w-96 align-top'>
+                    <FlagRequest prompt={f.prompt} imageUrls={f.imageUrls} />
                   </TableCell>
                   <TableCell>
                     <div className='flex max-w-72 flex-wrap gap-1'>

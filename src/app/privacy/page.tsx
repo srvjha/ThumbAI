@@ -79,9 +79,10 @@ export default function PrivacyPage() {
           <li>
             <strong>Abuse prevention.</strong> At signup we store a one-way hash
             of your IP address and a normalised form of your email, to stop the
-            same person claiming free credits repeatedly. When a prompt is
-            flagged by our safety checks, we record the kind of problem, not the
-            prompt text.
+            same person claiming free credits repeatedly. When a request is
+            flagged by our safety checks, we keep the kind of problem together
+            with the prompt and any image links, including for requests we
+            block, so a person can review it.
           </li>
         </ul>
       </Section>
@@ -97,6 +98,11 @@ export default function PrivacyPage() {
           <li>
             To understand which pages and features are used, so we can improve
             them.
+          </li>
+          <li>
+            To check that generations match what was asked for. The ThumbAI
+            team may read your prompts and look at the results to find and fix
+            quality problems.
           </li>
           <li>To answer you when you contact us.</li>
         </ul>

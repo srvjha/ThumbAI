@@ -159,6 +159,7 @@ export const GenerationsView = ({ userId }: { userId?: string }) => {
                 <TableHead className='pl-4'>Result</TableHead>
                 <TableHead>When</TableHead>
                 {!userId && <TableHead>User</TableHead>}
+                <TableHead>Prompt</TableHead>
                 <TableHead>Workflow</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className='text-right'>Took</TableHead>
@@ -210,6 +211,16 @@ export const GenerationsView = ({ userId }: { userId?: string }) => {
                       </Link>
                     </TableCell>
                   )}
+                  <TableCell className='max-w-72 min-w-48'>
+                    <p
+                      className='line-clamp-2 text-sm break-words'
+                      title={g.prompt}
+                    >
+                      {g.prompt || (
+                        <span className='text-muted-foreground'>—</span>
+                      )}
+                    </p>
+                  </TableCell>
                   <TableCell className='text-sm whitespace-nowrap'>
                     {WORKFLOWS[g.workflow ?? 'UNKNOWN']}
                     <span className='ml-1.5 text-xs text-muted-foreground'>

@@ -81,6 +81,40 @@ const Mono = ({ value }: { value: string | null | undefined }) =>
     <span className='text-muted-foreground'>—</span>
   );
 
+/** A prompt as the user wrote it, line breaks kept, with a copy button. */
+export const PromptText = ({
+  text,
+  className,
+}: {
+  text: string | null | undefined;
+  className?: string;
+}) =>
+  text ? (
+    <div
+      className={cn(
+        'group/prompt relative rounded-lg border bg-secondary/50 p-3 pr-9 text-sm whitespace-pre-wrap break-words',
+        className,
+      )}
+    >
+      {text}
+      <button
+        type='button'
+        title='Copy prompt'
+        onClick={() => {
+          navigator.clipboard.writeText(text);
+          toast.success('Copied');
+        }}
+        className='absolute top-2 right-2 text-muted-foreground hover:text-foreground'
+      >
+        <Copy className='size-3.5' />
+      </button>
+    </div>
+  ) : (
+    <p className={cn('text-sm text-muted-foreground', className)}>
+      No prompt recorded.
+    </p>
+  );
+
 const detailText = (detail: unknown) => {
   if (!detail || typeof detail !== 'object') return null;
   return Object.entries(detail as Record<string, unknown>)
@@ -160,6 +194,19 @@ export const GenerationSheet = ({
               </div>
             )}
 
+            <Section title='Prompt'>
+              <PromptText text={g.userPrompt} />
+              {g.enhancedPrompt && (
+                <details className='mt-3 group'>
+                  <summary className='cursor-pointer text-xs text-muted-foreground hover:text-foreground'>
+                    What the image model received ({fmt(g.enhancedPrompt.length)}{' '}
+                    chars)
+                  </summary>
+                  <PromptText text={g.enhancedPrompt} className='mt-2' />
+                </details>
+              )}
+            </Section>
+
             <Section title='Request'>
               <dl className='grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3'>
                 <Field label='User'>
@@ -185,9 +232,6 @@ export const GenerationSheet = ({
                   <span className='font-mono text-xs'>{g.seed ?? '—'}</span>
                 </Field>
                 <Field label='End to end'>{duration(g.latencyMs)}</Field>
-                <Field label='Prompt size'>
-                  {fmt(g.promptChars)} → {fmt(g.enhancedPromptChars)} chars
-                </Field>
                 <div className='col-span-2 sm:col-span-3'>
                   <Field label='Endpoint'>
                     <Mono value={g.endpoint} />
@@ -293,7 +337,7 @@ export const GenerationSheet = ({
             <Section title='Prompt screening'>
               {g.flags.length === 0 ? (
                 <p className='text-sm text-muted-foreground'>
-                  Nothing flagged. The prompt itself is never shown here.
+                  Nothing flagged.
                 </p>
               ) : (
                 <ul className='space-y-2'>

@@ -306,6 +306,10 @@ model PromptFlag {
   /// Highest moderation score, 0 to 1. Null for the injection check.
   score        Float?
   severity     FLAG_SEVERITY
+  /// What the user sent, so an admin can judge whether the flag was right.
+  /// Kept for blocked requests too, which have no generation row.
+  prompt       String?
+  image_urls   String[]      @default([])
   resolved_at  DateTime?
   resolved_by  String?
   createdAt    DateTime      @default(now())

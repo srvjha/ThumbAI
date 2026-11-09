@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 export const CONTACT_EMAIL = 'jhasaurav0209001@gmail.com';
-export const LEGAL_UPDATED = 'November 1, 2026';
+export const LEGAL_UPDATED = 'November 9, 2026';
 
 export const LEGAL_PAGES = [
   { href: '/terms', label: 'Terms of Service' },

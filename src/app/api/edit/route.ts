@@ -20,7 +20,7 @@ export const POST = async (req: NextRequest) => {
     // Lesser flags are written after the response, linked to the generation.
     // Rejected prompts count too: those are often the ones worth seeing.
     let generationId: string | null = null;
-    after(() => recordFlags(user.id, detections, generationId));
+    after(() => recordFlags(user.id, detections, generationId, body));
 
     const result = await submitEdit(user, body);
     if (result.kind === 'submitted') generationId = result.generationId;

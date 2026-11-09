@@ -16,9 +16,9 @@ import { ApiError } from '@/server/errors';
 import { recordCreditChange } from '@/server/credits';
 
 /**
- * Everything the admin panel reads and does. Prompts are deliberately never
- * returned from here: admins see whether a prompt was flagged and why, not
- * what the user wrote.
+ * Everything the admin panel reads and does. Prompts are returned so the
+ * admin can judge whether a generation matched the request and whether a
+ * flag was deserved. The admin pages are the only place they are shown.
  */
 
 export const ADMIN_PAGE_SIZE = 50;
@@ -313,6 +313,8 @@ export const getUserDetail = async (id: string) => {
       categories: f.categories,
       score: f.score,
       severity: f.severity,
+      prompt: f.prompt,
+      imageUrls: f.image_urls,
       generationId: f.thumbnail_id,
       resolvedAt: f.resolved_at,
       resolvedBy: f.resolved_by,
@@ -536,6 +538,7 @@ export const listGenerations = async ({
         aspect_ratio: true,
         num_of_images: true,
         image_url: true,
+        user_prompt: true,
         seed: true,
         error: true,
         createdAt: true,
@@ -564,6 +567,8 @@ export const listGenerations = async ({
       aspectRatio: row.aspect_ratio,
       images: row.num_of_images,
       thumbnail: row.image_url[0] ?? null,
+      // A preview; the full text is in the generation's detail.
+      prompt: row.user_prompt.slice(0, 240),
       seed: row.seed,
       error: row.error,
       user: row.user,
@@ -649,9 +654,8 @@ export const getGenerationDetail = async (id: string) => {
     latencyMs: rest.completed_at
       ? rest.completed_at.getTime() - rest.createdAt.getTime()
       : null,
-    // Sizes only, never the text.
-    promptChars: user_prompt.length,
-    enhancedPromptChars: enhanced_ai_prompt.length,
+    userPrompt: user_prompt,
+    enhancedPrompt: enhanced_ai_prompt,
     events: rest.GenerationEvent.map((e) => ({
       id: e.id,
       type: e.type,
@@ -686,7 +690,7 @@ export const parseFlagParams = (params: URLSearchParams) => ({
   page: pageOf(params),
 });
 
-/** Flagged prompts, as categories and scores only. */
+/** Flagged requests, with what the user sent. */
 export const listFlags = async ({
   state,
   severity,
@@ -734,6 +738,8 @@ export const listFlags = async ({
       categories: f.categories,
       score: f.score,
       severity: f.severity,
+      prompt: f.prompt,
+      imageUrls: f.image_urls,
       generationId: f.thumbnail_id,
       resolvedAt: f.resolved_at,
       resolvedBy: f.resolved_by,

@@ -271,7 +271,7 @@ describe('resetFlags', () => {
 });
 
 describe('getGenerationDetail', () => {
-  it('returns the log and sizes, never the prompt text', async () => {
+  it('returns the log and the prompts', async () => {
     const user = await createUser();
     const gen = await db.thumbnail.update({
       where: { id: (await createGeneration(user.id)).id },
@@ -284,7 +284,7 @@ describe('getGenerationDetail', () => {
     const detail = await getGenerationDetail(gen.id);
 
     expect(detail.events.map((e) => e.type)).toEqual(['CREATED']);
-    expect(detail.promptChars).toBe(12);
-    expect(JSON.stringify(detail)).not.toContain('secret words');
+    expect(detail.userPrompt).toBe('secret words');
+    expect(detail.enhancedPrompt).toBe('more words');
   });
 });

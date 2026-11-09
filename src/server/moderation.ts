@@ -5,11 +5,12 @@ import { db } from '@/db';
 import { SITE_URL } from '@/config/site';
 import { env } from '@/config/env';
 import { ApiError } from '@/server/errors';
+import { MAX_PROMPT_CHARS, MAX_URL_CHARS } from '@/server/generations/input';
 
 /**
  * Screens a request before anything is charged or generated, and records a
- * PromptFlag for anything worth an admin's look. Only the kind of problem is
- * stored, never the prompt itself.
+ * PromptFlag for anything worth an admin's look, with a copy of the prompt and
+ * image links so the admin can judge whether the check got it right.
  *
  * Two checks: OpenAI's moderation model for harmful text and images, and a
  * pattern check for attempts to subvert the prompt agent or smuggle code
@@ -239,17 +240,36 @@ export const screenRequest = async ({
 };
 
 /** Never throws: a failed write must not change the outcome of a request. */
+/** The parts of a request worth keeping with its flag for review. */
+const reviewCopy = (body: ScreenedBody) => ({
+  prompt:
+    typeof body?.prompt === 'string'
+      ? body.prompt.slice(0, MAX_PROMPT_CHARS)
+      : null,
+  image_urls: Array.isArray(body?.images_urls)
+    ? body.images_urls
+        .filter((u): u is string => typeof u === 'string')
+        .slice(0, 14)
+        .map((u) => u.slice(0, MAX_URL_CHARS))
+    : [],
+});
+
+type ScreenedBody = { prompt?: unknown; images_urls?: unknown } | null | undefined;
+
 export const recordFlags = async (
   userId: string,
   detections: Detection[],
-  thumbnailId?: string | null,
+  thumbnailId: string | null | undefined,
+  body: ScreenedBody,
 ) => {
   if (detections.length === 0) return;
+  const copy = reviewCopy(body);
   try {
     await db.promptFlag.createMany({
       data: detections.map((d) => ({
         user_id: userId,
         thumbnail_id: thumbnailId ?? null,
+        ...copy,
         source: d.source,
         categories: d.categories,
         score: d.score,
@@ -296,14 +316,14 @@ const alertAdmin = async (
  */
 export const guardRequest = async (
   user: { id: string; email: string },
-  body: { prompt?: unknown; images_urls?: unknown } | null | undefined,
+  body: ScreenedBody,
 ): Promise<Detection[]> => {
   const detections = await screenRequest({
     text: body?.prompt,
     imageUrls: body?.images_urls,
   });
   if (detections.some((d) => d.blocked)) {
-    await recordFlags(user.id, detections);
+    await recordFlags(user.id, detections, null, body);
     await alertAdmin(user, detections);
     throw new ApiError(BLOCKED_MESSAGE, 422);
   }
